@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #5F6FF5;
+}
+
+.overflow-scroll {
+  -ms-overflow-style: none;
+}
+
+.overflow-scroll::-webkit-scrollbar {
+  display: none;
+}

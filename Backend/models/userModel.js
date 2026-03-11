@@ -35,16 +35,9 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: "Not Selected"
   },
-  gender: {
-    type: String,
-    default: "Not Selected"
-  },
-  gender: {
-    type: String,
-    default: "00000000000"
-  }
+
 },)
 
 const userModel = mongoose.model.user || mongoose.model('user', userSchema)
 
-export default doctorModel
+export default userModel
