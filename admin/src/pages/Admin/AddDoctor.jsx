@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useContext } from 'react'
 import { AdminContext } from '../../context/AdminContext'
 import { toast } from 'react-toastify'
+import axios from 'axios'
 
 
 const AddDoctor = () => {
@@ -40,11 +41,34 @@ const AddDoctor = () => {
       formData.append('experience', experience)
       formData.append('fees', Number(fee))
       formData.append('about', about)
-      formData.append('adress', { line1: adress1, line2: adress2 })
-      formData.append('name', docImg)
+      formData.append('address', JSON.stringify({ line1: adress1, line2: adress2 }))
+      formData.append('available', true)
+
+      // console log formdata
+
+      formData.forEach((value, key) => {
+        console.log(`${key}: ${value}`)
+      })
+
+      const { data } = await axios.post(backendUrl + '/api/admin/add-doctor', formData, { headers: { aToken } })
+      if (data.success) {
+        toast.success(data.message)
+        setDocImg(false)
+        setName('')
+        setEmail('')
+        setPassword('')
+        setAbout('')
+        setAdress1('')
+        setAdress2('')
+        setFee('')
+        setDegree('')
+      } else {
+        toast.error(data.message)
+      }
 
     } catch (error) {
-
+      toast.error(error.message)
+      console.log(error)
     }
   }
 
@@ -56,7 +80,7 @@ const AddDoctor = () => {
       <div className='bg-white px-8 py-8 border rounded w-full max-w-4xl max-h-[80vh]  overflow-scroll'>
         <div className='flex items-center gap-4 mb-8 text-gray-500'>
           <label htmlFor="doc-img">
-            <img className='w-16 bg-gray-100 rounded-full cursor-pointer ' src={docImg ? URL.createObjectURL(doc) : assets.upload_area} alt="" />
+            <img className='w-16 bg-gray-100 rounded-full cursor-pointer ' src={docImg ? URL.createObjectURL(docImg) : assets.upload_area} alt="" />
           </label>
           <input onChange={(e) => setDocImg(e.target.files[0])} type="file" id="doc-img" hidden />
           <p>Upload doctor <br />picture</p>
@@ -105,11 +129,11 @@ const AddDoctor = () => {
 
           <div className='w-full lg:flex-1 flex-col gap-4'>
 
-            <div value={speciality} onChange={(e) => setSpeciality(e.target.value)} className='flex-1 flex flex-col gap-1'>
+            <div className='flex-1 flex flex-col gap-1' >
               <p>Speciality</p>
-              <select className='border rounded px-3 py-2' name="" id="">
+              <select value={speciality} onChange={(e) => setSpeciality(e.target.value)} className='border rounded px-3 py-2' name="" id="">
                 <option value="General physician">General physician</option>
-                <option value="Gynecologist">Gynecologis</option>
+                <option value="Gynecologist">Gynecologist</option>
                 <option value="Dermatologist">Dermatologist</option>
                 <option value="Pediatricians">Pediatricians</option>
                 <option value="Neurologist">Neurologist</option>
