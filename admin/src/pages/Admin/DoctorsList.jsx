@@ -4,27 +4,27 @@ import { AdminContext } from '../../context/AdminContext'
 import { useEffect } from 'react'
 
 const DoctorsList = () => {
-  const { doctors, aToken, getAllDoctors } = useContext(AdminContext)
+  const { doctors, aToken, getAllDoctors, changeAvailability } = useContext(AdminContext)
 
   useEffect(() => {
     if (aToken) {
       getAllDoctors()
     }
-  }, [aToken])
+  }, [aToken, getAllDoctors])
   return (
     <div className='m-5 max-h-[90vh] overflow-y-scroll'>
       <h1 className='text-lg font-medium'>All Doctors</h1>
       <div className='flex w-full flex-wrap gap-4 pt-5 gap-y-6'>
         {
           doctors.map((item, index) => (
-            <div className='border border-indigo-200 rounded-xl max-w-56 overflow-hidden cursor-pointer group' key={index}>
-              <img className='bg-indigo-50 group-hover:bg-primary transition-all duration-500' src={item.image} alt="" />
+            <div className='border border-indigo-200 rounded-xl max-w-56 overflow-hidden cursor-pointer group' key={item._id || index}>
+              <img className='bg-indigo-50 group-hover:bg-primary aspect-square object-cover transition-all duration-500' src={item.image} alt="" />
               <div className='p-4'>
                 <p className='text-neutral-800 text-lg font-medium'>{item.name}</p>
                 <p className='text-zinc-600 text-sm'>{item.speciality}</p>
                 <div className='mt-2 flex items-center gap-1 text-sm'>
-                  <input type="checkbox" checked={item.available} />
-                  <p>Available</p>
+                  <input className='cursor-pointer' type="checkbox" checked={item.available} onChange={() => changeAvailability(item._id)} />
+                  <p className='text-zinc-600'> Available</p>
                 </div>
               </div>
             </div>

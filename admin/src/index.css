@@ -1,7 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap');
 @import "tailwindcss";
+
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
 
 @theme {
   --color-primary: #5F6FF5;
+  --font-outfit: "Outfit", sans-serif;
+  --font-urbanist: "Urbanist", sans-serif;
 }
 
 .overflow-scroll {
@@ -10,4 +20,8 @@
 
 .overflow-scroll::-webkit-scrollbar {
   display: none;
+}
+
+* {
+  font-family: outfit;
 }

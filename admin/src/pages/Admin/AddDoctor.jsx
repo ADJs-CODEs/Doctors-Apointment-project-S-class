@@ -13,13 +13,13 @@ const AddDoctor = () => {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [experience, setExperience] = useState('1year')
+  const [experience, setExperience] = useState('1 year')
   const [fee, setFee] = useState('')
   const [about, setAbout] = useState('')
   const [speciality, setSpeciality] = useState('General physician')
   const [degree, setDegree] = useState('')
-  const [adress1, setAdress1] = useState('')
-  const [adress2, setAdress2] = useState('')
+  const [address1, setAddress1] = useState('')
+  const [address2, setAddress2] = useState('')
 
   const { backendUrl, aToken } = useContext(AdminContext)
 
@@ -41,7 +41,7 @@ const AddDoctor = () => {
       formData.append('experience', experience)
       formData.append('fees', Number(fee))
       formData.append('about', about)
-      formData.append('address', JSON.stringify({ line1: adress1, line2: adress2 }))
+      formData.append('address', JSON.stringify({ line1: address1, line2: address2 }))
       formData.append('available', true)
 
       // console log formdata
@@ -58,10 +58,12 @@ const AddDoctor = () => {
         setEmail('')
         setPassword('')
         setAbout('')
-        setAdress1('')
-        setAdress2('')
+        setAddress1('')
+        setAddress2('')
         setFee('')
         setDegree('')
+        setExperience('1 year')
+        setSpeciality('General physician')
       } else {
         toast.error(data.message)
       }
@@ -107,16 +109,16 @@ const AddDoctor = () => {
             <div className='flex-1 flex flex-col gap-1'>
               <p>Experience</p>
               <select value={experience} onChange={(e) => setExperience(e.target.value)} className='border rounded px-3 py-2' name="" id="">
-                <option value="1year">1year</option>
-                <option value="2year">2years</option>
-                <option value="3year">3years</option>
-                <option value="4year">4years</option>
-                <option value="5year">5years</option>
-                <option value="6year">6years</option>
-                <option value="7year">7years</option>
-                <option value="8year">8years</option>
-                <option value="9year">9years</option>
-                <option value="10year">10years</option>
+                <option value="1 year">1year</option>
+                <option value="2 year">2years</option>
+                <option value="3 year">3years</option>
+                <option value="4 year">4years</option>
+                <option value="5 year">5years</option>
+                <option value="6 year">6years</option>
+                <option value="7 year">7years</option>
+                <option value="8 year">8years</option>
+                <option value="9 year">9years</option>
+                <option value="10 year">10years</option>
               </select>
             </div>
 
@@ -146,17 +148,17 @@ const AddDoctor = () => {
               <input value={degree} onChange={(e) => setDegree(e.target.value)} className='border rounded px-3 py-2' type="text" placeholder='Education' required />
             </div>
 
-            <div>
+            <div className='flex-1 flex flex-col gap-1'>
               <p>Address</p>
-              <input value={adress1} onChange={(e) => setAdress1(e.target.value)} className='border rounded px-3 py-2' type="text" placeholder='address 1' required />
-              <input value={adress2} onChange={(e) => setAdress2(e.target.value)} className='border rounded px-3 py-2' type="text" placeholder='address 2' required />
+              <input value={address1} onChange={(e) => setAddress1(e.target.value)} className='border rounded px-3 py-2' type="text" placeholder='address 1' required />
+              <input value={address2} onChange={(e) => setAddress2(e.target.value)} className='border rounded px-3 py-2' type="text" placeholder='address 2' required />
             </div>
 
           </div>
         </div>
 
 
-        <div>
+        <div >
           <p className='mt-4 mb-2'>About Doctor</p>
           <textarea value={about} onChange={(e) => setAbout(e.target.value)} className='w-full px-4 pt-2 border rounded' placeholder='write about doctor' rows={5} required />
         </div>
