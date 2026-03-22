@@ -87,7 +87,7 @@ const loginUser = async (req: Request, res: Response) => {
 //API to get user profile data
 const getProfile = async (req: Request, res: Response) => {
   try {
-    const { userId } = req.body
+    const userId = (req as any).userId;
     const userData = await userModel.findById(userId).select('-password')
 
     res.json({
@@ -102,9 +102,13 @@ const getProfile = async (req: Request, res: Response) => {
 //API to update user Profile
 const updateProfile = async (req: Request, res: Response) => {
   try {
-    const { userId, name, phone, address, dob, gender, } = req.body
+    console.log("--- BACKEND CONTROLLER START ---");
+    console.log("Body Received:", req.body);
+    console.log("File Received:", req.file ? "Yes" : "No");
+    const userId = (req as any).userId;
+    const { name, phone, address, dob, gender, } = req.body
     const imageFile = req.file
-
+    console.log("ACTUAL ID BEING UPDATED:", userId);
 
     if (!name || !phone || !address || !dob || !gender) {
       return res.json({ success: false, message: 'Data Missing' })

@@ -13,11 +13,11 @@ const authUser = async (req: Request, res: Response, next: NextFunction) => {
     const token_decode = jwt.verify(token as string, process.env.JWT_SECRET as string) as { id: string }
 
     if (!req.body) { req.body = {} }
+    console.log("--- MIDDLEWARE AUTH --- User ID:", token_decode.id);
 
-    req.body.userId = token_decode.id
 
-    req.userId = token_decode.id
 
+    (req as any).userId = token_decode.id;
     next()
 
   } catch (error: any) {
