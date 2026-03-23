@@ -12,7 +12,24 @@ import appointments_icon from './appointments_icon.svg'
 import earning_icon from './earning_icon.svg'
 import patients_icon from './patients_icon.svg'
 
-export const assets = {
+// Define the shape of the assets object
+interface Assets {
+    add_icon: string;
+    admin_logo: string;
+    appointment_icon: string;
+    cancel_icon: string;
+    doctor_icon: string;
+    upload_area: string;
+    home_icon: string;
+    patients_icon: string;
+    people_icon: string;
+    list_icon: string;
+    tick_icon: string;
+    appointments_icon: string;
+    earning_icon: string;
+}
+
+export const assets: Assets = {
     add_icon,
     admin_logo,
     appointment_icon,

@@ -1,20 +1,21 @@
 import React, { useContext, useState } from 'react'
-import { assets } from '../assets/assets/assets_admin/assets'
-import { AdminContext } from '../context/AdminContext'
+import { AdminContext } from '../context/AdminContext.js'
 import axios from 'axios'
-import { toast } from 'react-toastify'
-import { DoctorContext } from '../context/DoctorContext'
+import { toast } from 'sonner'
+import { DoctorContext } from '../context/DoctorContext.js'
+import type { AdminContextType, DoctorContextType } from '../types/index.js'
 
-const Login = () => {
+const Login: React.FC = () => {
 
-  const [state, setState] = useState('Admin')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [state, setState] = useState<string>('Admin')
+  const [email, setEmail] = useState<string>('')
+  const [password, setPassword] = useState<string>('')
 
-  const { setAToken, backendUrl } = useContext(AdminContext);
-  const { dToken, setDToken, } = useContext(DoctorContext);
+  // We use type casting (as Type) to ensure TypeScript recognizes the Context values
+  const { setAToken, backendUrl } = useContext(AdminContext) as AdminContextType;
+  const { setDToken } = useContext(DoctorContext) as DoctorContextType;
 
-  const onSubmitHandler = async (event) => {
+  const onSubmitHandler = async (event: React.BaseSyntheticEvent) => {
     event.preventDefault()
 
     try {
@@ -37,16 +38,17 @@ const Login = () => {
           toast.error(data.message)
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       toast.error(error.message)
     }
 
     console.log("Full URL:", backendUrl + '/api/admin/login');
   }
+
   return (
     <form onSubmit={onSubmitHandler} className='min-h-[80vh] flex items-center'>
       <div className='flex flex-col gap-3 m-auto items-start p-8 min-w-96 border rounded-xl text-[#5E5E5E] text-sm shadow-lg'>
-        <p className='text-2xl font-semibold m-auto'><span className='text-primary'>{state}</span>Login</p>
+        <p className='text-2xl font-semibold m-auto'><span className='text-primary'>{state}</span> Login</p>
         <div className='w-full'>
           <p>Email</p>
           <input onChange={(e) => setEmail(e.target.value)} value={email} className='border border-[#DADADA] rounded w-full p-2 mt-1' type="email" required />

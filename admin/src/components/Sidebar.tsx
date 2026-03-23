@@ -1,17 +1,14 @@
-import React from 'react'
-import { useContext } from 'react'
-import { AdminContext } from '../context/AdminContext'
+import React, { useContext } from 'react'
+import { AdminContext } from '../context/AdminContext.js'
 import { NavLink } from 'react-router-dom';
-import { assets } from '../assets/assets/assets_admin/assets';
-import { DoctorContext } from '../context/DoctorContext';
+import { assets } from '../assets/assets/assets_admin/assets.js';
+import { DoctorContext } from '../context/DoctorContext.js';
+import type { AdminContextType, DoctorContextType } from '../types/index.js';
 
+const Sidebar: React.FC = () => {
 
-
-
-const Sidebar = () => {
-
-  const { aToken } = useContext(AdminContext);
-  const { dToken } = useContext(DoctorContext)
+  const { aToken } = useContext(AdminContext) as AdminContextType;
+  const { dToken } = useContext(DoctorContext) as DoctorContextType;
 
   return (
     <div className='min-h-screen bg-white border-r'>

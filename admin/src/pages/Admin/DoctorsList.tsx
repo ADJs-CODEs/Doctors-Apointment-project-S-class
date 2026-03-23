@@ -1,29 +1,36 @@
-import React from 'react'
-import { useContext } from 'react'
-import { AdminContext } from '../../context/AdminContext'
-import { useEffect } from 'react'
+import React, { useContext, useEffect } from 'react'
+import { AdminContext } from '../../context/AdminContext.js'
+import type { AdminContextType, Doctor } from '../../types/index.js'
 
-const DoctorsList = () => {
-  const { doctors, aToken, getAllDoctors, changeAvailability } = useContext(AdminContext)
+const DoctorsList: React.FC = () => {
+
+  // Explicitly cast the context to our AdminContextType
+  const { doctors, aToken, getAllDoctors, changeAvailability } = useContext(AdminContext) as AdminContextType
 
   useEffect(() => {
     if (aToken) {
       getAllDoctors()
     }
   }, [aToken, getAllDoctors])
+
   return (
     <div className='m-5 max-h-[90vh] overflow-y-scroll'>
       <h1 className='text-lg font-medium'>All Doctors</h1>
       <div className='flex w-full flex-wrap gap-4 pt-5 gap-y-6'>
         {
-          doctors.map((item, index) => (
+          doctors.map((item: Doctor, index: number) => (
             <div className='border border-indigo-200 rounded-xl max-w-56 overflow-hidden cursor-pointer group' key={item._id || index}>
-              <img className='bg-indigo-50 group-hover:bg-primary aspect-square object-cover transition-all duration-500' src={item.image} alt="" />
+              <img className='bg-indigo-50 group-hover:bg-primary aspect-square object-cover transition-all duration-500' src={item.image} alt={item.name} />
               <div className='p-4'>
                 <p className='text-neutral-800 text-lg font-medium'>{item.name}</p>
                 <p className='text-zinc-600 text-sm'>{item.speciality}</p>
                 <div className='mt-2 flex items-center gap-1 text-sm'>
-                  <input className='cursor-pointer' type="checkbox" checked={item.available} onChange={() => changeAvailability(item._id)} />
+                  <input
+                    className='cursor-pointer'
+                    type="checkbox"
+                    checked={item.available}
+                    onChange={() => changeAvailability(item._id)}
+                  />
                   <p className='text-zinc-600'> Available</p>
                 </div>
               </div>
