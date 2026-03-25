@@ -11,4 +11,5 @@ export interface IUser {
   gender: string;
   dob: string;
   phone: string;
+
 }

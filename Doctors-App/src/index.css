@@ -1,50 +1,86 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200..800&family=Instrument+Serif:ital@0;1&display=swap');
 @import "tailwindcss";
 
+/* --- Global Resets & Typography --- */
 * {
-  font-family: Outfit;
-  ;
+  /* Plus Jakarta Sans is the gold standard for clean, modern UI */
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  @apply transition-all duration-300 ease-in-out;
 }
-
 
 @theme {
-  --color-primary: #5F6FFF;
-  --grid-template-columns-auto: repeat(auto-fill, minmax(180px, 1fr));
+  /* --- The "Trust & Care" Palette --- */
+  --color-clinic-bg: #F8FAFC;
+  /* Soft, airy medical white */
+  --color-clinic-card: #FFFFFF;
+  /* Pure white for elevation */
+  --color-primary: #0F172A;
+  /* Deep Navy for authority */
+  --color-teal: #14B8A6;
+  /* Healing Teal for core branding */
+  --color-teal-dark: #0D9488;
+  /* Darker teal for hover states */
+  --color-slate-light: #F1F5F9;
+  /* Ultra-soft borders */
+
+  /* --- Professional Gradients --- */
+  --background-image-medical-grad: linear-gradient(135deg, #14B8A6 0%, #0D9488 100%);
+
+  /* --- Elevation & Shadows (Soft & Realistic) --- */
+  --shadow-clinical: 0 20px 50px rgba(15, 23, 42, 0.04);
+  --shadow-portal: 0 8px 32px rgba(0, 0, 0, 0.02);
+
+  /* --- Grid Constraints --- */
+  --grid-template-columns-auto: repeat(auto-fill, minmax(240px, 1fr));
 }
 
-:root {
-  --primary: #5F6FFF;
+/* --- Premium Medical Surface Utility --- */
+@utility medical-card {
+  background-color: white;
+  border: 1px solid #F1F5F9;
+  box-shadow: var(--shadow-clinical);
+  border-radius: 32px;
+  @apply overflow-hidden;
 }
 
-.active hr {
-  display: block;
-}
+/* --- High-Performance Input Utility --- */
+@utility medical-input {
+  background-color: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 18px;
+  padding: 1rem 1.25rem;
+  font-size: 0.875rem;
+  color: #1E293B;
+  outline: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-/* Hide scrollbar while keeping scroll functionality */
-.overflow-x-scroll {
-  -ms-overflow-style: none;
-  /* IE and Edge */
-  scrollbar-width: none;
-  /* Firefox */
-}
+  &::placeholder {
+    color: #94A3B8;
+  }
 
-.overflow-x-scroll::-webkit-scrollbar {
-  display: none;
-  /* Chrome, Safari and Opera */
-}
-
-@media (max-width: 740px) {
-  .active p {
-    @apply text-white;
-    background-color: #5F6FFF;
-
+  &:focus {
+    background-color: white;
+    border-color: #14B8A6;
+    box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.08);
   }
 }
 
-@keyframes fadeIn {
+/* --- Clean Navigation & Scrollbars --- */
+@utility hide-scrollbar {
+  &::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+    -webkit-appearance: none !important;
+  }
+}
+
+/* --- Interaction Animations --- */
+@keyframes reveal {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(20px);
   }
 
   to {
@@ -53,6 +89,23 @@
   }
 }
 
-.animate-reveal {
-  animation: fadeIn 0.5s ease-out forwards;
+@utility animate-reveal {
+  animation: reveal 0.8s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+}
+
+/* --- Global Body Styles --- */
+body {
+  @apply bg-clinic-bg text-slate-700 antialiased selection:bg-teal/10 selection:text-teal;
+}
+
+/* --- Specialty Typography --- */
+.font-serif {
+  /* Used for high-end accent words like "Expert" or "Consultants" */
+  font-family: 'Instrument Serif', serif;
+}
+
+/* Custom button for that "Medical Grad" feel */
+@utility btn-primary {
+  background-image: var(--background-image-medical-grad);
+  @apply text-white font-bold py-4 px-8 rounded-2xl shadow-lg shadow-teal/20 hover:scale-[1.02] active:scale-[0.98] transition-all;
 }

@@ -178,4 +178,31 @@ const adminDashboard = async (req: Request, res: Response) => {
   }
 }
 
-export { addDoctor, loginAdmin, allDoctors, appointmentsAdmin, appointmentCancel, adminDashboard }
+const deleteDoctor = async (req: Request, res: Response) => {
+  try {
+    // Explicitly cast or destructure the body
+    const { docId }: { docId: string } = req.body;
+
+    if (!docId) {
+      return res.json({ success: false, message: "Doctor ID is required" });
+    }
+
+    // 1. Remove the doctor
+    const deletedDoctor = await doctorModel.findByIdAndDelete(docId);
+
+    if (!deletedDoctor) {
+      return res.json({ success: false, message: "Doctor not found in registry" });
+    }
+
+    // 2. Cleanup appointments
+    await appointmentModel.deleteMany({ docId });
+
+    return res.json({ success: true, message: "Doctor and associated records terminated" });
+
+  } catch (error: any) {
+    console.error("Delete Doctor Error:", error);
+    return res.json({ success: false, message: error.message });
+  }
+};
+
+export { addDoctor, loginAdmin, allDoctors, appointmentsAdmin, appointmentCancel, adminDashboard, deleteDoctor }

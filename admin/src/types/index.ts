@@ -54,6 +54,7 @@ export interface AdminContextType {
   cancelAppointment: (appointmentId: string) => Promise<void>;
   dashData: any;
   getDashData: () => Promise<void>;
+  deleteDoctor: (docId: string) => Promise<void>;
 }
 
 export interface DoctorContextType {

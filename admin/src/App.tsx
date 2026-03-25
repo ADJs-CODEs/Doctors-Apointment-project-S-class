@@ -5,7 +5,7 @@ import { AppContext } from './context/AppContext.js'
 import { AdminContext } from './context/AdminContext.js';
 import Navbar from './components/Navbar.js';
 import Sidebar from './components/Sidebar.js';
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import Dashboard from './pages/Admin/Dashboard.js';
 import AddDoctor from './pages/Admin/AddDoctor.js';
 import DoctorsList from './pages/Admin/DoctorsList.js';

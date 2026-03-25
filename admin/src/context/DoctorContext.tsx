@@ -1,4 +1,4 @@
-import { createContext, useState } from "react";
+import { createContext, useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import type { DoctorContextType, Appointment, Doctor, ProviderProps } from "../types/index.js";
@@ -8,7 +8,7 @@ export const DoctorContext = createContext<DoctorContextType | undefined>(undefi
 const DoctorContextProvider = ({ children }: ProviderProps) => {
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
-    const [dToken, setDToken] = useState<string>(localStorage.getItem('dtoken') || '');
+    const [dToken, setDToken] = useState<string>(localStorage.getItem('dToken') ?? '');
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [dashData, setDashData] = useState<any>(false);
     const [profileData, setProfileData] = useState<Doctor | false>(false);
@@ -109,6 +109,14 @@ const DoctorContextProvider = ({ children }: ProviderProps) => {
             return false;
         }
     };
+
+    useEffect(() => {
+        if (dToken) {
+            localStorage.setItem('dToken', dToken);
+        } else {
+            localStorage.removeItem('dToken');
+        }
+    }, [dToken]);
 
     const value: DoctorContextType = {
         dToken, setDToken, backendUrl,

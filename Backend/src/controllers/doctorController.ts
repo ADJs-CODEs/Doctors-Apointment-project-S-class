@@ -16,9 +16,12 @@ interface Appointment {
 const changeAvailability = async (req: Request, res: Response) => {
   try {
 
-    const docId = req.docId
+    const { docId } = req.body;
 
     const docData = await doctorModel.findById(docId)
+    if (!docData) {
+      return res.json({ success: false, message: 'Doctor not found' })
+    }
     await doctorModel.findByIdAndUpdate(docId, { available: !docData.available })
     res.json({ success: true, message: 'Availability changed' })
 
@@ -81,19 +84,37 @@ const appointmentsDoctor = async (req: Request, res: Response) => {
   }
 }
 //API to mark appointment completed
+// API to mark appointment completed with Health Data
 const appointmentComplete = async (req: Request, res: Response) => {
   try {
     const docId = req.docId
-    const { appointmentId } = req.body
+    const { appointmentId, healthData } = req.body
 
     const appointmentData = await appointmentModel.findById(appointmentId)
 
     if (appointmentData && appointmentData.docId.toString() === docId) {
-      await appointmentModel.findByIdAndUpdate(appointmentId, { isCompleted: true })
-      return res.json({ success: true, message: 'Appointment Completed' })
-    }
-    else {
-      res.json({ success: false, message: "Mark Failed" })
+
+      // We update the healthData object and set isCompleted to true
+      await appointmentModel.findByIdAndUpdate(appointmentId, {
+        isCompleted: true,
+        healthData: {
+          bloodPressure: healthData.bloodPressure,
+          heartRate: healthData.heartRate,
+          temperature: healthData.temperature,
+          doctorNotes: healthData.doctorNotes,
+          // Map the medicines to ensure initial remainingQuantity equals totalQuantity
+          prescribedMedicines: healthData.prescribedMedicines.map((med: any) => ({
+            ...med,
+            remainingQuantity: med.totalQuantity,
+            adherenceLogs: [],
+            status: 'Active'
+          }))
+        }
+      })
+
+      return res.json({ success: true, message: 'Appointment Completed & Registry Updated' })
+    } else {
+      return res.json({ success: false, message: "Authorization Failed" })
     }
   } catch (error: any) {
     console.log(error)
