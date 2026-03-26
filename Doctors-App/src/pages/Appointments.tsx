@@ -159,8 +159,8 @@ const Appointments: React.FC = () => {
               key={index}
               onClick={() => { setSlotIndex(index); setSlotTime('') }}
               className={`flex flex-col items-center justify-center min-w-[70px] py-5 rounded-[32px] transition-all duration-300 ${slotIndex === index
-                  ? 'bg-slate-900 text-white shadow-xl scale-105'
-                  : 'bg-white text-slate-400 border border-slate-100 hover:border-teal-200'
+                ? 'bg-slate-900 text-white shadow-xl scale-105'
+                : 'bg-white text-slate-400 border border-slate-100 hover:border-teal-200'
                 }`}
             >
               <span className='text-[10px] font-black mb-1'>{item[0] && daysOfWeek[item[0].datetime.getDay()]}</span>
@@ -179,8 +179,8 @@ const Appointments: React.FC = () => {
                 key={item.time}
                 onClick={() => setSlotTime(item.time)}
                 className={`px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${item.time === slotTime
-                    ? 'bg-teal-500 text-white shadow-neon scale-105'
-                    : 'bg-white text-slate-500 border border-slate-100 hover:bg-slate-50'
+                  ? 'bg-teal-500 text-white shadow-neon scale-105'
+                  : 'bg-white text-slate-500 border border-slate-100 hover:bg-slate-50'
                   }`}
               >
                 {item.time}

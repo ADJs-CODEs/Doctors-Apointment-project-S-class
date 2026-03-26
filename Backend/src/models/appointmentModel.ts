@@ -1,11 +1,19 @@
 import mongoose, { Document, Model, Schema } from 'mongoose'
 
-// 1. Define sub-interfaces for better organization
+interface IMessage {
+  sender: 'Doctor' | 'System';
+  content: string;
+  sentAt: Date;
+  isRead: boolean;
+}
+
 interface IMedicine {
   name: string;
   dosagePerDay: number;
   totalQuantity: number;
   remainingQuantity: number;
+  lastTaken?: Date;
+  overdoseAlert: boolean;
   adherenceLogs: Date[];
   status: 'Active' | 'Completed';
 }
@@ -18,7 +26,6 @@ interface IHealthData {
   doctorNotes: string;
 }
 
-// 2. Update the main Interface
 export interface IAppointment extends Document {
   userId: string;
   docId: string;
@@ -31,11 +38,13 @@ export interface IAppointment extends Document {
   cancelled: boolean;
   payment: boolean;
   isCompleted: boolean;
-  // 🔑 Add this line to fix the error:
   healthData: IHealthData;
+  // --- NEW FIELDS ---
+  patientStatus: 'Stable' | 'Critical' | 'Completed';
+  messages: IMessage[];
+  lastWarningSent?: Date;
 }
 
-// 3. The Schema remains the same as you wrote it
 const appointmentSchema: Schema<IAppointment> = new mongoose.Schema({
   userId: { type: String, required: true },
   docId: { type: String, required: true },
@@ -48,6 +57,21 @@ const appointmentSchema: Schema<IAppointment> = new mongoose.Schema({
   cancelled: { type: Boolean, default: false },
   payment: { type: Boolean, default: false },
   isCompleted: { type: Boolean, default: false },
+
+  // --- NEW LOGIC FIELDS ---
+  patientStatus: {
+    type: String,
+    enum: ['Stable', 'Critical', 'Completed'],
+    default: 'Stable'
+  },
+  messages: [{
+    sender: { type: String, enum: ['Doctor', 'System'], default: 'Doctor' },
+    content: { type: String, required: true },
+    sentAt: { type: Date, default: Date.now },
+    isRead: { type: Boolean, default: false }
+  }],
+  lastWarningSent: { type: Date },
+
   healthData: {
     bloodPressure: { type: String, default: "" },
     heartRate: { type: String, default: "" },
@@ -57,12 +81,14 @@ const appointmentSchema: Schema<IAppointment> = new mongoose.Schema({
       dosagePerDay: { type: Number, required: true },
       totalQuantity: { type: Number, required: true },
       remainingQuantity: { type: Number, required: true },
+      lastTaken: { type: Date },
+      overdoseAlert: { type: Boolean, default: false },
       adherenceLogs: [{ type: Date }],
       status: { type: String, enum: ['Active', 'Completed'], default: 'Active' }
     }],
     doctorNotes: { type: String, default: "" }
   }
-})
+}, { minimize: false, timestamps: true }) // Added timestamps for better record keeping
 
 const appointmentModel: Model<IAppointment> = mongoose.models.appointment || mongoose.model<IAppointment>('appointment', appointmentSchema)
 

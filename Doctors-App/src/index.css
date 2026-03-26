@@ -3,7 +3,6 @@
 
 /* --- Global Resets & Typography --- */
 * {
-  /* Plus Jakarta Sans is the gold standard for clean, modern UI */
   font-family: 'Plus Jakarta Sans', sans-serif;
   @apply transition-all duration-300 ease-in-out;
 }
@@ -11,27 +10,60 @@
 @theme {
   /* --- The "Trust & Care" Palette --- */
   --color-clinic-bg: #F8FAFC;
-  /* Soft, airy medical white */
   --color-clinic-card: #FFFFFF;
-  /* Pure white for elevation */
   --color-primary: #0F172A;
-  /* Deep Navy for authority */
   --color-teal: #14B8A6;
-  /* Healing Teal for core branding */
   --color-teal-dark: #0D9488;
-  /* Darker teal for hover states */
   --color-slate-light: #F1F5F9;
-  /* Ultra-soft borders */
 
   /* --- Professional Gradients --- */
   --background-image-medical-grad: linear-gradient(135deg, #14B8A6 0%, #0D9488 100%);
 
-  /* --- Elevation & Shadows (Soft & Realistic) --- */
+  /* --- Elevation & Shadows --- */
   --shadow-clinical: 0 20px 50px rgba(15, 23, 42, 0.04);
   --shadow-portal: 0 8px 32px rgba(0, 0, 0, 0.02);
 
-  /* --- Grid Constraints --- */
+  /* --- Custom Animations --- */
+  --animate-critical-glow: critical-glow 2s infinite ease-in-out;
+  --animate-pulse-red: pulse-red-subtle 3s infinite ease-in-out;
+
+  @keyframes critical-glow {
+
+    0%,
+    100% {
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+
+    50% {
+      box-shadow: 0 0 30px rgba(239, 68, 68, 0.25);
+      border-color: rgba(239, 68, 68, 1);
+    }
+  }
+
+  @keyframes pulse-red-subtle {
+
+    0%,
+    100% {
+      background-color: rgba(254, 242, 242, 0.3);
+    }
+
+    50% {
+      background-color: rgba(254, 226, 226, 0.6);
+    }
+  }
+
   --grid-template-columns-auto: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+/* --- High-Contrast Glass Utility --- */
+@utility glass-card-premium {
+  /* Increased opacity to 0.7 for text readability */
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 10px 40px rgba(15, 23, 42, 0.05);
 }
 
 /* --- Premium Medical Surface Utility --- */
@@ -65,17 +97,6 @@
   }
 }
 
-/* --- Clean Navigation & Scrollbars --- */
-@utility hide-scrollbar {
-  &::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-    background: transparent !important;
-    -webkit-appearance: none !important;
-  }
-}
-
 /* --- Interaction Animations --- */
 @keyframes reveal {
   from {
@@ -95,16 +116,13 @@
 
 /* --- Global Body Styles --- */
 body {
-  @apply bg-clinic-bg text-slate-700 antialiased selection:bg-teal/10 selection:text-teal;
+  @apply bg-clinic-bg text-slate-800 antialiased selection:bg-teal/10 selection:text-teal;
 }
 
-/* --- Specialty Typography --- */
 .font-serif {
-  /* Used for high-end accent words like "Expert" or "Consultants" */
   font-family: 'Instrument Serif', serif;
 }
 
-/* Custom button for that "Medical Grad" feel */
 @utility btn-primary {
   background-image: var(--background-image-medical-grad);
   @apply text-white font-bold py-4 px-8 rounded-2xl shadow-lg shadow-teal/20 hover:scale-[1.02] active:scale-[0.98] transition-all;

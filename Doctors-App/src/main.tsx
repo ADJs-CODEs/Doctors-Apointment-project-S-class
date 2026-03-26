@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.js'
 import { BrowserRouter } from 'react-router-dom'
 import AppContextProvider from './Context/AppContext.js'
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 const rootElement = document.getElementById('root')!;
 
@@ -26,8 +27,9 @@ createRoot(rootElement).render(
           </div>
 
           {/* --- Main App Content --- */}
-          <App />
-
+          <GoogleOAuthProvider clientId="703083582094-kl10rok1pn4cev8mcq6thlr67scdevmu.apps.googleusercontent.com">
+            <App />
+          </GoogleOAuthProvider>
         </div>
       </AppContextProvider>
     </BrowserRouter>

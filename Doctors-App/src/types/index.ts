@@ -66,4 +66,8 @@ export interface Appointment {
   cancelled: boolean;
   payment: boolean;
   isCompleted: boolean;
+  isPaid: boolean;
+  healthData?: HealthData;
+  patientStatus?: 'Normal' | 'Critical';
+  messages?: { content: string; sentAt: Date; isCritical: boolean }[];
 }

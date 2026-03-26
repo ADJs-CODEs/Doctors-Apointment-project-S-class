@@ -10,12 +10,12 @@ const DoctorProfile: React.FC = () => {
   const { currency } = useContext(AppContext) as AppContextType
 
   const [isEdit, setIsEdit] = useState<boolean>(false)
-  // 1. Local state to hold changes before saving
+  // Initialize tempData as null, but we will handle the fallback logic safely
   const [tempData, setTempData] = useState<Doctor | null>(null)
 
-  // 2. Sync local state when profileData loads
+  // Sync local state when profileData changes
   useEffect(() => {
-    if (profileData & !isEdit) {
+    if (profileData) {
       setTempData(profileData)
     }
   }, [profileData])
@@ -49,18 +49,17 @@ const DoctorProfile: React.FC = () => {
   }
 
   useEffect(() => {
-    if (dToken) {
-      getProfileData()
+    if (profileData && !isEdit) {
+      setTempData(profileData)
     }
-  }, [dToken, getProfileData])
+  }, [profileData, isEdit])
 
-  const displayData = isEdit ? tempData : profileData;
+  // CRITICAL FIX: If we are editing but tempData isn't ready, fallback to profileData 
+  // so the screen doesn't go white.
+  const displayData = (isEdit && tempData) ? tempData : profileData;
 
-  if (!displayData) return null;
-
-  if (!profileData || typeof profileData === 'boolean') {
-    return null;
-  }
+  // Basic guard: only return null if we have absolutely no data at all
+  if (!profileData) return null;
 
   return (
     <div className='p-4 sm:p-10 bg-slate-50/50 min-h-screen'>
@@ -82,15 +81,15 @@ const DoctorProfile: React.FC = () => {
                 <p className='text-xs font-black uppercase text-slate-400 mb-2'>Appointment Fee</p>
                 <div className='flex items-center gap-2 text-xl font-black text-slate-900'>
                   <span>{currency}</span>
-                  {isEdit ? (
+                  {isEdit && tempData ? (
                     <input
-                      className='w-24 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1'
+                      className='w-24 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-primary'
                       type="number"
-                      onChange={(e) => setTempData(prev => prev ? ({ ...prev, fees: Number(e.target.value) }) : null)}
-                      value={tempData?.fees}
+                      onChange={(e) => setTempData({ ...tempData, fees: Number(e.target.value) })}
+                      value={tempData.fees}
                     />
                   ) : (
-                    <span>{profileData?.fees}</span>
+                    <span>{profileData.fees}</span>
                   )}
                 </div>
               </div>
@@ -98,25 +97,25 @@ const DoctorProfile: React.FC = () => {
               {/* --- Address --- */}
               <div>
                 <p className='text-xs font-black uppercase text-slate-400 mb-2'>Practice Address</p>
-                {isEdit ? (
+                {isEdit && tempData ? (
                   <div className='flex flex-col gap-2'>
                     <input
-                      className='bg-slate-50 border border-slate-200 rounded-lg px-2 py-1'
+                      className='bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-sm outline-none'
                       type="text"
-                      onChange={(e) => setTempData(prev => prev ? ({ ...prev, address: { ...prev.address, line1: e.target.value } }) : null)}
-                      value={tempData?.address.line1}
+                      onChange={(e) => setTempData({ ...tempData, address: { ...tempData.address, line1: e.target.value } })}
+                      value={tempData.address.line1}
                     />
                     <input
-                      className='bg-slate-50 border border-slate-200 rounded-lg px-2 py-1'
+                      className='bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-sm outline-none'
                       type="text"
-                      onChange={(e) => setTempData(prev => prev ? ({ ...prev, address: { ...prev.address, line2: e.target.value } }) : null)}
-                      value={tempData?.address.line2}
+                      onChange={(e) => setTempData({ ...tempData, address: { ...tempData.address, line2: e.target.value } })}
+                      value={tempData.address.line2}
                     />
                   </div>
                 ) : (
                   <div className='text-sm text-slate-600 font-medium'>
-                    <p>{profileData?.address.line1}</p>
-                    <p>{profileData?.address.line2}</p>
+                    <p>{profileData.address.line1}</p>
+                    <p>{profileData.address.line2}</p>
                   </div>
                 )}
               </div>
@@ -126,8 +125,8 @@ const DoctorProfile: React.FC = () => {
             <div className='flex items-center gap-3 mt-8 p-4 bg-slate-50 rounded-2xl w-fit'>
               <input
                 className='w-5 h-5 accent-primary cursor-pointer'
-                onChange={() => isEdit && setTempData(prev => prev ? ({ ...prev, available: !prev.available }) : null)}
-                checked={isEdit ? tempData?.available : profileData?.available}
+                onChange={() => isEdit && tempData && setTempData({ ...tempData, available: !tempData.available })}
+                checked={isEdit && tempData ? tempData.available : profileData.available}
                 type="checkbox"
                 id='available'
               />
@@ -139,11 +138,11 @@ const DoctorProfile: React.FC = () => {
             <div className='mt-10'>
               {isEdit ? (
                 <div className='flex gap-3'>
-                  <button onClick={updateProfile} className='bg-primary text-white px-8 py-3 rounded-2xl font-black uppercase text-[10px] tracking-[2px] shadow-lg shadow-primary/20'>Save</button>
+                  <button onClick={updateProfile} className='bg-primary text-white px-8 py-3 rounded-2xl font-black uppercase text-[10px] tracking-[2px] shadow-lg shadow-primary/20 hover:scale-105 transition-transform'>Save</button>
                   <button onClick={() => { setIsEdit(false); setTempData(profileData); }} className='bg-slate-200 text-slate-600 px-8 py-3 rounded-2xl font-black uppercase text-[10px] tracking-[2px]'>Cancel</button>
                 </div>
               ) : (
-                <button onClick={() => setIsEdit(true)} className='bg-slate-900 text-white px-10 py-3 rounded-2xl font-black uppercase text-[10px] tracking-[2px] shadow-lg shadow-slate-900/20'>Edit Profile</button>
+                <button onClick={() => setIsEdit(true)} className='bg-slate-900 text-white px-10 py-3 rounded-2xl font-black uppercase text-[10px] tracking-[2px] shadow-lg shadow-slate-900/20 hover:scale-105 transition-transform'>Edit Profile</button>
               )}
             </div>
           </div>

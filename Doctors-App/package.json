@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
+    "@react-oauth/google": "^0.13.4",
     "@remixicon/react": "^4.9.0",
     "@tailwindcss/vite": "^4.2.2",
     "axios": "^1.13.6",

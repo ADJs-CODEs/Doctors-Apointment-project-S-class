@@ -3,6 +3,9 @@ import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import appointmentModel from "../models/appointmentModel.js"
 import { type Request, type Response } from 'express';
+import nodemailer from 'nodemailer'
+
+
 
 interface Appointment {
   userId: string;
@@ -84,17 +87,18 @@ const appointmentsDoctor = async (req: Request, res: Response) => {
   }
 }
 //API to mark appointment completed
-// API to mark appointment completed with Health Data
+
+
 const appointmentComplete = async (req: Request, res: Response) => {
   try {
-    const docId = req.docId
-    const { appointmentId, healthData } = req.body
+    const docId = (req as any).docId;
+    const { appointmentId, healthData } = req.body;
 
-    const appointmentData = await appointmentModel.findById(appointmentId)
+    if (!healthData) return res.json({ success: false, message: "Health data required" });
+
+    const appointmentData = await appointmentModel.findById(appointmentId);
 
     if (appointmentData && appointmentData.docId.toString() === docId) {
-
-      // We update the healthData object and set isCompleted to true
       await appointmentModel.findByIdAndUpdate(appointmentId, {
         isCompleted: true,
         healthData: {
@@ -102,26 +106,21 @@ const appointmentComplete = async (req: Request, res: Response) => {
           heartRate: healthData.heartRate,
           temperature: healthData.temperature,
           doctorNotes: healthData.doctorNotes,
-          // Map the medicines to ensure initial remainingQuantity equals totalQuantity
-          prescribedMedicines: healthData.prescribedMedicines.map((med: any) => ({
+          prescribedMedicines: (healthData.prescribedMedicines || []).map((med: any) => ({
             ...med,
-            remainingQuantity: med.totalQuantity,
+            remainingQuantity: Number(med.totalQuantity),
             adherenceLogs: [],
             status: 'Active'
           }))
         }
-      })
-
-      return res.json({ success: true, message: 'Appointment Completed & Registry Updated' })
-    } else {
-      return res.json({ success: false, message: "Authorization Failed" })
+      });
+      return res.json({ success: true, message: 'Appointment Completed' });
     }
+    res.json({ success: false, message: "Auth Failed" });
   } catch (error: any) {
-    console.log(error)
-    res.json({ success: false, message: error.message })
+    res.json({ success: false, message: error.message });
   }
 }
-
 //API to cancel appointment for doctor Panel
 const appointmentCancel = async (req: Request, res: Response) => {
   try {
@@ -202,5 +201,73 @@ const updateDoctorProfile = async (req: Request, res: Response) => {
     res.json({ success: false, message: error.message })
   }
 }
+
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT),
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
+const sendPatientAlert = async (req: Request, res: Response) => {
+  try {
+    const { appointmentId, messageContent, isCritical } = req.body;
+
+    // 1. Find the appointment and populate user email
+    const appointment = await appointmentModel.findById(appointmentId);
+
+    if (!appointment) {
+      return res.json({ success: false, message: "Appointment not found" });
+    }
+
+    // 2. Update the Database (UI Trigger)
+    const newMessage = {
+      sender: 'Doctor' as const,
+      content: messageContent,
+      sentAt: new Date(),
+      isRead: false
+    };
+
+    appointment.messages.push(newMessage);
+
+    // If doctor marks as critical, update status
+    if (isCritical) {
+      appointment.patientStatus = 'Critical';
+    }
+
+    appointment.lastWarningSent = new Date();
+    await appointment.save();
+
+    // 3. Trigger the Email (Nodemailer)
+    const mailOptions = {
+      from: `Dr. ${appointment.docData.name} <${process.env.SMTP_USER}>`,
+      replyTo: appointment.docData.email,
+      to: appointment.userData.email, // Ensure userData has email
+      subject: isCritical ? "URGENT: Medical Alert from your Doctor" : "New Message from your Doctor",
+      text: `Hello ${appointment.userData.name},\n\nYour doctor has sent you a message regarding your appointment:\n\n"${messageContent}"\n\nPlease log into the app to view details.`,
+      html: `
+                <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee;">
+                    <h2 style="color: ${isCritical ? '#ef4444' : '#0d9488'};">Medical Notification</h2>
+                    <p>Hello <strong>${appointment.userData.name}</strong>,</p>
+                    <p>Your doctor has sent a new update regarding your medication schedule:</p>
+                    <blockquote style="background: #f9fafb; padding: 15px; border-left: 4px solid #0d9488;">
+                        ${messageContent}
+                    </blockquote>
+                    <p>Please check your mobile app for live tracking updates.</p>
+                </div>
+            `
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.json({ success: true, message: "Alert sent to patient successfully" });
+
+  } catch (error: any) {
+    console.error("ALERT ERROR:", error);
+    res.json({ success: false, message: "Failed to send alert: " + error.message });
+  }
+};
 
 export { changeAvailability, doctorList, loginDoctor, appointmentsDoctor, appointmentCancel, appointmentComplete, doctorDashboard, doctorProfile, updateDoctorProfile }
