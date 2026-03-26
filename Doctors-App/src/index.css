@@ -1,50 +1,107 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200..800&family=Instrument+Serif:ital@0;1&display=swap');
 @import "tailwindcss";
 
+/* --- Global Resets & Typography --- */
 * {
-  font-family: Outfit;
-  ;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  @apply transition-all duration-300 ease-in-out;
 }
-
 
 @theme {
-  --color-primary: #5F6FFF;
-  --grid-template-columns-auto: repeat(auto-fill, minmax(180px, 1fr));
+  /* --- The "Trust & Care" Palette --- */
+  --color-clinic-bg: #F8FAFC;
+  --color-clinic-card: #FFFFFF;
+  --color-primary: #0F172A;
+  --color-teal: #14B8A6;
+  --color-teal-dark: #0D9488;
+  --color-slate-light: #F1F5F9;
+
+  /* --- Professional Gradients --- */
+  --background-image-medical-grad: linear-gradient(135deg, #14B8A6 0%, #0D9488 100%);
+
+  /* --- Elevation & Shadows --- */
+  --shadow-clinical: 0 20px 50px rgba(15, 23, 42, 0.04);
+  --shadow-portal: 0 8px 32px rgba(0, 0, 0, 0.02);
+
+  /* --- Custom Animations --- */
+  --animate-critical-glow: critical-glow 2s infinite ease-in-out;
+  --animate-pulse-red: pulse-red-subtle 3s infinite ease-in-out;
+
+  @keyframes critical-glow {
+
+    0%,
+    100% {
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+
+    50% {
+      box-shadow: 0 0 30px rgba(239, 68, 68, 0.25);
+      border-color: rgba(239, 68, 68, 1);
+    }
+  }
+
+  @keyframes pulse-red-subtle {
+
+    0%,
+    100% {
+      background-color: rgba(254, 242, 242, 0.3);
+    }
+
+    50% {
+      background-color: rgba(254, 226, 226, 0.6);
+    }
+  }
+
+  --grid-template-columns-auto: repeat(auto-fill, minmax(240px, 1fr));
 }
 
-:root {
-  --primary: #5F6FFF;
+/* --- High-Contrast Glass Utility --- */
+@utility glass-card-premium {
+  /* Increased opacity to 0.7 for text readability */
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 10px 40px rgba(15, 23, 42, 0.05);
 }
 
-.active hr {
-  display: block;
+/* --- Premium Medical Surface Utility --- */
+@utility medical-card {
+  background-color: white;
+  border: 1px solid #F1F5F9;
+  box-shadow: var(--shadow-clinical);
+  border-radius: 32px;
+  @apply overflow-hidden;
 }
 
-/* Hide scrollbar while keeping scroll functionality */
-.overflow-x-scroll {
-  -ms-overflow-style: none;
-  /* IE and Edge */
-  scrollbar-width: none;
-  /* Firefox */
-}
+/* --- High-Performance Input Utility --- */
+@utility medical-input {
+  background-color: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 18px;
+  padding: 1rem 1.25rem;
+  font-size: 0.875rem;
+  color: #1E293B;
+  outline: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-.overflow-x-scroll::-webkit-scrollbar {
-  display: none;
-  /* Chrome, Safari and Opera */
-}
+  &::placeholder {
+    color: #94A3B8;
+  }
 
-@media (max-width: 740px) {
-  .active p {
-    @apply text-white;
-    background-color: #5F6FFF;
-
+  &:focus {
+    background-color: white;
+    border-color: #14B8A6;
+    box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.08);
   }
 }
 
-@keyframes fadeIn {
+/* --- Interaction Animations --- */
+@keyframes reveal {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(20px);
   }
 
   to {
@@ -53,6 +110,20 @@
   }
 }
 
-.animate-reveal {
-  animation: fadeIn 0.5s ease-out forwards;
+@utility animate-reveal {
+  animation: reveal 0.8s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+}
+
+/* --- Global Body Styles --- */
+body {
+  @apply bg-clinic-bg text-slate-800 antialiased selection:bg-teal/10 selection:text-teal;
+}
+
+.font-serif {
+  font-family: 'Instrument Serif', serif;
+}
+
+@utility btn-primary {
+  background-image: var(--background-image-medical-grad);
+  @apply text-white font-bold py-4 px-8 rounded-2xl shadow-lg shadow-teal/20 hover:scale-[1.02] active:scale-[0.98] transition-all;
 }

@@ -1,27 +1,91 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap');
 @import "tailwindcss";
 
-
-@layer utilities {
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-}
-
 @theme {
   --color-primary: #5F6FF5;
+  --color-teal-500: #14b8a6;
+  --color-slate-900: #0f172a;
   --font-outfit: "Outfit", sans-serif;
   --font-urbanist: "Urbanist", sans-serif;
 }
 
-.overflow-scroll {
-  -ms-overflow-style: none;
-}
-
-.overflow-scroll::-webkit-scrollbar {
-  display: none;
-}
-
+/* --- Global Reset --- */
 * {
-  font-family: outfit;
+  font-family: var(--font-outfit);
+}
+
+/* --- Individual Flat Utilities (No Nesting) --- */
+@utility hide-scrollbar {
+  scrollbar-width: none !important;
+}
+
+@utility shadow-portal {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.03), 0 0 1px 1px rgba(0, 0, 0, 0.01);
+}
+
+@utility admin-input {
+  width: 100%;
+  background-color: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 1rem;
+  padding: 1rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+@utility animate-reveal {
+  animation: reveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* --- Native Selectors --- */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none !important;
+}
+
+.admin-input:focus {
+  background-color: #ffffff;
+  border-color: rgba(20, 184, 166, 0.3);
+  box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.05);
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility img-sharp {
+  /* 🛡️ Forces high-contrast, sharp pixel rendering */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+
+  /* 🚀 Forces GPU rendering to prevent "scrambling" during scrolls */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+@utility img-contain {
+  object-fit: cover;
+  object-position: center;
+}
+
+@utility img-layer {
+  /* 🛡️ Forces the browser to keep this in its own graphics layer */
+  will-change: transform, opacity;
+  transform: translateZ(0);
+
+  /* 🚀 Prevents the "rainbow/scramble" during repaints */
+  backface-visibility: hidden;
+  perspective: 1000px;
+
+  /* 🎨 Ensure the background doesn't bleed through while loading */
+  background-color: transparent;
 }

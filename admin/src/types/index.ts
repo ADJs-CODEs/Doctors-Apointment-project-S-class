@@ -19,6 +19,17 @@ export interface Doctor {
   slots_booked?: Record<string, string[]>;
 }
 
+// Added Health Data and Status to match your backend model
+export interface Medicine {
+  name: string;
+  frequencyType?: string;
+  frequencyValue: number;
+  totalQuantity: number;
+  remainingQuantity: number;
+  status: 'Active' | 'Completed';
+  overdoseAlert?: boolean;
+}
+
 export interface Appointment {
   _id: string;
   userId: string;
@@ -29,15 +40,26 @@ export interface Appointment {
     name: string;
     image: string;
     dob: string;
+    email?: string; // Helpful for alerts
   };
   docData: {
     name: string;
     image: string;
+    email?: string;
   };
   amount: number;
   cancelled: boolean;
   payment: boolean;
   isCompleted: boolean;
+  // --- NEW FIELDS SYNCED WITH BACKEND ---
+  patientStatus?: 'Stable' | 'Critical' | 'Completed';
+  healthData?: {
+    bloodPressure: string;
+    heartRate: string;
+    temperature: string;
+    doctorNotes: string;
+    prescribedMedicines: Medicine[];
+  };
 }
 
 // --- Context Specific Types ---
@@ -54,6 +76,7 @@ export interface AdminContextType {
   cancelAppointment: (appointmentId: string) => Promise<void>;
   dashData: any;
   getDashData: () => Promise<void>;
+  deleteDoctor: (docId: string) => Promise<void>;
 }
 
 export interface DoctorContextType {
@@ -64,7 +87,8 @@ export interface DoctorContextType {
   setAppointments: Dispatch<SetStateAction<Appointment[]>>;
   getAppointments: () => Promise<void>;
   cancelAppointment: (id: string) => Promise<void>;
-  completeAppointment: (id: string) => Promise<void>;
+  // FIXED: Changed from Promise<void> to Promise<boolean>
+  completeAppointment: (appointmentId: string, healthData: any) => Promise<boolean>;
   dashData: any;
   setDashData: Dispatch<SetStateAction<any>>;
   getDashData: () => Promise<void>;
@@ -72,12 +96,14 @@ export interface DoctorContextType {
   setProfileData: Dispatch<SetStateAction<any>>;
   getProfileData: () => Promise<void>;
   updateProfile: (data: any) => Promise<boolean>;
+  sendAlert: (appointmentId: string, messageContent: string, isCritical: boolean) => Promise<boolean>;
 }
 
 export interface AppContextType {
   calculateAge: (dob: string) => number;
   slotDateFormat: (slotDate: string) => string;
   currency: string;
+  backendUrl: string; // Added this as it is used in your components
 }
 
 export interface ProviderProps {

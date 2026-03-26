@@ -13,6 +13,10 @@ import Footer from './components/Footer.js'
 import { Toaster } from 'sonner'
 import LoadingBar from 'react-top-loading-bar'
 import Verify from './pages/Verify.js'
+import MedHistory from './pages/MedHistory.js'
+import AccountSettings from './pages/AccountSetting.js'
+import ForgotPassword from './pages/ForgotPassword.js'
+import ResetPassword from './pages/ResetPassword.js'
 
 const App: React.FC = () => {
 
@@ -41,6 +45,10 @@ const App: React.FC = () => {
         <Route path='/my-appointments' element={<MyAppointments />} />
         <Route path='/appointments/:docId' element={<Appointments />} />
         <Route path='/verify' element={<Verify />} />
+        <Route path='/medication-history' element={<MedHistory />} />
+        <Route path='/account-settings' element={<AccountSettings />} />
+        <Route path='/forgot-password' element={<ForgotPassword />} />
+        <Route path='/reset-password/:token' element={<ResetPassword />} />
       </Routes>
 
       <Footer />

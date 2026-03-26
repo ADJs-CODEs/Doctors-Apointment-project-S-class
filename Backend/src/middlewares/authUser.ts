@@ -16,7 +16,7 @@ const authUser = async (req: Request, res: Response, next: NextFunction) => {
     console.log("--- MIDDLEWARE AUTH --- User ID:", token_decode.id);
 
 
-
+    req.body.userId = token_decode.id;
     (req as any).userId = token_decode.id;
     next()
 
