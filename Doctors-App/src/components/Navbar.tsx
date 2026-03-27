@@ -72,9 +72,9 @@ const Navbar: React.FC = () => {
             <div className='flex items-center gap-3 cursor-pointer group relative'>
               <div className='relative isolate'>
                 <div 
-                style={{ backfaceVisibility: 'hidden', imageRendering: 'auto' }}
+                style={{ backfaceVisibility: 'hidden', imageRendering: 'auto', filter: 'none', WebkitFilter: 'none', willChange: 'transform',transform: 'translateZ(0)' }}
                 className='absolute -inset-1 bg-teal-500/10 rounded-full blur-sm group-hover:bg-teal-500/20 transition duration-500'></div>
-                <img className='w-9 h-9 rounded-xl border border-slate-100 relative z-10 object-cover  bg-white transform-gpu  shadow-sm' src={userData.image} alt="Profile" />
+                <img className='w-9 h-9 rounded-xl border border-slate-100 relative z-10 object-cover  bg-white transform-gpu  shadow-sm' src={userData.image.replace('/upload/', '/upload/f_jpg,q_auto:best/')} alt="Profile" />
               </div>
 
               <div className='hidden lg:flex items-center gap-1'>
