@@ -22,11 +22,14 @@ export interface Doctor {
 // Added Health Data and Status to match your backend model
 export interface Medicine {
   name: string;
+  dosagePerDay: number;
   frequencyType?: string;
   frequencyValue: number;
+  note?: string;
   totalQuantity: number;
   remainingQuantity: number;
   status: 'Active' | 'Completed';
+  lastTaken?: Date;
   overdoseAlert?: boolean;
 }
 
@@ -44,6 +47,7 @@ export interface Appointment {
   };
   docData: {
     name: string;
+    speciality: string;
     image: string;
     email?: string;
   };

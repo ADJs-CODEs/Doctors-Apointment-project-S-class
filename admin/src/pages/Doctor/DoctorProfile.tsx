@@ -56,7 +56,7 @@ const DoctorProfile: React.FC = () => {
 
   // CRITICAL FIX: If we are editing but tempData isn't ready, fallback to profileData 
   // so the screen doesn't go white.
-  const displayData = (isEdit && tempData) ? tempData : profileData;
+  const displayData = ((isEdit && tempData) ? tempData : profileData) as Doctor;
 
   // Basic guard: only return null if we have absolutely no data at all
   if (!profileData) return null;

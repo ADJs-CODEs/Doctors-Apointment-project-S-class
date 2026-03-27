@@ -14,7 +14,8 @@ import {
   RiDashboardLine,
   RiMessage3Line,
   RiArrowRightLine,
-  RiShieldCheckLine
+  RiShieldCheckLine,
+  RiCheckDoubleLine
 } from "@remixicon/react"
 
 const MyAppointments: React.FC = () => {
@@ -39,7 +40,6 @@ const MyAppointments: React.FC = () => {
     }
   }
 
-  // --- STRIPE PAYMENT HANDLER ---
   const payStripe = async (appointmentId: string) => {
     try {
       setProgress(30);
@@ -62,7 +62,6 @@ const MyAppointments: React.FC = () => {
     }
   };
 
-  // --- CANCEL APPOINTMENT HANDLER ---
   const cancelAppointment = async (appointmentId: string) => {
     try {
       setProgress(40);
@@ -86,17 +85,30 @@ const MyAppointments: React.FC = () => {
   };
 
   const getDoseStatus = (med: any) => {
-    if (!med.lastTaken) return { isEarly: false, hoursLeft: 0 };
-    const requiredGap = med.dosagePerDay > 0 ? 24 / med.dosagePerDay : 4;
+    if (!med.lastTaken) return { isEarly: false, hoursLeft: "0" };
+
+    const gap = med.frequencyType === 'daily'
+      ? (24 / (med.dosagePerDay || 1))
+      : (med.dosagePerDay || 4);
+
     const now = new Date().getTime();
     const last = new Date(med.lastTaken).getTime();
     const diffHours = (now - last) / (1000 * 60 * 60);
 
     return {
-      isEarly: diffHours < requiredGap,
-      hoursLeft: Math.max(0, requiredGap - diffHours).toFixed(1)
+      isEarly: diffHours < gap,
+      hoursLeft: Math.max(0, gap - diffHours).toFixed(1)
     };
   }
+
+  // --- NEW: Helper for Adherence Bar Calculation ---
+  const getAdherenceStats = (med: any) => {
+    const total = med.totalQuantity || 1;
+    const remaining = med.remainingQuantity ?? total;
+    const taken = total - remaining;
+    const rate = Math.min(100, Math.round((taken / total) * 100));
+    return { rate };
+  };
 
   const logDose = async (appointmentId: string, medicineName: string, med: any) => {
     if (processingMed) return;
@@ -104,7 +116,7 @@ const MyAppointments: React.FC = () => {
     let overdoseAlert = false;
 
     if (isEarly) {
-      const confirm = window.confirm(`⚠️ WARNING: Early dose for ${medicineName}. Log anyway?`);
+      const confirm = window.confirm(`⚠️ WARNING: Early dose for ${medicineName}. This will notify your doctor. Log anyway?`);
       if (!confirm) return;
       overdoseAlert = true;
     }
@@ -112,7 +124,10 @@ const MyAppointments: React.FC = () => {
     try {
       setProcessingMed(`${appointmentId}-${medicineName}`);
       setProgress(40);
-      const { data } = await axios.post(`${backendUrl}/api/user/update-dose`, { appointmentId, medicineName, overdoseAlert }, { headers: { token } });
+      const { data } = await axios.post(`${backendUrl}/api/user/update-dose`,
+        { appointmentId, medicineName, overdoseAlert },
+        { headers: { token } }
+      );
       if (data.success) {
         toast.success(data.message || `${medicineName} logged!`);
         await getUserAppointments();
@@ -139,7 +154,7 @@ const MyAppointments: React.FC = () => {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className='max-w-5xl mx-auto p-6 py-20 bg-slate-50 min-h-screen relative'>
 
-      {/* --- FLOATING ACTION BUTTON --- */}
+      {/* --- PHARMACY VAULT FAB --- */}
       <button
         onClick={() => navigate('/medication-history')}
         className='fixed bottom-10 right-10 z-50 bg-slate-900 text-white p-5 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.3)] hover:scale-110 active:scale-95 transition-all flex items-center gap-3 group border border-white/10'
@@ -164,7 +179,7 @@ const MyAppointments: React.FC = () => {
 
           return (
             <div key={item._id} className='flex flex-col gap-4'>
-              {/* --- Doctor Info Card --- */}
+              {/* --- Doctor Card --- */}
               <div className={`bg-white p-6 rounded-[40px] flex flex-col md:flex-row gap-8 items-center shadow-sm border transition-all duration-500 ${isCritical ? 'border-red-500 shadow-[0_0_25px_rgba(239,68,68,0.15)] bg-red-50/30' : 'border-slate-100'}`}>
                 <div className='relative'>
                   <img className='w-32 h-32 rounded-[32px] object-cover bg-slate-100 border-4 border-white shadow-sm' src={item.docData?.image} alt="" />
@@ -191,110 +206,95 @@ const MyAppointments: React.FC = () => {
                 </div>
 
                 <div className='flex flex-col gap-2 w-full md:w-auto'>
-                  {/* --- PAYMENT AND CANCEL BUTTONS --- */}
                   {!item.cancelled && !item.isCompleted && !item.payment && (
-                    <button
-                      onClick={() => payStripe(item._id)}
-                      className='px-8 py-3 bg-slate-900 text-white rounded-2xl font-bold text-xs uppercase hover:bg-slate-800 transition-all'
-                    >
+                    <button onClick={() => payStripe(item._id)} className='px-8 py-3 bg-slate-900 text-white rounded-2xl font-bold text-xs uppercase hover:bg-slate-800 transition-all'>
                       Pay Online
                     </button>
                   )}
-
                   {item.payment && !item.isCompleted && (
                     <div className='flex items-center gap-2 px-6 py-3 bg-teal-50 text-teal-600 rounded-2xl font-black text-[10px] uppercase tracking-wider border border-teal-100'>
-                      <RiShieldCheckLine size={16} />
-                      Paid Securely
+                      <RiShieldCheckLine size={16} /> Paid Securely
                     </div>
                   )}
-
                   {!item.cancelled && !item.isCompleted && (
-                    <button
-                      onClick={() => cancelAppointment(item._id)}
-                      className='px-8 py-3 border border-slate-200 text-slate-400 rounded-2xl font-bold text-xs uppercase hover:bg-red-50 hover:text-red-500 transition-all'
-                    >
+                    <button onClick={() => cancelAppointment(item._id)} className='px-8 py-3 border border-slate-200 text-slate-400 rounded-2xl font-bold text-xs uppercase hover:bg-red-50 hover:text-red-500 transition-all'>
                       Cancel
                     </button>
                   )}
-
                   {item.cancelled && <button className='px-8 py-3 border border-red-100 text-red-400 rounded-2xl font-bold text-xs uppercase cursor-not-allowed'>Cancelled</button>}
                   {item.isCompleted && <button className='px-8 py-3 border border-teal-100 text-teal-500 rounded-2xl font-bold text-xs uppercase cursor-not-allowed'>Visited</button>}
                 </div>
               </div>
 
-              {/* --- Health Tracker Section --- */}
+              {/* --- Health & Medication Tracker --- */}
               <AnimatePresence>
                 {item.isCompleted && item.healthData && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`rounded-[45px] p-8 md:p-12 text-white shadow-2xl overflow-hidden relative transition-all duration-700 ${isCritical ? 'bg-gradient-to-br from-red-950 via-slate-900 to-black' : 'bg-slate-900'}`}
-                  >
-                    {/* --- DOCTOR'S ALERT MESSAGE --- */}
+                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className={`rounded-[45px] p-8 md:p-12 text-white shadow-2xl overflow-hidden relative transition-all duration-700 ${isCritical ? 'bg-gradient-to-br from-red-950 via-slate-900 to-black' : 'bg-slate-900'}`}>
+
                     {latestMessage && (
-                      <motion.div
-                        initial={{ x: -20, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        className={`mb-12 p-6 rounded-[32px] border-l-8 flex gap-5 items-start ${isCritical ? 'bg-white/5 border-red-500 shadow-[20px_0_40px_rgba(0,0,0,0.3)]' : 'bg-white/5 border-teal-500'}`}
-                      >
+                      <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className={`mb-12 p-6 rounded-[32px] border-l-8 flex gap-5 items-start ${isCritical ? 'bg-white/5 border-red-500' : 'bg-white/5 border-teal-500'}`}>
                         <div className={`${isCritical ? 'text-red-500' : 'text-teal-500'} mt-1`}>
                           <RiMessage3Line size={28} />
                         </div>
                         <div>
                           <p className={`text-[10px] font-black uppercase tracking-[3px] mb-2 ${isCritical ? 'text-red-400' : 'text-teal-400'}`}>Doctor's Instructions</p>
-                          <p className='text-lg md:text-xl font-medium leading-relaxed text-slate-100 italic'>
-                            "{latestMessage.content}"
-                          </p>
+                          <p className='text-lg md:text-xl font-medium leading-relaxed text-slate-100 italic'>"{latestMessage.content}"</p>
                         </div>
                       </motion.div>
                     )}
 
-                    {/* --- VITALS DASHBOARD --- */}
-                    <div className='mb-12'>
-                      <div className='grid grid-cols-1 sm:grid-cols-3 gap-6'>
-                        <div className='bg-white/5 border border-white/10 p-6 rounded-[32px] hover:bg-white/10 transition-colors'>
-                          <RiHeartPulseLine className='text-rose-400 mb-4' size={28} />
-                          <p className='text-[10px] text-slate-400 font-bold uppercase tracking-widest'>Heart Rate</p>
-                          <p className='text-3xl font-black mt-1'>{item.healthData.heartRate || '--'} <span className='text-xs text-slate-500 font-medium'>BPM</span></p>
+                    <div className='mb-12 grid grid-cols-1 sm:grid-cols-3 gap-6'>
+                      {[
+                        { icon: <RiHeartPulseLine size={28} className='text-rose-400' />, label: 'Heart Rate', value: item.healthData.heartRate, unit: 'BPM' },
+                        { icon: <RiDashboardLine size={28} className='text-blue-400' />, label: 'Blood Pressure', value: item.healthData.bloodPressure, unit: '' },
+                        { icon: <RiTempHotLine size={28} className='text-orange-400' />, label: 'Temperature', value: item.healthData.temperature, unit: '°C' }
+                      ].map((v, i) => (
+                        <div key={i} className='bg-white/5 border border-white/10 p-6 rounded-[32px]'>
+                          {v.icon}
+                          <p className='text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-4'>{v.label}</p>
+                          <p className='text-3xl font-black mt-1'>{v.value || '--'} <span className='text-xs text-slate-500 font-medium'>{v.unit}</span></p>
                         </div>
-                        <div className='bg-white/5 border border-white/10 p-6 rounded-[32px] hover:bg-white/10 transition-colors'>
-                          <RiDashboardLine className='text-blue-400 mb-4' size={28} />
-                          <p className='text-[10px] text-slate-400 font-bold uppercase tracking-widest'>Blood Pressure</p>
-                          <p className='text-3xl font-black mt-1'>{item.healthData.bloodPressure || '--'}</p>
-                        </div>
-                        <div className='bg-white/5 border border-white/10 p-6 rounded-[32px] hover:bg-white/10 transition-colors'>
-                          <RiTempHotLine className='text-orange-400 mb-4' size={28} />
-                          <p className='text-[10px] text-slate-400 font-bold uppercase tracking-widest'>Temperature</p>
-                          <p className='text-3xl font-black mt-1'>{item.healthData.temperature || '--'}<span className='text-xs text-slate-500 font-medium'>°C</span></p>
-                        </div>
-                      </div>
+                      ))}
                     </div>
 
-                    {/* --- MEDICATION TRACKER --- */}
                     <div className='space-y-8'>
-                      <div className='flex items-center justify-between'>
-                        <h3 className='text-[11px] font-black uppercase tracking-[4px] text-teal-400'>Current Medication Plan</h3>
-                      </div>
-
+                      <h3 className='text-[11px] font-black uppercase tracking-[4px] text-teal-400'>Current Medication Plan</h3>
                       <div className='grid gap-6'>
-                        {item.healthData.prescribedMedicines?.map((med) => {
+                        {item.healthData.prescribedMedicines?.map((med: any) => {
                           const { isEarly, hoursLeft } = getDoseStatus(med);
+                          const { rate } = getAdherenceStats(med);
                           const isThisMedProcessing = processingMed === `${item._id}-${med.name}`;
 
                           return (
-                            <div key={`${item._id}-${med.name}`} className={`bg-white/5 rounded-[35px] p-8 border transition-all duration-300 ${isEarly ? 'border-red-500/30' : 'border-white/10'}`}>
+                            <div key={`${item._id}-${med.name}`} className={`bg-white/5 rounded-[35px] p-8 border transition-all duration-300 ${isEarly ? 'border-red-500/20' : 'border-white/10'}`}>
                               <div className='flex flex-col md:flex-row justify-between items-center gap-8'>
-                                <div className='flex items-center gap-6'>
-                                  <div className={`w-16 h-16 rounded-[24px] flex items-center justify-center transition-colors ${isEarly ? 'bg-red-500/20 text-red-400' : 'bg-teal-500/20 text-teal-400'}`}>
+                                <div className='flex items-center gap-6 flex-1'>
+                                  <div className={`w-16 h-16 rounded-[24px] flex items-center justify-center shrink-0 ${isEarly ? 'bg-red-500/20 text-red-400' : 'bg-teal-500/20 text-teal-400'}`}>
                                     <RiMedicineBottleLine size={32} />
                                   </div>
-                                  <div>
+                                  <div className='w-full'>
                                     <p className='font-black text-2xl'>{med.name}</p>
                                     <div className='flex items-center gap-3 mt-1'>
                                       <p className='text-[10px] text-slate-400 uppercase font-black tracking-widest'>
                                         {med.remainingQuantity <= 0 ? 'Cycle Completed' : `${med.remainingQuantity} Doses Remaining`}
                                       </p>
                                       {isEarly && <span className='text-[9px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded font-bold uppercase'>Wait {hoursLeft}h</span>}
+                                      {!isEarly && med.remainingQuantity > 0 && <span className='text-[9px] bg-teal-500/20 text-teal-400 px-2 py-0.5 rounded font-bold uppercase animate-pulse'>Safe to take</span>}
+                                    </div>
+
+                                    {/* --- NEW: Adherence Progress Bar --- */}
+                                    <div className='mt-4 w-full max-w-[240px]'>
+                                      <div className='flex justify-between items-center mb-1.5'>
+                                        <span className='text-[9px] font-black text-slate-500 uppercase tracking-tighter'>Adherence Rate</span>
+                                        <span className='text-[10px] font-black text-teal-400'>{rate}%</span>
+                                      </div>
+                                      <div className='h-1.5 w-full bg-white/5 rounded-full border border-white/5 overflow-hidden'>
+                                        <motion.div
+                                          initial={{ width: 0 }}
+                                          animate={{ width: `${rate}%` }}
+                                          className={`h-full rounded-full transition-all duration-700 ${rate > 80 ? 'bg-teal-500' : rate > 40 ? 'bg-orange-500' : 'bg-red-500'}`}
+                                        />
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
@@ -304,11 +304,10 @@ const MyAppointments: React.FC = () => {
                                   disabled={med.remainingQuantity <= 0 || !!processingMed}
                                   className={`w-full md:w-auto px-10 py-5 rounded-2xl font-black text-[12px] uppercase tracking-[2px] transition-all active:scale-95 shadow-xl ${isThisMedProcessing ? 'bg-slate-700 animate-pulse text-slate-400' :
                                     med.remainingQuantity <= 0 ? 'bg-white/10 text-slate-500 cursor-not-allowed' :
-                                      isEarly ? 'bg-red-600 hover:bg-red-500 text-white' :
-                                        'bg-teal-500 hover:bg-teal-400 text-slate-900'
+                                      isEarly ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-teal-500 hover:bg-teal-400 text-slate-900'
                                     }`}
                                 >
-                                  {isThisMedProcessing ? 'Updating Record...' : med.remainingQuantity <= 0 ? 'All Doses Taken' : 'Confirm Dose'}
+                                  {isThisMedProcessing ? 'Updating...' : med.remainingQuantity <= 0 ? <RiCheckDoubleLine className='mx-auto' size={20} /> : 'Confirm Dose'}
                                 </button>
                               </div>
                             </div>

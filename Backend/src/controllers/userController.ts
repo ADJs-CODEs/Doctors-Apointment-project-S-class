@@ -110,6 +110,12 @@ const bookAppointment = async (req: Request, res: Response) => {
   try {
     const { userId, docId, slotDate, slotTime } = req.body
     const docData = await doctorModel.findById(docId).select('-password')
+
+    if (!docData) {
+      res.json({ success: false, message: 'Doctor not found' });
+      return;
+    }
+
     if (!docData.available) return res.json({ success: false, message: 'Doctor not available' })
 
     let slots_booked = docData.slots_booked
@@ -148,6 +154,12 @@ const cancelAppointment = async (req: Request, res: Response) => {
   try {
     const { userId, appointmentId } = req.body
     const appointmentData = await appointmentModel.findById(appointmentId)
+
+    if (!appointmentData) {
+      res.json({ success: false, message: 'Appointment not found' });
+      return;
+    }
+
     if (appointmentData.userId.toString() !== userId) return res.json({ success: false, message: 'Unauthorized' })
 
     await appointmentModel.findByIdAndUpdate(appointmentId, { cancelled: true })
@@ -167,31 +179,59 @@ const cancelAppointment = async (req: Request, res: Response) => {
 const updateMedicationDose = async (req: Request, res: Response) => {
   try {
     const { userId, appointmentId, medicineName, overdoseAlert } = req.body;
+
     const appointment = await appointmentModel.findById(appointmentId);
 
     if (!appointment) return res.json({ success: false, message: "Appointment not found" });
     if (appointment.userId.toString() !== userId.toString()) return res.json({ success: false, message: "Unauthorized" });
     if (!appointment.healthData?.prescribedMedicines) return res.json({ success: false, message: "No medication data found" });
 
-    const medIndex = appointment.healthData.prescribedMedicines.findIndex((m: any) => m.name.toLowerCase() === medicineName.toLowerCase());
-    if (medIndex === -1) return res.json({ success: false, message: "Medicine not found" });
+    // Find the medicine
+    const medicine = appointment.healthData.prescribedMedicines.find(
+      (m: any) => m.name.toLowerCase() === medicineName.toLowerCase()
+    );
 
-    const medicine = appointment.healthData.prescribedMedicines[medIndex];
-    if (medicine.remainingQuantity <= 0) return res.json({ success: false, message: "No doses left" });
+    if (!medicine) return res.json({ success: false, message: "Medicine not found" });
 
+    // Validation
+    if (medicine.remainingQuantity <= 0) {
+      return res.json({ success: false, message: "No doses left" });
+    }
+
+    // --- UPDATES ---
+    const now = new Date();
     medicine.remainingQuantity -= 1;
-    medicine.lastTaken = new Date();
-    if (overdoseAlert) medicine.overdoseAlert = true;
+    medicine.lastTaken = now;
+
+    // Ensure adherenceLogs exists before pushing
+    if (!medicine.adherenceLogs) medicine.adherenceLogs = [];
+    medicine.adherenceLogs.push(now);
+
+    if (overdoseAlert) {
+      medicine.overdoseAlert = true;
+      appointment.patientStatus = 'Critical';
+    }
+
     if (medicine.remainingQuantity === 0) medicine.status = 'Completed';
 
+    // IMPORTANT: Tell Mongoose exactly which path changed
     appointment.markModified('healthData.prescribedMedicines');
-    await appointment.save();
-    res.json({ success: true, message: "Dose logged", remaining: medicine.remainingQuantity });
+
+    // Use validateModifiedOnly: true to prevent it from complaining about 
+    // existing fields like dosagePerDay that aren't being changed right now.
+    await appointment.save({ validateModifiedOnly: true });
+
+    res.json({
+      success: true,
+      message: "Dose logged successfully",
+      remaining: medicine.remainingQuantity
+    });
+
   } catch (error: any) {
+    console.error(error);
     res.json({ success: false, message: error.message });
   }
 };
-
 // --- PAYMENTS ---
 
 const paymentStripe = async (req: Request, res: Response) => {
@@ -309,6 +349,7 @@ const deleteAccount = async (req: Request, res: Response) => {
     res.json({ success: false, message: error.message })
   }
 }
+
 
 export {
   registerUser, loginUser, getProfile, updateProfile, bookAppointment,

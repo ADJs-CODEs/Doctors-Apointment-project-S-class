@@ -73,10 +73,18 @@ const loginDoctor = async (req: Request, res: Response) => {
 }
 
 //API to get doctor appointments for doctor panel
-const appointmentsDoctor = async (req: Request, res: Response) => {
+const appointmentsDoctor = async (req: Request, res: Response): Promise<void> => {
   try {
 
     const docId = req.docId
+
+    if (!docId) {
+      res.status(400).json({
+        success: false,
+        message: "Authentication Error: Doctor ID missing."
+      });
+      return;
+    }
     const appointments = await appointmentModel.find({ docId })
 
     res.json({ success: true, appointments })
@@ -142,10 +150,15 @@ const appointmentCancel = async (req: Request, res: Response) => {
   }
 }
 //API to get dashboard dta for doctor panel
-const doctorDashboard = async (req: Request, res: Response) => {
+const doctorDashboard = async (req: Request, res: Response): Promise<void> => {
   try {
 
     const docId = req.docId
+
+    if (!docId) {
+      res.status(400).json({ success: false, message: "Doctor ID missing" });
+      return;
+    }
 
     const appointments = await appointmentModel.find({ docId })
 
@@ -270,4 +283,4 @@ const sendPatientAlert = async (req: Request, res: Response) => {
   }
 };
 
-export { changeAvailability, doctorList, loginDoctor, appointmentsDoctor, appointmentCancel, appointmentComplete, doctorDashboard, doctorProfile, updateDoctorProfile }
+export { changeAvailability, doctorList, loginDoctor, appointmentsDoctor, appointmentCancel, appointmentComplete, doctorDashboard, doctorProfile, updateDoctorProfile, sendPatientAlert }

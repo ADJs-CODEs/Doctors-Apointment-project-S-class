@@ -31,11 +31,11 @@ const DoctorAppointment: React.FC = () => {
   const [alertForm, setAlertForm] = useState({ message: '', isCritical: false })
   const [vitals, setVitals] = useState({ bloodPressure: '', heartRate: '', temperature: '', notes: '' })
 
-  // Updated medicines state to include frequencyType selection
+  // Updated state: frequencyValue is now dosagePerDay to match backend schema
   const [medicines, setMedicines] = useState([{
     name: '',
-    frequencyType: 'daily', // 'daily' (Days) or 'interval' (Hours)
-    frequencyValue: 1,
+    frequencyType: 'daily',
+    dosagePerDay: 1, // Matches "required" backend field
     totalQuantity: 7,
     status: 'Active',
     remainingQuantity: 7,
@@ -71,12 +71,13 @@ const DoctorAppointment: React.FC = () => {
 
   const resetForm = () => {
     setVitals({ bloodPressure: '', heartRate: '', temperature: '', notes: '' })
-    setMedicines([{ name: '', frequencyType: 'daily', frequencyValue: 1, totalQuantity: 7, status: 'Active', remainingQuantity: 7, lastTaken: '' }])
+    setMedicines([{ name: '', frequencyType: 'daily', dosagePerDay: 1, totalQuantity: 7, status: 'Active', remainingQuantity: 7, lastTaken: '' }])
     setShowModal(false)
     setSelectedApptId('')
   }
 
   const getAdherenceStats = (med: any) => {
+    if (!med.totalQuantity) return { rate: 0 };
     const actual = med.totalQuantity - med.remainingQuantity;
     const rate = Math.min(100, Math.round((actual / med.totalQuantity) * 100));
     return { rate };
@@ -88,7 +89,6 @@ const DoctorAppointment: React.FC = () => {
 
   return (
     <div className='w-full max-w-6xl m-5 animate-reveal'>
-      {/* Header & Table Section */}
       <div className='flex justify-between items-center mb-5'>
         <p className='text-2xl font-bold text-gray-800'>Patient Management</p>
         <div className='flex gap-2'>
@@ -245,7 +245,7 @@ const DoctorAppointment: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* --- RESTORED PRESCRIBE MODAL --- */}
+      {/* --- PRESCRIBE MODAL --- */}
       <AnimatePresence>
         {showModal && (
           <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
@@ -262,7 +262,6 @@ const DoctorAppointment: React.FC = () => {
               </div>
 
               <div className="p-8 overflow-y-auto space-y-10">
-                {/* Vitals Section */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {[
                     { label: 'BP', key: 'bloodPressure', icon: <RiHeartPulseLine size={16} />, placeholder: '120/80' },
@@ -279,11 +278,10 @@ const DoctorAppointment: React.FC = () => {
                   ))}
                 </div>
 
-                {/* Prescription List */}
                 <div className="space-y-6">
                   <div className="flex justify-between items-center">
                     <p className="text-[11px] font-black text-slate-500 uppercase tracking-[1px]">Medication Plan</p>
-                    <button onClick={() => setMedicines([...medicines, { name: '', frequencyType: 'daily', frequencyValue: 1, totalQuantity: 7, status: 'Active', remainingQuantity: 7, lastTaken: '' }])} className="text-blue-600 font-bold text-xs flex items-center gap-1 hover:bg-blue-50 px-3 py-1 rounded-lg transition-all">
+                    <button onClick={() => setMedicines([...medicines, { name: '', frequencyType: 'daily', dosagePerDay: 1, totalQuantity: 7, status: 'Active', remainingQuantity: 7, lastTaken: '' }])} className="text-blue-600 font-bold text-xs flex items-center gap-1 hover:bg-blue-50 px-3 py-1 rounded-lg transition-all">
                       <RiAddLine size={16} /> Add Drug
                     </button>
                   </div>
@@ -293,22 +291,46 @@ const DoctorAppointment: React.FC = () => {
                       <div key={index} className="p-5 bg-slate-50 rounded-[24px] border border-slate-100 grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                         <div className="md:col-span-4 space-y-1">
                           <label className="text-[9px] font-black text-slate-400 uppercase ml-1">Drug Name</label>
-                          <input className="w-full p-3 bg-white rounded-xl text-sm border-none shadow-sm outline-none" placeholder="Name" value={med.name} onChange={(e) => { const n = [...medicines]; n[index].name = e.target.value; setMedicines(n); }} />
+                          <input className="w-full p-3 bg-white rounded-xl text-sm border-none shadow-sm outline-none" placeholder="Name" value={med.name} onChange={(e) => { const n = [...medicines]; if (n[index]) { n[index].name = e.target.value; setMedicines(n); } }} />
                         </div>
                         <div className="md:col-span-3 space-y-1">
                           <label className="text-[9px] font-black text-slate-400 uppercase ml-1">Frequency</label>
-                          <select className="w-full p-3 bg-white rounded-xl text-sm border-none shadow-sm outline-none appearance-none" value={med.frequencyType} onChange={(e) => { const n = [...medicines]; n[index].frequencyType = e.target.value; setMedicines(n); }}>
+                          <select className="w-full p-3 bg-white rounded-xl text-sm border-none shadow-sm outline-none appearance-none" value={med.frequencyType} onChange={(e) => { const n = [...medicines]; if (n[index]) { n[index].frequencyType = e.target.value; setMedicines(n); } }}>
                             <option value="daily">Daily (Days)</option>
                             <option value="interval">Hourly (Interval)</option>
                           </select>
                         </div>
                         <div className="md:col-span-2 space-y-1">
                           <label className="text-[9px] font-black text-slate-400 uppercase ml-1">{med.frequencyType === 'daily' ? 'Every X Days' : 'Every X Hours'}</label>
-                          <input type="number" className="w-full p-3 bg-white rounded-xl text-sm border-none shadow-sm outline-none" value={med.frequencyValue} onChange={(e) => { const n = [...medicines]; n[index].frequencyValue = Number(e.target.value); setMedicines(n); }} />
+                          <input
+                            type="number"
+                            className="w-full p-3 bg-white rounded-xl text-sm border-none shadow-sm outline-none"
+                            value={med.dosagePerDay}
+                            onChange={(e) => {
+                              const n = [...medicines];
+                              if (n[index]) {
+                                n[index].dosagePerDay = Number(e.target.value);
+                                setMedicines(n);
+                              }
+                            }}
+                          />
                         </div>
                         <div className="md:col-span-2 space-y-1">
                           <label className="text-[9px] font-black text-slate-400 uppercase ml-1">Total Qty</label>
-                          <input type="number" className="w-full p-3 bg-white rounded-xl text-sm border-none shadow-sm outline-none" value={med.totalQuantity} onChange={(e) => { const n = [...medicines]; n[index].totalQuantity = Number(e.target.value); n[index].remainingQuantity = Number(e.target.value); setMedicines(n); }} />
+                          <input
+                            type="number"
+                            className="w-full p-3 bg-white rounded-xl text-sm border-none shadow-sm outline-none"
+                            value={med.totalQuantity}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              const n = [...medicines];
+                              if (n[index]) {
+                                n[index].totalQuantity = val;
+                                n[index].remainingQuantity = val;
+                                setMedicines(n);
+                              }
+                            }}
+                          />
                         </div>
                         <div className="md:col-span-1 flex justify-center pb-1">
                           <button onClick={() => setMedicines(medicines.filter((_, i) => i !== index))} className="p-2 text-red-300 hover:text-red-500 transition-colors"><RiDeleteBin6Line size={20} /></button>
@@ -328,8 +350,13 @@ const DoctorAppointment: React.FC = () => {
                 <button onClick={resetForm} className="flex-1 py-4 text-xs font-black uppercase text-slate-400">Discard</button>
                 <button
                   onClick={async () => {
+                    // This call will now pass validation because prescribedMedicines contains dosagePerDay
                     const success = await completeAppointment(selectedApptId, { ...vitals, prescribedMedicines: medicines });
-                    if (success) { toast.success("Consultation Completed"); resetForm(); getAppointments(); }
+                    if (success) {
+                      toast.success("Consultation Completed");
+                      resetForm();
+                      getAppointments();
+                    }
                   }}
                   className="flex-[2] py-4 bg-emerald-500 text-white rounded-[20px] text-xs font-black uppercase shadow-lg shadow-emerald-100"
                 >
