@@ -230,7 +230,7 @@ const sendPatientAlert = async (req: Request, res: Response) => {
     const { appointmentId, messageContent, isCritical } = req.body;
 
     // 1. Find the appointment and populate user email
-    const appointment = await appointmentModel.findById(appointmentId);
+    const appointment = await appointmentModel.findById(appointmentId).populate('userData');
 
     if (!appointment) {
       return res.json({ success: false, message: "Appointment not found" });
@@ -256,7 +256,7 @@ const sendPatientAlert = async (req: Request, res: Response) => {
 
     // 3. Trigger the Email (Nodemailer)
     const mailOptions = {
-      from: `Dr. ${appointment.docData.name} <${process.env.SMTP_USER}>`,
+       from: process.env.SMTP_USER,
       replyTo: appointment.docData.email,
       to: appointment.userData.email, // Ensure userData has email
       subject: isCritical ? "URGENT: Medical Alert from your Doctor" : "New Message from your Doctor",
@@ -273,6 +273,8 @@ const sendPatientAlert = async (req: Request, res: Response) => {
                 </div>
             `
     };
+    console.log("Recipient Email:", appointment.userData?.email);
+console.log("Sender Config:", process.env.SMTP_USER);
 
     await transporter.sendMail(mailOptions);
 
