@@ -22,6 +22,9 @@ import { toast } from 'sonner'
 const DoctorAppointment: React.FC = () => {
   const { dToken, appointments, getAppointments, completeAppointment, cancelAppointment } = useContext(DoctorContext) as DoctorContextType
   const { calculateAge, slotDateFormat, currency, backendUrl } = useContext(AppContext) as AppContextType
+  
+  // State for loading feedback
+  const [isSendingAlert, setIsSendingAlert] = useState(false)
 
   const [showModal, setShowModal] = useState(false)
   const [showAlertModal, setShowAlertModal] = useState(false)
@@ -31,11 +34,10 @@ const DoctorAppointment: React.FC = () => {
   const [alertForm, setAlertForm] = useState({ message: '', isCritical: false })
   const [vitals, setVitals] = useState({ bloodPressure: '', heartRate: '', temperature: '', notes: '' })
 
-  // Updated state: frequencyValue is now dosagePerDay to match backend schema
   const [medicines, setMedicines] = useState([{
     name: '',
     frequencyType: 'daily',
-    dosagePerDay: 1, // Matches "required" backend field
+    dosagePerDay: 1, 
     totalQuantity: 7,
     status: 'Active',
     remainingQuantity: 7,
@@ -52,20 +54,33 @@ const DoctorAppointment: React.FC = () => {
     return 0;
   }) : [];
 
+  // FIXED: Added loading states and better error parsing
   const handleSendAlert = async () => {
+    if (!alertForm.message.trim()) {
+      return toast.error("Please enter alert content");
+    }
+
     try {
+      setIsSendingAlert(true);
       const { data } = await axios.post(`${backendUrl}/api/doctor/send-alert`,
         { appointmentId: selectedApptId, messageContent: alertForm.message, isCritical: alertForm.isCritical },
         { headers: { dToken } }
       );
+      
       if (data.success) {
         toast.success("Alert & Email sent!");
         setShowAlertModal(false);
         setAlertForm({ message: '', isCritical: false });
         getAppointments();
+      } else {
+        toast.error(data.message || "Failed to send alert");
       }
     } catch (error: any) {
-      toast.error(error.message);
+      // Extracts the specific error message from the backend if available
+      const msg = error.response?.data?.message || error.message || "An error occurred";
+      toast.error(msg);
+    } finally {
+      setIsSendingAlert(false); 
     }
   }
 
@@ -237,8 +252,20 @@ const DoctorAppointment: React.FC = () => {
                 <input type="checkbox" className='w-5 h-5 accent-red-500' checked={alertForm.isCritical} onChange={(e) => setAlertForm({ ...alertForm, isCritical: e.target.checked })} />
               </div>
               <div className='flex gap-3'>
-                <button onClick={() => setShowAlertModal(false)} className='flex-1 py-4 text-xs font-black uppercase text-slate-400'>Cancel</button>
-                <button onClick={handleSendAlert} className='flex-1 py-4 bg-red-500 text-white rounded-2xl text-xs font-black uppercase'>Send Alert</button>
+                <button 
+                  disabled={isSendingAlert} 
+                  onClick={() => setShowAlertModal(false)} 
+                  className='flex-1 py-4 text-xs font-black uppercase text-slate-400'
+                >
+                  Cancel
+                </button>
+                <button 
+                  disabled={isSendingAlert}
+                  onClick={handleSendAlert} 
+                  className={`flex-1 py-4 rounded-2xl text-xs font-black uppercase transition-all active:scale-95 ${isSendingAlert ? 'bg-slate-300 text-slate-500' : 'bg-red-500 text-white shadow-lg shadow-red-100'}`}
+                >
+                  {isSendingAlert ? 'Sending...' : 'Send Alert'}
+                </button>
               </div>
             </motion.div>
           </div>
@@ -350,7 +377,6 @@ const DoctorAppointment: React.FC = () => {
                 <button onClick={resetForm} className="flex-1 py-4 text-xs font-black uppercase text-slate-400">Discard</button>
                 <button
                   onClick={async () => {
-                    // This call will now pass validation because prescribedMedicines contains dosagePerDay
                     const success = await completeAppointment(selectedApptId, { ...vitals, prescribedMedicines: medicines });
                     if (success) {
                       toast.success("Consultation Completed");

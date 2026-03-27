@@ -182,7 +182,14 @@ const MyAppointments: React.FC = () => {
               {/* --- Doctor Card --- */}
               <div className={`bg-white p-6 rounded-[40px] flex flex-col md:flex-row gap-8 items-center shadow-sm border transition-all duration-500 ${isCritical ? 'border-red-500 shadow-[0_0_25px_rgba(239,68,68,0.15)] bg-red-50/30' : 'border-slate-100'}`}>
                 <div className='relative'>
-                  <img className='w-32 h-32 rounded-[32px] object-cover bg-slate-100 border-4 border-white shadow-sm' src={item.docData?.image} alt="" />
+                  <img
+                  style={{ 
+      imageRendering: 'auto', 
+      backfaceVisibility: 'hidden',
+      transform: 'translateZ(0)', // Force GPU layer
+      WebkitTransform: 'translateZ(0)'
+    }}
+                   className='w-32 h-32 rounded-[32px] object-cover bg-slate-100 border-4 border-white shadow-sm' src={item.docData?.image?.replace('/upload/', '/upload/f_jpg,q_auto:best,w_400,h_400,c_fill/')} alt="" />
                   {isCritical && (
                     <div className='absolute -top-2 -right-2 bg-red-600 text-white p-2 rounded-full animate-bounce shadow-lg'>
                       <RiErrorWarningLine size={20} />
