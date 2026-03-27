@@ -117,7 +117,12 @@ const DoctorList: React.FC = () => {
                 <div className='relative aspect-square overflow-hidden bg-slate-100'>
                   <img
                     className='w-full h-full object-cover transition-transform duration-700 group-hover:scale-110'
-                    src={item?.image}
+                    style={{ 
+                   imageRendering: 'auto', 
+                   backfaceVisibility: 'hidden',
+                     transform: 'translateZ(0)'
+                       }}
+                    src={item?.image.replace('/upload/', '/upload/f_jpg,q_auto:best,w_500,h_500,c_fill/')}
                     alt={item?.name}
                   />
                   <div className={`absolute top-4 right-4 px-3 py-1.5 rounded-full backdrop-blur-md flex items-center gap-2 border ${isAvailable ? 'bg-teal-500/20 border-teal-400/30 text-teal-700' : 'bg-red-500/20 border-red-400/30 text-red-700'}`}>
