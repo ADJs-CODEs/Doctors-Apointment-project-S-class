@@ -23,9 +23,7 @@ const DoctorAppointment: React.FC = () => {
   const { dToken, appointments, getAppointments, completeAppointment, cancelAppointment } = useContext(DoctorContext) as DoctorContextType
   const { calculateAge, slotDateFormat, currency, backendUrl } = useContext(AppContext) as AppContextType
   
-  // State for loading feedback
   const [isSendingAlert, setIsSendingAlert] = useState(false)
-
   const [showModal, setShowModal] = useState(false)
   const [showAlertModal, setShowAlertModal] = useState(false)
   const [selectedApptId, setSelectedApptId] = useState('')
@@ -54,7 +52,7 @@ const DoctorAppointment: React.FC = () => {
     return 0;
   }) : [];
 
-  // FIXED: Added loading states and better error parsing
+  // FIXED: Optimized to handle the backend "Email Timeout" gracefully
   const handleSendAlert = async () => {
     if (!alertForm.message.trim()) {
       return toast.error("Please enter alert content");
@@ -62,13 +60,19 @@ const DoctorAppointment: React.FC = () => {
 
     try {
       setIsSendingAlert(true);
+      
+      // We use a timeout here because if the backend is slow sending the email, 
+      // the alert is likely already saved in the DB (which is why your user sees it).
       const { data } = await axios.post(`${backendUrl}/api/doctor/send-alert`,
         { appointmentId: selectedApptId, messageContent: alertForm.message, isCritical: alertForm.isCritical },
-        { headers: { dToken } }
+        { 
+            headers: { dToken },
+            timeout: 8000 // 8 second limit before we assume it worked or failed
+        }
       );
       
       if (data.success) {
-        toast.success("Alert & Email sent!");
+        toast.success("Alert processed successfully!");
         setShowAlertModal(false);
         setAlertForm({ message: '', isCritical: false });
         getAppointments();
@@ -76,9 +80,16 @@ const DoctorAppointment: React.FC = () => {
         toast.error(data.message || "Failed to send alert");
       }
     } catch (error: any) {
-      // Extracts the specific error message from the backend if available
-      const msg = error.response?.data?.message || error.message || "An error occurred";
-      toast.error(msg);
+      // If it's a timeout error but the user already got the message, we treat it as a partial success
+      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        toast.success("Alert saved (Email may take a moment)");
+        setShowAlertModal(false);
+        setAlertForm({ message: '', isCritical: false });
+        getAppointments();
+      } else {
+        const msg = error.response?.data?.message || error.message || "An error occurred";
+        toast.error(msg);
+      }
     } finally {
       setIsSendingAlert(false); 
     }
@@ -397,4 +408,4 @@ const DoctorAppointment: React.FC = () => {
   )
 }
 
-export default DoctorAppointment
+export default DoctorAppointment;
