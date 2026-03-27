@@ -241,8 +241,8 @@ const paymentStripe = async (req: Request, res: Response) => {
     if (!appointmentData || appointmentData.cancelled) return res.json({ success: false, message: "Invalid appointment" })
 
     const session = await stripeInstance.checkout.sessions.create({
-      success_url: `${process.env.CLIENT_URL}/verify?success=true&appointmentId=${appointmentId}`,
-      cancel_url: `${process.env.CLIENT_URL}/verify?success=false&appointmentId=${appointmentId}`,
+      success_url: `${process.env.USER_URL}/verify?success=true&appointmentId=${appointmentId}`,
+      cancel_url: `${process.env.USER_URL}/verify?success=false&appointmentId=${appointmentId}`,
       line_items: [{
         price_data: {
           currency: process.env.CURRENCY || 'usd',
