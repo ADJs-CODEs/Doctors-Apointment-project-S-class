@@ -70,17 +70,19 @@ const MyProfile: React.FC = () => {
       {/* --- Header Section --- */}
       <div className='glass-card-premium p-8 rounded-[40px] flex flex-col md:flex-row items-center gap-8 mb-10'>
         <div className='relative shrink-0 group'>
-          <div className='w-40 h-40 rounded-full overflow-hidden border-4 border-white shadow-xl relative z-10'>
+          <div className='w-40 h-40 rounded-full overflow-hidden border-4 border-white shadow-xl relative z-10 ring-1 ring-slae-100'>
             {isEdit ? (
               <label htmlFor="image" className="cursor-pointer group relative block h-full w-full bg-slate-100">
-                <img className='w-full h-full object-cover opacity-50' src={image ? URL.createObjectURL(image) : userData.image} alt="" />
+                <img className='w-full h-full object-cover opacity-50 bg-white' src={image ? URL.createObjectURL(image) : userData.image} alt="" />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-100">
                   <img className="w-10 invert" src={assets.upload_icon} alt="" />
                 </div>
                 <input onChange={(e) => setImage(e.target.files ? e.target.files[0] : false)} type='file' id='image' hidden />
               </label>
             ) : (
-              <img className='w-full h-full object-cover' src={userData.image} alt="" />
+              <img className='w-full h-full object-cover rounded-full bg-white transform-gpu'
+              style={{ backfaceVisibility: 'hidden', imageRendering: 'auto' }}
+               src={userData.image} alt="" />
             )}
           </div>
         </div>
