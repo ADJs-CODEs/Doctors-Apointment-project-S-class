@@ -72,7 +72,13 @@ const AllAppointments: React.FC = () => {
                     <p className='hidden lg:block text-xs font-black text-slate-300'>{(index + 1).toString().padStart(2, '0')}</p>
 
                     <div className='flex items-center gap-4 w-full lg:w-auto mb-4 lg:mb-0'>
-                      <img className='w-12 h-12 rounded-2xl object-cover border-2 border-white shadow-md' src={item.userData.image} alt="" />
+                      <img
+                      style={{ 
+                      imageRendering: 'auto', 
+                       backfaceVisibility: 'hidden',
+                       transform: 'translateZ(0)'
+                       }}
+                       className='w-12 h-12 rounded-2xl object-cover border-2 border-white bg-white transform-gpu shadow-md' src={item.userData.image.replace('/upload/', '/upload/f_jpg,q_auto:best,w_200,h_200,c_fill/')} alt="" />
                       <p className='text-sm font-black text-slate-900'>{item.userData.name}</p>
                     </div>
 

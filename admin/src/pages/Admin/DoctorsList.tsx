@@ -116,7 +116,7 @@ const DoctorList: React.FC = () => {
 
                 <div className='relative aspect-square overflow-hidden bg-slate-100'>
                   <img
-                    className='w-full h-full object-cover transition-transform duration-700 group-hover:scale-110'
+                    className='w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 bg-white'
                     style={{ 
                    imageRendering: 'auto', 
                    backfaceVisibility: 'hidden',
