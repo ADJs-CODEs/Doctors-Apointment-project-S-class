@@ -39,7 +39,6 @@ export interface IAppointment extends Document {
   payment: boolean;
   isCompleted: boolean;
   healthData: IHealthData;
-  // --- NEW FIELDS ---
   patientStatus: 'Stable' | 'Critical' | 'Completed';
   messages: IMessage[];
   lastWarningSent?: Date;
@@ -58,7 +57,6 @@ const appointmentSchema: Schema<IAppointment> = new mongoose.Schema({
   payment: { type: Boolean, default: false },
   isCompleted: { type: Boolean, default: false },
 
-  // --- NEW LOGIC FIELDS ---
   patientStatus: {
     type: String,
     enum: ['Stable', 'Critical', 'Completed'],
@@ -77,8 +75,10 @@ const appointmentSchema: Schema<IAppointment> = new mongoose.Schema({
     heartRate: { type: String, default: "" },
     temperature: { type: String, default: "" },
     prescribedMedicines: [{
+      _id: false, // Prevents validation issues with sub-documents
       name: { type: String, required: true },
-      dosagePerDay: { type: Number, required: true },
+      // --- FIX: Added default so it never evaluates to "undefined" ---
+      dosagePerDay: { type: Number, required: true, default: 1 },
       totalQuantity: { type: Number, required: true },
       remainingQuantity: { type: Number, required: true },
       lastTaken: { type: Date },
@@ -88,7 +88,7 @@ const appointmentSchema: Schema<IAppointment> = new mongoose.Schema({
     }],
     doctorNotes: { type: String, default: "" }
   }
-}, { minimize: false, timestamps: true }) // Added timestamps for better record keeping
+}, { minimize: false, timestamps: true })
 
 const appointmentModel: Model<IAppointment> = mongoose.models.appointment || mongoose.model<IAppointment>('appointment', appointmentSchema)
 

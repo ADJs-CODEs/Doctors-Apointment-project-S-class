@@ -10,6 +10,8 @@ interface AppContextProviderProps {
 
 const AppContextProvider = ({ children }: AppContextProviderProps) => {
 
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
     const calculateAge = (dob: string): number => {
         const today = new Date();
         const birthDate = new Date(dob);
@@ -35,6 +37,7 @@ const AppContextProvider = ({ children }: AppContextProviderProps) => {
     const currency = '$';
 
     const value: AppContextType = {
+        backendUrl,
         calculateAge,
         slotDateFormat,
         currency
