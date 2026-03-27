@@ -70,7 +70,7 @@ const MyProfile: React.FC = () => {
       {/* --- Header Section --- */}
       <div className='glass-card-premium p-8 rounded-[40px] flex flex-col md:flex-row items-center gap-8 mb-10'>
         <div className='relative shrink-0 group'>
-          <div className='w-40 h-40 rounded-full overflow-hidden border-4 border-white shadow-xl relative z-10 ring-1 ring-slae-100'>
+          <div className='w-40 h-40 rounded-full overflow-hidden border-4 border-white shadow-xl relative z-10 ring-1 ring-slae-100 isolate'>
             {isEdit ? (
               <label htmlFor="image" className="cursor-pointer group relative block h-full w-full bg-slate-100">
                 <img className='w-full h-full object-cover opacity-50 bg-white' src={image ? URL.createObjectURL(image) : userData.image} alt="" />
