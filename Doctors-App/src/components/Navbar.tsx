@@ -70,9 +70,11 @@ const Navbar: React.FC = () => {
         <div className='flex items-center gap-6'>
           {token && userData ? (
             <div className='flex items-center gap-3 cursor-pointer group relative'>
-              <div className='relative'>
-                <div className='absolute -inset-1 bg-teal-500/10 rounded-full blur-sm group-hover:bg-teal-500/20 transition duration-500'></div>
-                <img className='w-9 h-9 rounded-xl border border-slate-100 relative z-10 object-cover shadow-sm' src={userData.image} alt="Profile" />
+              <div className='relative isolate'>
+                <div 
+                style={{ backfaceVisibility: 'hidden' }}
+                className='absolute -inset-1 bg-teal-500/10 rounded-full blur-sm group-hover:bg-teal-500/20 transition duration-500'></div>
+                <img className='w-9 h-9 rounded-xl border border-slate-100 relative z-10 object-cover  bg-white transform-gpu  shadow-sm' src={userData.image} alt="Profile" />
               </div>
 
               <div className='hidden lg:flex items-center gap-1'>
