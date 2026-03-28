@@ -1,5 +1,4 @@
 import React, { useContext, useState } from 'react'
-import { assets } from '../assets/assets/assets_frontend/assets.js'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { AppContext } from '../Context/AppContext.js';
 import type { AppContextType } from '../types/index.js';
@@ -55,7 +54,6 @@ const Navbar: React.FC = () => {
           <div className='w-9 h-9 md:w-11 md:h-11 bg-teal-50 rounded-full border-2 border-dotted border-teal-200 flex items-center justify-center shrink-0'>
             <div className='text-teal-600 font-black text-xl md:text-2xl leading-none'>+</div>
           </div>
-
           <div className='flex flex-col leading-tight'>
             <span className='text-[14px] md:text-[19px] font-black text-slate-800 tracking-tighter uppercase'>
               ADJ's <span className='text-teal-600'>CODEs</span>
@@ -85,17 +83,13 @@ const Navbar: React.FC = () => {
         <div className='flex items-center gap-3'>
           {token && userData ? (
             <div className='flex items-center gap-3 cursor-pointer group relative p-1'>
-              <div className='relative isolate'>
-                <div className='absolute -inset-1 bg-teal-500/10 rounded-full blur-sm group-hover:bg-teal-500/20 transition duration-500'></div>
-                <img className='w-8 h-8 md:w-9 md:h-9 rounded-xl border border-slate-100 relative z-10 object-cover bg-white shadow-sm' src={userData.image} alt="Profile" />
-              </div>
-
+              <img className='w-8 h-8 md:w-9 md:h-9 rounded-xl border border-slate-100 object-cover bg-white' src={userData.image} alt="Profile" />
               <div className='hidden lg:flex items-center gap-1'>
                 <p className='text-[11px] font-bold text-slate-700 uppercase tracking-wider'>{userData.name.split(' ')[0]}</p>
                 <CaretDown size={12} weight="bold" className='text-slate-400 group-hover:rotate-180 transition-transform' />
               </div>
 
-              {/* Desktop Dropdown Only */}
+              {/* Desktop Dropdown */}
               <div className='absolute top-full right-0 pt-4 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all z-50 hidden md:block'>
                 <div className='min-w-64 bg-white border border-slate-100 rounded-[24px] p-2 shadow-xl'>
                   <div onClick={() => handleNav('/my-profile')} className='flex items-center gap-3 px-4 py-3 hover:bg-slate-50 rounded-xl transition-all group/item'><UserGear size={20} weight="duotone" className="text-slate-400 group-hover/item:text-teal-600" /><span className='text-xs font-bold text-slate-600'>Medical Profile</span></div>
@@ -110,13 +104,13 @@ const Navbar: React.FC = () => {
             <button onClick={() => handleNav('/login')} className='hidden md:block bg-slate-900 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[2px]'>Patient Portal</button>
           )}
 
-          {/* Mobile Menu Trigger */}
+          {/* Mobile Trigger */}
           <div onClick={() => setShowMenu(true)} className='md:hidden p-2 bg-slate-50 rounded-xl border border-slate-100 active:scale-90 transition-transform cursor-pointer'>
             <List size={22} weight="bold" className="text-slate-900" />
           </div>
         </div>
 
-        {/* Mobile Fullscreen Menu - Corrected Stacking & Content Visibility */}
+        {/* --- MOBILE MENU --- */}
         <AnimatePresence>
           {showMenu && (
             <motion.div
@@ -127,51 +121,63 @@ const Navbar: React.FC = () => {
               className='fixed inset-0 z-[100] bg-[#0F172A] flex flex-col md:hidden'
             >
               {/* Menu Header */}
-              <div className='flex items-center justify-between px-6 py-6 border-b border-slate-800'>
+              <div className='flex items-center justify-between px-6 py-6 border-b border-slate-800 bg-[#0F172A]'>
                 <div className='flex items-center gap-2'>
                   <div className='w-8 h-8 bg-teal-500/10 rounded-full flex items-center justify-center border border-teal-500/20'>
                     <span className='text-teal-500 font-black'>+</span>
                   </div>
                   <span className='font-black text-white tracking-tighter uppercase text-sm'>ADJ's CODEs</span>
                 </div>
-                <div onClick={() => setShowMenu(false)} className='p-2 bg-slate-800 rounded-xl text-white cursor-pointer active:scale-90'>
+                <div onClick={() => setShowMenu(false)} className='p-2 bg-slate-800 rounded-xl text-white active:scale-95 cursor-pointer'>
                   <X size={24} weight="bold" />
                 </div>
               </div>
 
-              {/* Main Links - Centered vertically and explicitly styled */}
-              <div className='flex-1 flex flex-col justify-center px-8'>
-                <p className='text-[10px] font-black text-teal-500 uppercase tracking-[4px] mb-8 opacity-50'>Registry Menu</p>
-                <ul className='flex flex-col gap-6'>
-                  {['HOME', 'DOCTORS', 'ABOUT', 'CONTACT'].map((item) => (
-                    <li
-                      key={item}
-                      onClick={() => handleNav(item === 'HOME' ? '/' : `/${item.toLowerCase()}`)}
-                      className='text-5xl font-black text-white tracking-tighter hover:text-teal-400 transition-colors uppercase cursor-pointer'
-                    >
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <div className='flex-1 flex flex-col overflow-y-auto'>
+                {/* Section 1: NAVIGATE - Smaller Font Size */}
+                <div className='px-8 pt-10 pb-6'>
+                  <p className='text-[9px] font-black text-teal-500/50 uppercase tracking-[4px] mb-6'>Navigate</p>
+                  <ul className='flex flex-col gap-4'>
+                    {['HOME', 'DOCTORS', 'ABOUT', 'CONTACT'].map((item) => (
+                      <li
+                        key={item}
+                        onClick={() => handleNav(item === 'HOME' ? '/' : `/${item.toLowerCase()}`)}
+                        className='text-2xl font-black text-white tracking-tight active:text-teal-400 transition-colors uppercase'
+                      >
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
 
-              {/* Bottom Actions */}
-              <div className='p-8 bg-slate-900/50 border-t border-slate-800'>
-                {token ? (
+                {/* Section 2: ACCOUNT - Scaled Icons */}
+                <div className='px-8 py-8 border-t border-slate-800/50 bg-slate-900/40'>
+                  <p className='text-[9px] font-black text-teal-500/50 uppercase tracking-[4px] mb-6'>Patient Registry</p>
                   <div className='flex flex-col gap-6'>
-                    <div onClick={() => handleNav('/my-profile')} className='flex items-center gap-4 text-slate-300 font-bold text-lg cursor-pointer'>
-                      <UserGear size={26} weight="duotone" className="text-teal-500" /> Medical Profile
-                    </div>
-                    <div onClick={() => handleNav('/my-appointments')} className='flex items-center gap-4 text-slate-300 font-bold text-lg cursor-pointer'>
-                      <CalendarCheck size={26} weight="duotone" className="text-teal-500" /> My Appointments
-                    </div>
-                    <button onClick={logout} className='mt-4 flex items-center gap-3 text-rose-500 font-black uppercase text-[10px] tracking-[2px]'>
-                      <SignOut size={20} weight="duotone" /> Sign Out Account
+                    <button onClick={() => handleNav('/my-profile')} className='flex items-center gap-4 text-slate-300 font-bold text-sm text-left uppercase tracking-wider'>
+                      <UserGear size={22} weight="duotone" className="text-teal-500" /> Medical Profile
+                    </button>
+                    <button onClick={() => handleNav('/my-appointments')} className='flex items-center gap-4 text-slate-300 font-bold text-sm text-left uppercase tracking-wider'>
+                      <CalendarCheck size={22} weight="duotone" className="text-teal-500" /> My Appointments
+                    </button>
+                    <button onClick={() => handleNav('/account-settings')} className='flex items-center gap-4 text-slate-300 font-bold text-sm text-left uppercase tracking-wider'>
+                      <Fingerprint size={22} weight="duotone" className="text-teal-500" /> Security & Access
                     </button>
                   </div>
-                ) : (
-                  <button onClick={() => handleNav('/login')} className='w-full bg-teal-500 text-slate-900 py-5 rounded-2xl flex items-center justify-center gap-3 font-black uppercase text-xs tracking-widest shadow-xl shadow-teal-500/20'>
-                    Patient Access Portal <ArrowUpRight size={18} weight="bold" />
+                </div>
+              </div>
+
+              {/* Bottom Footer */}
+              <div className='p-6 bg-[#161e33] border-t border-slate-800 mt-auto'>
+                <button
+                  onClick={() => handleNav('/doctors')}
+                  className='w-full bg-teal-500 text-slate-900 py-4 rounded-xl flex items-center justify-center gap-2 font-black uppercase text-[10px] tracking-widest shadow-lg shadow-teal-500/10'
+                >
+                  Start Consultation <ArrowUpRight size={16} weight="bold" />
+                </button>
+                {token && (
+                  <button onClick={logout} className='w-full mt-4 text-rose-500 font-black uppercase text-[9px] tracking-[2px] opacity-70'>
+                    Terminate Session
                   </button>
                 )}
               </div>
