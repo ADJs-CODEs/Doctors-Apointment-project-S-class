@@ -18,6 +18,7 @@ import AccountSettings from './pages/AccountSetting.js'
 import ForgotPassword from './pages/ForgotPassword.js'
 import ResetPassword from './pages/ResetPassword.js'
 import { AppContext } from './Context/AppContext.js'
+import type { AppContextType } from './types/index.js';
 
 const App: React.FC = () => {
   // Pull the progress state from your Context so it actually moves!
@@ -42,7 +43,7 @@ const App: React.FC = () => {
       <Navbar />
 
       {/* Wrapping Routes in a main tag helps with layout consistency */}
-      <main className='flex-grow'>
+      <main className='grow'>
         <Routes>
           <Route path='/' element={<Home />} />
           <Route path='/doctors' element={<Doctors />} />

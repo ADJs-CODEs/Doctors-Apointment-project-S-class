@@ -1,5 +1,21 @@
 // src/types/index.ts
 
+export interface PrescribedMedicine {
+  name: string;
+  dosagePerDay: number;
+  frequencyType: 'daily' | 'interval';
+  totalQuantity: number;
+  remainingQuantity: number;
+  lastTaken?: string;
+}
+
+export interface HealthData {
+  heartRate: string;
+  bloodPressure: string;
+  temperature: string;
+  prescribedMedicines: PrescribedMedicine[];
+}
+
 export interface Doctor {
   _id: string;
   name: string;
