@@ -117,11 +117,11 @@ const DoctorList: React.FC = () => {
                 <div className='relative aspect-square overflow-hidden bg-slate-100'>
                   <img
                     className='w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 bg-white'
-                    style={{ 
-                   imageRendering: 'auto', 
-                   backfaceVisibility: 'hidden',
-                     transform: 'translateZ(0)'
-                       }}
+                    style={{
+                      imageRendering: 'auto',
+                      backfaceVisibility: 'hidden',
+                      transform: 'translateZ(0)'
+                    }}
                     src={item?.image.replace('/upload/', '/upload/f_jpg,q_auto:best,w_500,h_500,c_fill/')}
                     alt={item?.name}
                   />

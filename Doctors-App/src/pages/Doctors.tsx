@@ -3,13 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { AppContext } from '../Context/AppContext.js';
 import SkeletonCard from '../components/SkeletonCard.js';
 import type { AppContextType, Doctor } from '../types/index.js';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
 import {
   RiSearchLine,
   RiFilter3Line,
   RiArrowRightLine,
   RiShieldCheckFill,
-  RiUserSearchLine
+  RiUserSearchLine,
+  RiRefreshLine
 } from "@remixicon/react";
 
 const Doctors: React.FC = () => {
@@ -17,6 +18,14 @@ const Doctors: React.FC = () => {
   const { doctors, loading } = useContext(AppContext) as AppContextType;
   const [searchTerm, setSearchTerm] = useState<string>('');
   const navigate = useNavigate();
+
+  // Progress Bar Logic
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
 
   const specialties = [
     'General physician', 'Gynecologist', 'Dermatologist',
@@ -31,8 +40,20 @@ const Doctors: React.FC = () => {
     });
   }, [doctors, speciality, searchTerm]);
 
+  // Clear Filter Logic
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    navigate('/doctors');
+  };
+
   return (
     <div className='max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-12 bg-[#F8FAFC] min-h-screen'>
+
+      {/* Scroll Progress Bar */}
+      <motion.div
+        className="fixed top-0 left-0 right-0 h-1.5 bg-teal-500 origin-left z-[100]"
+        style={{ scaleX }}
+      />
 
       {/* --- Rebranded Header Section --- */}
       <div className='flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8 mb-12 md:mb-16'>
@@ -71,7 +92,6 @@ const Doctors: React.FC = () => {
               <p className='text-[10px] font-black text-slate-400 uppercase tracking-[3px]'>Department</p>
             </div>
 
-            {/* Mobile Horizontal Scroll / Desktop Vertical List */}
             <div className='flex lg:flex-col gap-2 overflow-x-auto pb-4 lg:pb-0 no-scrollbar'>
               <button
                 onClick={() => navigate('/doctors')}
@@ -118,15 +138,12 @@ const Doctors: React.FC = () => {
                     className='group bg-white border border-slate-100 rounded-[28px] md:rounded-[32px] overflow-hidden cursor-pointer hover:shadow-[0_24px_48px_rgba(0,0,0,0.06)] transition-all duration-500 relative'
                     key={item._id}
                   >
-                    {/* Portrait Area */}
                     <div className='aspect-[4/5] overflow-hidden bg-slate-100 relative'>
                       <img
                         src={item.image}
                         className='w-full h-full object-cover group-hover:scale-105 transition-transform duration-700'
                         alt={item.name}
                       />
-
-                      {/* Availability Badge */}
                       <div className='absolute top-4 left-4 z-20'>
                         <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-md border shadow-sm ${item.available
                           ? 'bg-white/90 border-teal-100 text-teal-600'
@@ -140,7 +157,6 @@ const Doctors: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Content Area */}
                     <div className='p-6'>
                       <div className='flex justify-between items-start mb-4'>
                         <div className='flex-1 pr-2'>
@@ -174,15 +190,22 @@ const Doctors: React.FC = () => {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className='flex flex-col items-center justify-center py-20 text-center'
+                className='flex flex-col items-center justify-center py-20 text-center bg-white rounded-[40px] border border-dashed border-slate-200'
               >
                 <div className='w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 mb-6'>
                   <RiUserSearchLine size={40} />
                 </div>
                 <h3 className='text-xl font-bold text-slate-800 mb-2'>No practitioners found</h3>
-                <p className='text-slate-500 max-w-xs text-sm'>
-                  We couldn't find any doctors matching "{searchTerm}". Try checking your spelling or selecting a different department.
+                <p className='text-slate-500 max-w-xs text-sm mb-8'>
+                  We couldn't find any doctors matching your criteria. Try adjusting your search or department.
                 </p>
+                <button
+                  onClick={handleClearFilters}
+                  className='flex items-center gap-2 px-8 py-4 bg-teal-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-xl shadow-teal-100 active:scale-95'
+                >
+                  <RiRefreshLine size={16} />
+                  Reset Registry Filters
+                </button>
               </motion.div>
             )}
           </AnimatePresence>
