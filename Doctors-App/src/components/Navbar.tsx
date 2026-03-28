@@ -88,24 +88,13 @@ const Navbar: React.FC = () => {
                 <p className='text-[11px] font-bold text-slate-700 uppercase tracking-wider'>{userData.name.split(' ')[0]}</p>
                 <CaretDown size={12} weight="bold" className='text-slate-400 group-hover:rotate-180 transition-transform' />
               </div>
-
-              {/* Desktop Dropdown */}
-              <div className='absolute top-full right-0 pt-4 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all z-50 hidden md:block'>
-                <div className='min-w-64 bg-white border border-slate-100 rounded-[24px] p-2 shadow-xl'>
-                  <div onClick={() => handleNav('/my-profile')} className='flex items-center gap-3 px-4 py-3 hover:bg-slate-50 rounded-xl transition-all group/item'><UserGear size={20} weight="duotone" className="text-slate-400 group-hover/item:text-teal-600" /><span className='text-xs font-bold text-slate-600'>Medical Profile</span></div>
-                  <div onClick={() => handleNav('/my-appointments')} className='flex items-center gap-3 px-4 py-3 hover:bg-slate-50 rounded-xl transition-all group/item'><CalendarCheck size={20} weight="duotone" className="text-slate-400 group-hover/item:text-teal-600" /><span className='text-xs font-bold text-slate-600'>My Appointments</span></div>
-                  <div onClick={() => handleNav('/account-settings')} className='flex items-center gap-3 px-4 py-3 hover:bg-slate-50 rounded-xl transition-all group/item'><Fingerprint size={20} weight="duotone" className="text-slate-400 group-hover/item:text-teal-600" /><span className='text-xs font-bold text-slate-600'>Security</span></div>
-                  <div className='h-[1px] bg-slate-50 my-1 mx-2' />
-                  <div onClick={logout} className='flex items-center gap-3 px-4 py-3 hover:bg-rose-50 rounded-xl text-rose-500 transition-all'><SignOut size={20} weight="duotone" /><span className='text-xs font-bold'>Sign Out</span></div>
-                </div>
-              </div>
             </div>
           ) : (
             <button onClick={() => handleNav('/login')} className='hidden md:block bg-slate-900 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[2px]'>Patient Portal</button>
           )}
 
           {/* Mobile Trigger */}
-          <div onClick={() => setShowMenu(true)} className='md:hidden p-2 bg-slate-50 rounded-xl border border-slate-100 active:scale-90 transition-transform cursor-pointer'>
+          <div onClick={() => setShowMenu(true)} className='md:hidden p-2 bg-slate-50 rounded-xl border border-slate-100 cursor-pointer active:scale-90 transition-transform'>
             <List size={22} weight="bold" className="text-slate-900" />
           </div>
         </div>
@@ -114,70 +103,70 @@ const Navbar: React.FC = () => {
         <AnimatePresence>
           {showMenu && (
             <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className='fixed inset-0 z-[100] bg-[#0F172A] flex flex-col md:hidden'
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className='fixed inset-0 z-[999] bg-[#0F172A] w-screen h-screen flex flex-col md:hidden'
             >
-              {/* Menu Header */}
-              <div className='flex items-center justify-between px-6 py-6 border-b border-slate-800 bg-[#0F172A]'>
+              {/* Header */}
+              <div className='flex items-center justify-between px-6 py-6 border-b border-slate-800 bg-[#0F172A] sticky top-0'>
                 <div className='flex items-center gap-2'>
                   <div className='w-8 h-8 bg-teal-500/10 rounded-full flex items-center justify-center border border-teal-500/20'>
                     <span className='text-teal-500 font-black'>+</span>
                   </div>
                   <span className='font-black text-white tracking-tighter uppercase text-sm'>ADJ's CODEs</span>
                 </div>
-                <div onClick={() => setShowMenu(false)} className='p-2 bg-slate-800 rounded-xl text-white active:scale-95 cursor-pointer'>
+                <div onClick={() => setShowMenu(false)} className='p-2 bg-slate-800 rounded-xl text-white cursor-pointer active:scale-95'>
                   <X size={24} weight="bold" />
                 </div>
               </div>
 
-              <div className='flex-1 flex flex-col overflow-y-auto'>
-                {/* Section 1: NAVIGATE - Smaller Font Size */}
-                <div className='px-8 pt-10 pb-6'>
-                  <p className='text-[9px] font-black text-teal-500/50 uppercase tracking-[4px] mb-6'>Navigate</p>
-                  <ul className='flex flex-col gap-4'>
-                    {['HOME', 'DOCTORS', 'ABOUT', 'CONTACT'].map((item) => (
-                      <li
-                        key={item}
-                        onClick={() => handleNav(item === 'HOME' ? '/' : `/${item.toLowerCase()}`)}
-                        className='text-2xl font-black text-white tracking-tight active:text-teal-400 transition-colors uppercase'
-                      >
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+              {/* Scrollable Content */}
+              <div className='flex-1 overflow-y-auto px-8 py-10'>
+                {/* Navigation */}
+                <p className='text-[9px] font-black text-teal-500 uppercase tracking-[4px] mb-8 opacity-50'>Menu</p>
+                <ul className='flex flex-col gap-5 mb-12'>
+                  {['HOME', 'DOCTORS', 'ABOUT', 'CONTACT'].map((item) => (
+                    <li
+                      key={item}
+                      onClick={() => handleNav(item === 'HOME' ? '/' : `/${item.toLowerCase()}`)}
+                      className='text-3xl font-black text-white tracking-tight uppercase cursor-pointer'
+                    >
+                      {item}
+                    </li>
+                  ))}
+                </ul>
 
-                {/* Section 2: ACCOUNT - Scaled Icons */}
-                <div className='px-8 py-8 border-t border-slate-800/50 bg-slate-900/40'>
-                  <p className='text-[9px] font-black text-teal-500/50 uppercase tracking-[4px] mb-6'>Patient Registry</p>
-                  <div className='flex flex-col gap-6'>
-                    <button onClick={() => handleNav('/my-profile')} className='flex items-center gap-4 text-slate-300 font-bold text-sm text-left uppercase tracking-wider'>
-                      <UserGear size={22} weight="duotone" className="text-teal-500" /> Medical Profile
-                    </button>
-                    <button onClick={() => handleNav('/my-appointments')} className='flex items-center gap-4 text-slate-300 font-bold text-sm text-left uppercase tracking-wider'>
-                      <CalendarCheck size={22} weight="duotone" className="text-teal-500" /> My Appointments
-                    </button>
-                    <button onClick={() => handleNav('/account-settings')} className='flex items-center gap-4 text-slate-300 font-bold text-sm text-left uppercase tracking-wider'>
-                      <Fingerprint size={22} weight="duotone" className="text-teal-500" /> Security & Access
-                    </button>
-                  </div>
-                </div>
+                {/* Account Section */}
+                {token && (
+                  <>
+                    <p className='text-[9px] font-black text-teal-500 uppercase tracking-[4px] mb-8 opacity-50'>Dashboard</p>
+                    <div className='flex flex-col gap-8'>
+                      <button onClick={() => handleNav('/my-profile')} className='flex items-center gap-4 text-slate-300 font-bold text-lg text-left'>
+                        <UserGear size={24} className="text-teal-500" /> My Info
+                      </button>
+                      <button onClick={() => handleNav('/my-appointments')} className='flex items-center gap-4 text-slate-300 font-bold text-lg text-left'>
+                        <CalendarCheck size={24} className="text-teal-500" /> Appointments
+                      </button>
+                      <button onClick={() => handleNav('/account-settings')} className='flex items-center gap-4 text-slate-300 font-bold text-lg text-left'>
+                        <Fingerprint size={24} className="text-teal-500" /> Privacy
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
 
-              {/* Bottom Footer */}
-              <div className='p-6 bg-[#161e33] border-t border-slate-800 mt-auto'>
+              {/* Bottom Fixed Actions */}
+              <div className='p-6 bg-[#161e33] border-t border-slate-800'>
                 <button
                   onClick={() => handleNav('/doctors')}
-                  className='w-full bg-teal-500 text-slate-900 py-4 rounded-xl flex items-center justify-center gap-2 font-black uppercase text-[10px] tracking-widest shadow-lg shadow-teal-500/10'
+                  className='w-full bg-teal-500 text-slate-900 py-4 rounded-xl flex items-center justify-center gap-2 font-black uppercase text-xs tracking-widest'
                 >
-                  Start Consultation <ArrowUpRight size={16} weight="bold" />
+                  Start Consultation <ArrowUpRight size={18} weight="bold" />
                 </button>
                 {token && (
-                  <button onClick={logout} className='w-full mt-4 text-rose-500 font-black uppercase text-[9px] tracking-[2px] opacity-70'>
-                    Terminate Session
+                  <button onClick={logout} className='w-full mt-5 text-rose-500 font-black uppercase text-[10px] tracking-[2px] opacity-80'>
+                    Logout Account
                   </button>
                 )}
               </div>
