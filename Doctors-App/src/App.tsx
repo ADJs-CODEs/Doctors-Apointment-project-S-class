@@ -3,6 +3,7 @@ import { Route, Routes } from 'react-router-dom'
 // ... (your existing imports)
 import { AppContext } from './Context/AppContext.js';
 import type { AppContextType } from './types/index.js';
+import LoadingBar from 'react-top-loading-bar';
 
 const App: React.FC = () => {
   // Pull the progress state from your Context so it actually moves!
