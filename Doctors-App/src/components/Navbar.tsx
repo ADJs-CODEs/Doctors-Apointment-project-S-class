@@ -11,7 +11,8 @@ import {
   CalendarCheck,
   UserGear,
   CaretDown,
-  Fingerprint
+  Fingerprint,
+  ArrowUpRight
 } from "@phosphor-icons/react";
 
 const Navbar: React.FC = () => {
@@ -85,9 +86,7 @@ const Navbar: React.FC = () => {
           {token && userData ? (
             <div className='flex items-center gap-3 cursor-pointer group relative p-1'>
               <div className='relative isolate'>
-                <div
-                  style={{ backfaceVisibility: 'hidden', transform: 'translateZ(0)' }}
-                  className='absolute -inset-1 bg-teal-500/10 rounded-full blur-sm group-hover:bg-teal-500/20 transition duration-500'></div>
+                <div className='absolute -inset-1 bg-teal-500/10 rounded-full blur-sm group-hover:bg-teal-500/20 transition duration-500'></div>
                 <img className='w-8 h-8 md:w-9 md:h-9 rounded-xl border border-slate-100 relative z-10 object-cover bg-white shadow-sm' src={userData.image.replace('/upload/', '/upload/f_jpg,q_auto:best/')} alt="Profile" />
               </div>
 
@@ -117,7 +116,7 @@ const Navbar: React.FC = () => {
           </div>
         </div>
 
-        {/* Mobile Fullscreen Menu (Fixed Background & account visibility) */}
+        {/* Mobile Fullscreen Menu */}
         <AnimatePresence>
           {showMenu && (
             <motion.div
@@ -125,43 +124,59 @@ const Navbar: React.FC = () => {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className='fixed inset-0 z-[70] bg-white flex flex-col md:hidden'
+              className='fixed inset-0 z-[70] bg-[#0F172A] flex flex-col md:hidden overflow-y-auto'
             >
-              <div className='flex items-center justify-between px-6 py-6 border-b border-slate-50'>
+              {/* Header */}
+              <div className='flex items-center justify-between px-6 py-6 border-b border-slate-800/50'>
                 <div className='flex items-center gap-2'>
-                  <div className='w-8 h-8 bg-teal-50 rounded-full flex items-center justify-center'><span className='text-teal-600 font-black'>+</span></div>
-                  <span className='font-black text-slate-900 tracking-tighter uppercase text-sm'>ADJ's CODEs</span>
+                  <div className='w-8 h-8 bg-teal-500/10 rounded-full flex items-center justify-center border border-teal-500/20'>
+                    <span className='text-teal-500 font-black'>+</span>
+                  </div>
+                  <span className='font-black text-white tracking-tighter uppercase text-sm'>ADJ's CODEs</span>
                 </div>
-                <div onClick={() => setShowMenu(false)} className='p-2 bg-slate-50 rounded-xl active:scale-90'><X size={24} weight="bold" className="text-slate-900" /></div>
+                <div onClick={() => setShowMenu(false)} className='p-2 bg-slate-800 rounded-xl active:scale-90 text-white'>
+                  <X size={24} weight="bold" />
+                </div>
               </div>
 
-              {/* Navigation Links */}
-              <ul className='flex flex-col gap-4 mt-8 px-8 pb-8 border-b border-slate-50'>
+              {/* Navigation Links - Scaled down for readability */}
+              <ul className='flex flex-col gap-1 mt-6 px-4'>
                 {['HOME', 'DOCTORS', 'ABOUT', 'CONTACT'].map((item) => (
                   <li
                     key={item}
                     onClick={() => handleNav(item === 'HOME' ? '/' : `/${item.toLowerCase()}`)}
-                    className='text-5xl font-black tracking-tighter text-slate-200 active:text-teal-500 transition-colors uppercase'
+                    className='text-3xl font-black tracking-tight text-slate-500 hover:text-white px-4 py-3 transition-colors uppercase'
                   >
                     {item}
                   </li>
                 ))}
               </ul>
 
-              {/* Account Section (Now showing on mobile) */}
-              {token && (
-                <div className='px-8 py-8 flex flex-col gap-6'>
-                  <p className='text-[10px] font-black text-slate-400 uppercase tracking-widest'>Patient Dashboard</p>
-                  <div onClick={() => handleNav('/my-profile')} className='flex items-center gap-4 text-slate-700 font-bold active:text-teal-500'><UserGear size={28} weight="duotone" className="text-teal-500" /> Medical Profile</div>
-                  <div onClick={() => handleNav('/my-appointments')} className='flex items-center gap-4 text-slate-700 font-bold active:text-teal-500'><CalendarCheck size={28} weight="duotone" className="text-teal-500" /> My Appointments</div>
-                  <div onClick={() => handleNav('/account-settings')} className='flex items-center gap-4 text-slate-700 font-bold active:text-teal-500'><Fingerprint size={28} weight="duotone" className="text-teal-500" /> Security & Credentials</div>
-                  <button onClick={logout} className='mt-4 flex items-center gap-4 text-rose-500 font-black uppercase text-xs tracking-widest active:scale-95 transition-transform'><SignOut size={22} weight="duotone" /> Sign Out</button>
-                </div>
-              )}
+              {/* Account Section */}
+              <div className='px-8 py-10 flex flex-col gap-5 mt-4 border-t border-slate-800/50 bg-slate-900/30'>
+                <p className='text-[10px] font-black text-teal-500/50 uppercase tracking-[3px] mb-2'>Patient Dashboard</p>
 
-              <div className='mt-auto p-8 bg-slate-50 border-t border-slate-100'>
-                <p className='text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1'>Health Hotline</p>
-                <p className='text-lg font-bold text-slate-900'>(+234) 704 203 0981</p>
+                {token ? (
+                  <>
+                    <div onClick={() => handleNav('/my-profile')} className='flex items-center gap-4 text-slate-300 font-bold active:text-teal-400'><UserGear size={24} weight="duotone" className="text-teal-500" /> Medical Profile</div>
+                    <div onClick={() => handleNav('/my-appointments')} className='flex items-center gap-4 text-slate-300 font-bold active:text-teal-400'><CalendarCheck size={24} weight="duotone" className="text-teal-500" /> My Appointments</div>
+
+                    {/* Consult Button */}
+                    <button onClick={() => handleNav('/doctors')} className='mt-4 w-full bg-teal-500 text-slate-900 py-4 rounded-2xl flex items-center justify-center gap-2 font-black uppercase text-xs tracking-widest active:scale-95 transition-all shadow-lg shadow-teal-500/20'>
+                      Start Consultation <ArrowUpRight size={18} weight="bold" />
+                    </button>
+
+                    <button onClick={logout} className='mt-6 flex items-center gap-3 text-rose-500 font-black uppercase text-[10px] tracking-[2px] active:opacity-70 transition-opacity'><SignOut size={20} weight="duotone" /> Sign Out Account</button>
+                  </>
+                ) : (
+                  <button onClick={() => handleNav('/login')} className='w-full bg-white text-slate-900 py-4 rounded-2xl font-black uppercase text-xs tracking-widest'>Login to Portal</button>
+                )}
+              </div>
+
+              {/* Footer Info */}
+              <div className='mt-auto p-8 bg-slate-900/50 border-t border-slate-800/50'>
+                <p className='text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1'>Clinical Support</p>
+                <p className='text-lg font-bold text-white tracking-tight'>(+234) 704 203 0981</p>
               </div>
             </motion.div>
           )}
