@@ -6,13 +6,28 @@ import Banner from '../components/Banner.js'
 
 const Home: React.FC = () => {
   return (
-    <div className='animate-reveal space-y-24 mb-20'>
+    // Adjusted space-y to scale from mobile (12) to desktop (24) for better flow
+    <div className='animate-reveal space-y-12 md:space-y-24 mb-10 md:mb-20 overflow-hidden'>
+
+      {/* Hero Header Section */}
       <Header />
-      <div className='max-w-7xl mx-auto px-6'>
+
+      {/* Main Content Wrapper - Responsive Horizontal Padding */}
+      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+
+        {/* Speciality Selection Grid/Menu */}
         <SpecialityMenu />
-        <TopDoctors />
+
+        {/* Featured Medical Professionals */}
+        <div className='mt-16 md:mt-24'>
+          <TopDoctors />
+        </div>
+
       </div>
+
+      {/* Promotional / Action Banner */}
       <Banner />
+
     </div>
   )
 }

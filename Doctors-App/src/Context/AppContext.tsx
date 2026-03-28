@@ -16,12 +16,12 @@ const AppContextProvider = (props: AppContextProviderProps) => {
   const [token, setToken] = useState<string>(localStorage.getItem('token') || '');
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [userData, setUserData] = useState<any>(false);
-  const [loading, setLoading] = useState<boolean>(false); // Start at false
+  const [loading, setLoading] = useState<boolean>(true);
   const [progress, setProgress] = useState<number>(0);
 
   const currency = '$';
 
-  // --- Helpers (The Logic) ---
+  // --- Helpers ---
   const calculateAge = (dob: string): number => {
     const today = new Date();
     const birthDate = new Date(dob);
@@ -46,33 +46,11 @@ const AppContextProvider = (props: AppContextProviderProps) => {
   // Fetch all doctors
   const getDoctorsData = async () => {
     try {
-      setLoading(true); // FEEDBACK: Trigger loading for mobile
       setProgress(30);
+      setLoading(true);
       const { data } = await axios.get(backendUrl + '/api/doctor/list');
       if (data.success) {
         setDoctors(data.doctors);
-        setProgress(70);
-      } else {
-        toast.error(data.message);
-      }
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-      setLoading(false); 
-      setProgress(100); // UI: End progress bar
-    }
-  };
-
-  // Fetch User Profile
-  const loadUserProfileData = async () => {
-    if (!token) return;
-    try {
-      setLoading(true); // FEEDBACK: Let mobile users know profile is loading
-      setProgress(40);
-      const { data } = await axios.get(backendUrl + '/api/user/get-profile', { headers: { token } });
-      if (data.success) {
-        setUserData(data.userData);
-        setProgress(80);
       } else {
         toast.error(data.message);
       }
@@ -84,9 +62,27 @@ const AppContextProvider = (props: AppContextProviderProps) => {
     }
   };
 
+  // Fetch User Profile
+  const loadUserProfileData = async () => {
+    if (!token) return;
+    try {
+      setProgress(40);
+      const { data } = await axios.get(backendUrl + '/api/user/get-profile', { headers: { token } });
+      if (data.success) {
+        setUserData(data.userData);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setProgress(100);
+    }
+  };
+
+  // Log Medication Dose (Supports Overdose Alert)
   const updateDose = async (appointmentId: string, medicineName: string, overdoseAlert: boolean = false) => {
     try {
-      setLoading(true);
       setProgress(40);
       const { data } = await axios.post(
         backendUrl + '/api/user/update-dose',
@@ -95,6 +91,7 @@ const AppContextProvider = (props: AppContextProviderProps) => {
       )
       if (data.success) {
         toast.success(data.message);
+        // We refresh profile data in case any user-level health stats changed
         loadUserProfileData();
         return true;
       } else {
@@ -105,16 +102,18 @@ const AppContextProvider = (props: AppContextProviderProps) => {
       toast.error(error.response?.data?.message || error.message);
       return false;
     } finally {
-      setLoading(false);
       setProgress(100);
     }
   };
 
   // --- Effects ---
+
+  // Initial Load
   useEffect(() => {
     getDoctorsData();
   }, []);
 
+  // Sync token and load user data on login/logout
   useEffect(() => {
     if (token) {
       localStorage.setItem('token', token);
@@ -125,6 +124,7 @@ const AppContextProvider = (props: AppContextProviderProps) => {
     }
   }, [token]);
 
+  // --- Context Value ---
   const value: AppContextType = {
     calculateAge,
     slotDateFormat,

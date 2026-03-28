@@ -10,6 +10,7 @@ import {
   RiMailLine,
   RiLock2Line,
   RiUserLine,
+  RiPulseFill,
   RiArrowRightLine,
   RiGoogleFill,
   RiAppleFill
@@ -30,7 +31,7 @@ const Login: React.FC = () => {
     onSuccess: async (tokenResponse) => {
       try {
         setProgress(30)
-        toast.info("Verifying credentials...")
+        toast.info("Verifying credentials with ADJ's CODEs...")
 
         const { data } = await axios.post(`${backendUrl}/api/user/google-auth`, {
           access_token: tokenResponse.access_token
@@ -53,7 +54,7 @@ const Login: React.FC = () => {
   })
 
   const handleAppleLogin = () => {
-    toast.error("Apple Sign-In is coming soon to ADJ's CODEs.")
+    toast.error("Apple Sign-In is currently in development for ADJ's CODEs.")
   }
 
   const onSubmitHandler = async (event: React.BaseSyntheticEvent) => {
@@ -69,7 +70,7 @@ const Login: React.FC = () => {
       if (data.success) {
         localStorage.setItem('token', data.token)
         setToken(data.token)
-        toast.success(`Access Granted`)
+        toast.success(`Access Granted to Patient Portal`)
       } else {
         toast.error(data.message)
       }
@@ -85,120 +86,94 @@ const Login: React.FC = () => {
   }, [token, navigate])
 
   return (
-    <div className='min-h-[85vh] flex items-center justify-center px-4 py-8 bg-slate-50/50'>
+    <div className='min-h-[90vh] flex items-center justify-center px-4 sm:px-8 md:px-12 py-12 bg-clinic-bg'>
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        // Adjusted padding and radius for mobile vs desktop
-        className='w-full max-w-md bg-white border border-slate-100 p-6 md:p-12 rounded-[32px] md:rounded-[48px] shadow-xl shadow-slate-200/50'
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        // Added max-w-lg for tablets to keep the form centered and readable
+        className='w-full max-w-md lg:max-w-lg bg-white border border-slate-100 p-6 sm:p-10 md:p-12 rounded-[40px] md:rounded-[48px] shadow-clinical'
       >
         {/* Header Branding */}
-        <div className='mb-8 text-center'>
-          <div className='inline-flex items-center gap-2 px-4 py-1.5 bg-teal-50 rounded-full text-teal-600 mb-6 border border-teal-100/30'>
-            <div className='w-4 h-4 bg-teal-600 rounded-full flex items-center justify-center text-white font-black text-[8px]'>+</div>
-            <span className='text-[9px] font-black uppercase tracking-[2px]'>ADJ's CODEs Security</span>
+        <div className='mb-8 md:mb-10 text-center'>
+          <div className='inline-flex items-center gap-2 px-5 py-2 bg-teal-50 rounded-full text-teal-600 mb-6 md:mb-8 border border-teal-100/50'>
+            <div className='w-5 h-5 bg-teal-600 rounded-full flex items-center justify-center text-white font-black text-[10px]'>+</div>
+            <span className='text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[2px] md:tracking-[2.5px]'>ADJ's CODEs Verified</span>
           </div>
 
-          <h2 className='text-2xl md:text-3xl font-black text-slate-900 mb-2 tracking-tight uppercase'>
-            {state === 'Sign Up' ? "Join Network" : "Patient Login"}
+          <h2 className='text-2xl sm:text-3xl font-black text-slate-900 mb-2 tracking-tight'>
+            {state === 'Sign Up' ? "Join the Network" : "Patient Access"}
           </h2>
-          <p className='text-slate-400 text-xs font-medium'>
+          <p className='text-slate-400 text-xs sm:text-sm font-medium px-2'>
             {state === 'Sign Up'
-              ? "Create your medical profile."
-              : "Secure access to your health records."}
+              ? "Create your ADJ's CODEs medical profile."
+              : "Secure medical data synchronization."}
           </p>
         </div>
 
-        {/* Social Auth Buttons */}
-        <div className='grid grid-cols-2 gap-3 mb-8'>
+        {/* Social Auth Buttons - Tab/Medium Screen optimization */}
+        <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 mb-8'>
           <button
             type="button"
             onClick={() => handleGoogleLogin()}
-            className='flex items-center justify-center gap-2 py-3 border border-slate-100 rounded-2xl hover:bg-slate-50 active:scale-95 transition-all text-slate-600 font-black text-[9px] uppercase tracking-wider'
+            className='flex items-center justify-center gap-3 py-3 md:py-3.5 border border-slate-100 rounded-2xl hover:bg-slate-50 active:scale-95 transition-all text-slate-600 font-black text-[10px] uppercase tracking-wider w-full'
           >
-            <RiGoogleFill size={16} className="text-teal-600" /> Google
+            <RiGoogleFill size={18} className="text-teal-600" /> Google
           </button>
           <button
             type="button"
             onClick={handleAppleLogin}
-            className='flex items-center justify-center gap-2 py-3 border border-slate-100 rounded-2xl hover:bg-slate-50 active:scale-95 transition-all text-slate-600 font-black text-[9px] uppercase tracking-wider'
+            className='flex items-center justify-center gap-3 py-3 md:py-3.5 border border-slate-100 rounded-2xl hover:bg-slate-50 active:scale-95 transition-all text-slate-600 font-black text-[10px] uppercase tracking-wider w-full'
           >
-            <RiAppleFill size={16} /> Apple
+            <RiAppleFill size={18} /> Apple
           </button>
         </div>
 
         <div className='relative mb-8'>
           <div className='absolute inset-0 flex items-center'><span className='w-full border-t border-slate-100'></span></div>
-          <div className='relative flex justify-center text-[8px] uppercase font-black tracking-[3px] text-slate-300'>
-            <span className='bg-white px-4'>Secure Portal</span>
+          <div className='relative flex justify-center text-[8px] md:text-[9px] uppercase font-black tracking-[3px] text-slate-300'>
+            <span className='bg-white px-4 md:px-6'>Official Registry</span>
           </div>
         </div>
 
-        {/* Form Section */}
-        <form onSubmit={onSubmitHandler} className='space-y-3.5'>
+        {/* Email Form */}
+        <form onSubmit={onSubmitHandler} className='space-y-4'>
           {state === 'Sign Up' && (
             <div className='relative group'>
-              <input 
-                type="text" 
-                placeholder="Full Name" 
-                className='w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-teal-500 focus:bg-white transition-all' 
-                onChange={(e) => setName(e.target.value)} 
-                value={name} 
-                required 
-              />
-              <RiUserLine size={18} className='absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-600 transition-colors' />
+              <input type="text" placeholder="Your Full Name" className='medical-input pl-14 w-full focus:border-teal-600 transition-all text-sm h-12 md:h-14' onChange={(e) => setName(e.target.value)} value={name} required />
+              <RiUserLine size={20} className='absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-teal-600 transition-colors' />
             </div>
           )}
 
           <div className='relative group'>
-            <input 
-              type="email" 
-              placeholder="Email Address" 
-              className='w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-teal-500 focus:bg-white transition-all' 
-              onChange={(e) => setEmail(e.target.value)} 
-              value={email} 
-              required 
-            />
-            <RiMailLine size={18} className='absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-600 transition-colors' />
+            <input type="email" placeholder="patient@adjscodes.com" className='medical-input pl-14 w-full focus:border-teal-600 transition-all text-sm h-12 md:h-14' onChange={(e) => setEmail(e.target.value)} value={email} required />
+            <RiMailLine size={20} className='absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-teal-600 transition-colors' />
           </div>
 
           <div className='relative group'>
-            <input 
-              type="password" 
-              placeholder="Password" 
-              className='w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-teal-500 focus:bg-white transition-all' 
-              onChange={(e) => setPassword(e.target.value)} 
-              value={password} 
-              required 
-            />
-            <RiLock2Line size={18} className='absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-600 transition-colors' />
+            <input type="password" placeholder="Security Password" className='medical-input pl-14 w-full focus:border-teal-600 transition-all text-sm h-12 md:h-14' onChange={(e) => setPassword(e.target.value)} value={password} required />
+            <RiLock2Line size={20} className='absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-teal-600 transition-colors' />
           </div>
 
           {state === 'Login' && (
-            <div className='flex justify-end'>
-              <Link to='/forgot-password' title="Reset Password" className='text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-teal-600 transition-colors'>
-                Forgot Credentials?
+            <div className='flex justify-end mt-1'>
+              <Link to='/forgot-password' className='text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-teal-600 transition-colors'>
+                Reset Access Credentials?
               </Link>
             </div>
           )}
 
-          <button 
-            type='submit' 
-            className='w-full flex items-center justify-center gap-3 mt-4 bg-slate-900 text-white rounded-2xl py-4 text-[10px] font-black uppercase tracking-widest hover:bg-teal-600 active:scale-[0.98] transition-all shadow-lg shadow-slate-200'
-          >
-            {state === 'Sign Up' ? 'Initialize' : 'Authorize'}
-            <RiArrowRightLine size={16} />
+          <button type='submit' className='w-full flex items-center justify-center gap-3 mt-4 bg-slate-900 hover:bg-teal-600 active:scale-[0.98] transition-all py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white shadow-lg'>
+            {state === 'Sign Up' ? 'Initialize Profile' : 'Authorize Session'}
+            <RiArrowRightLine size={18} />
           </button>
         </form>
 
-        <div className='mt-8 text-center border-t border-slate-50 pt-6'>
-          <p className='text-slate-400 text-[10px] font-bold uppercase tracking-widest'>
-            {state === 'Sign Up' ? 'Member?' : 'New Patient?'}
-            <span 
-              onClick={() => setState(state === 'Sign Up' ? 'Login' : 'Sign Up')} 
-              className='ml-2 text-teal-600 cursor-pointer hover:underline font-black'
-            >
-              {state === 'Sign Up' ? 'Log In' : 'Sign Up'}
+        {/* Footer Toggle */}
+        <div className='mt-8 md:mt-10 text-center border-t border-slate-50 pt-6 md:pt-8'>
+          <p className='text-slate-400 text-[9px] md:text-[10px] font-bold uppercase tracking-widest leading-relaxed'>
+            {state === 'Sign Up' ? 'Already in the registry?' : 'New patient?'}
+            <span onClick={() => setState(state === 'Sign Up' ? 'Login' : 'Sign Up')} className='block sm:inline-block sm:ml-2 text-teal-600 cursor-pointer hover:underline font-black mt-2 sm:mt-0'>
+              {state === 'Sign Up' ? 'Authorize Access' : 'Register Now'}
             </span>
           </p>
         </div>
