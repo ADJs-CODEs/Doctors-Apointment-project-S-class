@@ -108,6 +108,8 @@ export interface AppContextType {
   slotDateFormat: (slotDate: string) => string;
   currency: string;
   backendUrl: string; // Added this as it is used in your components
+  progress: number;
+  setProgress: React.Dispatch<React.SetStateAction<number>>;
 }
 
 export interface ProviderProps {

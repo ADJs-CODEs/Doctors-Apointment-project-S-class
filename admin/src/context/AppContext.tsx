@@ -1,4 +1,4 @@
-import { createContext, } from "react";
+import { createContext, useState } from "react"; // Added useState
 import type { ReactNode } from "react";
 import type { AppContextType } from "../types/index.js";
 
@@ -11,6 +11,9 @@ interface AppContextProviderProps {
 const AppContextProvider = ({ children }: AppContextProviderProps) => {
 
     const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
+    // --- Progress state for the loading bar ---
+    const [progress, setProgress] = useState<number>(0);
 
     const calculateAge = (dob: string): number => {
         const today = new Date();
@@ -40,7 +43,10 @@ const AppContextProvider = ({ children }: AppContextProviderProps) => {
         backendUrl,
         calculateAge,
         slotDateFormat,
-        currency
+        currency,
+        // Passing state to the provider
+        progress,
+        setProgress
     };
 
     return (

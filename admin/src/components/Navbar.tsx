@@ -2,17 +2,22 @@ import React, { useContext } from 'react'
 import { AdminContext } from '../context/AdminContext.js'
 import { useNavigate } from 'react-router-dom'
 import { DoctorContext } from '../context/DoctorContext.js'
+import { AppContext } from '../context/AppContext.js' // Added to access progress
 import { RiLogoutCircleRLine, RiShieldUserLine, RiStethoscopeLine } from '@remixicon/react'
-import type { AdminContextType, DoctorContextType } from '../types/index.js'
+import type { AdminContextType, DoctorContextType, AppContextType } from '../types/index.js'
 import { motion } from 'framer-motion'
 
 const Navbar: React.FC = () => {
   const { aToken, setAToken } = useContext(AdminContext) as AdminContextType
   const { dToken, setDToken } = useContext(DoctorContext) as DoctorContextType
+  // 1. Accessing setProgress from AppContext
+  const { setProgress } = useContext(AppContext) as AppContextType
 
   const navigate = useNavigate()
 
+  // 2. Logic remains identical, just added progress bar triggers
   const logout = (): void => {
+    setProgress(40)
     navigate('/')
     if (aToken) {
       setAToken('')
@@ -22,6 +27,14 @@ const Navbar: React.FC = () => {
       setDToken('')
       localStorage.removeItem('dToken')
     }
+    setTimeout(() => setProgress(100), 500)
+  }
+
+  // 3. Helper for navigation clicks
+  const handleLogoClick = () => {
+    setProgress(40)
+    navigate(aToken ? '/admin-dashboard' : '/doctor-dashboard')
+    setTimeout(() => setProgress(100), 500)
   }
 
   return (
@@ -31,7 +44,8 @@ const Navbar: React.FC = () => {
       <div className='flex items-center gap-6'>
         <motion.div
           whileHover={{ scale: 1.02 }}
-          onClick={() => navigate(aToken ? '/admin-dashboard' : '/doctor-dashboard')}
+          whileTap={{ scale: 0.95 }} // Added for mobile responsiveness
+          onClick={handleLogoClick}
           className='flex items-center gap-4 cursor-pointer'
         >
           {/* Scaled Up Cross Token */}
@@ -70,9 +84,10 @@ const Navbar: React.FC = () => {
           <p className='text-xs font-bold text-slate-900'>Active Now</p>
         </div>
 
+        {/* Added active:scale-95 for better mobile "click" feedback */}
         <button
           onClick={logout}
-          className='group flex items-center gap-2 bg-slate-50 hover:bg-rose-50 text-slate-600 hover:text-rose-500 px-7 py-3 rounded-2xl border border-slate-100 hover:border-rose-100 transition-all duration-300 font-black text-[10px] uppercase tracking-widest'
+          className='group flex items-center gap-2 bg-slate-50 hover:bg-rose-50 text-slate-600 hover:text-rose-500 px-7 py-3 rounded-2xl border border-slate-100 hover:border-rose-100 transition-all duration-300 font-black text-[10px] uppercase tracking-widest active:scale-95'
         >
           Logout
           <RiLogoutCircleRLine size={16} className='group-hover:translate-x-1 transition-transform' />
