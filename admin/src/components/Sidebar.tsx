@@ -2,15 +2,14 @@ import React, { useContext } from 'react'
 import { AdminContext } from '../context/AdminContext.js'
 import { NavLink } from 'react-router-dom';
 import { DoctorContext } from '../context/DoctorContext.js';
-import { AppContext } from '../context/AppContext.js'; // Added for progress
+import { AppContext } from '../context/AppContext.js';
 import {
   RiDashboard3Line,
   RiCalendarCheckLine,
   RiUserAddLine,
   RiGroupLine,
-  RiUser3Line,
-  RiSettings4Line
-} from '@remixicon/react';
+  RiUser3Line
+} from '@remixicon/react'; // Removed RiSettings4Line import
 import type { AdminContextType, DoctorContextType, AppContextType } from '../types/index.js';
 
 const Sidebar: React.FC = () => {
@@ -18,7 +17,6 @@ const Sidebar: React.FC = () => {
   const { dToken } = useContext(DoctorContext) as DoctorContextType;
   const { setProgress } = useContext(AppContext) as AppContextType;
 
-  // Refined style variables - Added active:scale for mobile responsiveness
   const activeClass = "bg-slate-900 text-white shadow-xl lg:translate-x-2";
   const inactiveClass = "text-slate-500 hover:bg-slate-50 hover:text-slate-900";
   const baseClass = "flex items-center gap-4 py-3 md:py-4 px-4 md:px-6 cursor-pointer transition-all duration-300 rounded-2xl mx-1 md:mx-4 mb-2 group active:scale-95";
@@ -29,10 +27,6 @@ const Sidebar: React.FC = () => {
   };
 
   return (
-    /* RESPONSIVE LOGIC:
-      - Mobile/Tablet: Horizontal scrollable bar at the top, width is 100%.
-      - Large Screens (lg): Vertical sticky sidebar with 72 (288px) width.
-    */
     <div className='w-full lg:w-72 bg-white border-b lg:border-r border-slate-100 py-4 lg:py-10 shrink-0 sticky top-[72px] lg:min-h-screen z-40 overflow-x-auto lg:overflow-x-visible'>
 
       <div className='flex lg:flex-col items-center lg:items-stretch min-w-max lg:min-w-full px-4 lg:px-0'>
@@ -93,14 +87,6 @@ const Sidebar: React.FC = () => {
             </ul>
           </div>
         )}
-
-        {/* --- System Footer Settings --- */}
-        <div className='lg:absolute lg:bottom-10 lg:w-full px-2 lg:px-4 ml-auto lg:ml-0'>
-          <button onClick={handleLinkClick} className='flex items-center gap-4 py-3 lg:py-4 px-4 lg:px-6 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-2xl transition-all group active:scale-95'>
-            <RiSettings4Line size={22} className='group-hover:rotate-45 transition-transform duration-500' />
-            <p className='hidden lg:block text-[11px] font-black uppercase tracking-widest'>Settings</p>
-          </button>
-        </div>
 
       </div>
     </div>

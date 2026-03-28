@@ -7,13 +7,11 @@ import type { DoctorContextType, AppContextType, Doctor } from '../../types/inde
 
 const DoctorProfile: React.FC = () => {
   const { dToken, profileData, getProfileData, backendUrl } = useContext(DoctorContext) as DoctorContextType
-  const { currency } = useContext(AppContext) as AppContextType
+  const { currency, setProgress } = useContext(AppContext) as AppContextType
 
   const [isEdit, setIsEdit] = useState<boolean>(false)
-  // Initialize tempData as null, but we will handle the fallback logic safely
   const [tempData, setTempData] = useState<Doctor | null>(null)
 
-  // Sync local state when profileData changes
   useEffect(() => {
     if (profileData) {
       setTempData(profileData)
@@ -24,6 +22,7 @@ const DoctorProfile: React.FC = () => {
     try {
       if (!tempData) return;
 
+      setProgress(30); // Start progress
       const payload = {
         address: tempData.address,
         fees: tempData.fees,
@@ -37,13 +36,17 @@ const DoctorProfile: React.FC = () => {
       )
 
       if (data.success) {
+        setProgress(70);
         toast.success(data.message)
         setIsEdit(false)
         await getProfileData()
+        setProgress(100); // Complete progress
       } else {
+        setProgress(100);
         toast.error(data.message)
       }
     } catch (error: any) {
+      setProgress(100);
       toast.error(error.response?.data?.message || error.message)
     }
   }
@@ -54,36 +57,34 @@ const DoctorProfile: React.FC = () => {
     }
   }, [profileData, isEdit])
 
-  // CRITICAL FIX: If we are editing but tempData isn't ready, fallback to profileData 
-  // so the screen doesn't go white.
   const displayData = ((isEdit && tempData) ? tempData : profileData) as Doctor;
 
-  // Basic guard: only return null if we have absolutely no data at all
   if (!profileData) return null;
 
   return (
-    <div className='p-4 sm:p-10 bg-slate-50/50 min-h-screen'>
+    <div className='p-4 sm:p-6 md:p-10 bg-slate-50/50 min-h-screen animate-reveal'>
       <div className='max-w-4xl mx-auto'>
-        <div className='flex flex-col md:flex-row gap-8 bg-white p-8 rounded-[40px] shadow-sm border border-slate-100'>
+        <div className='flex flex-col md:flex-row gap-6 md:gap-8 bg-white p-6 sm:p-8 md:p-10 rounded-[32px] md:rounded-[40px] shadow-sm border border-slate-100'>
 
-          <div className='w-full md:w-64'>
-            <img className='bg-primary/10 w-full aspect-square object-cover rounded-3xl' src={displayData.image} alt="" />
+          {/* Image Container - Responsive sizing */}
+          <div className='w-full md:w-64 flex justify-center md:block'>
+            <img className='bg-primary/10 w-48 h-48 sm:w-64 sm:h-64 md:w-full md:h-auto aspect-square object-cover rounded-3xl shadow-inner' src={displayData.image} alt="" />
           </div>
 
-          <div className='flex-1'>
-            <h1 className='text-3xl font-black text-slate-900'>{displayData.name}</h1>
-            <p className='text-slate-500 font-bold'>{displayData.degree} — {displayData.speciality}</p>
+          <div className='flex-1 text-center md:text-left'>
+            <h1 className='text-2xl sm:text-3xl font-black text-slate-900'>{displayData.name}</h1>
+            <p className='text-slate-500 font-bold text-sm sm:text-base'>{displayData.degree} — {displayData.speciality}</p>
 
-            <div className='grid grid-cols-1 sm:grid-cols-2 gap-6 mt-8 pt-8 border-t border-slate-50'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6 md:mt-8 pt-6 md:pt-8 border-t border-slate-50 text-left'>
 
               {/* --- Fees --- */}
-              <div>
-                <p className='text-xs font-black uppercase text-slate-400 mb-2'>Appointment Fee</p>
+              <div className='active:scale-[0.98] transition-transform'>
+                <p className='text-[10px] font-black uppercase text-slate-400 mb-2 tracking-wider'>Appointment Fee</p>
                 <div className='flex items-center gap-2 text-xl font-black text-slate-900'>
                   <span>{currency}</span>
                   {isEdit && tempData ? (
                     <input
-                      className='w-24 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-primary'
+                      className='w-full sm:w-24 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all'
                       type="number"
                       onChange={(e) => setTempData({ ...tempData, fees: Number(e.target.value) })}
                       value={tempData.fees}
@@ -95,25 +96,25 @@ const DoctorProfile: React.FC = () => {
               </div>
 
               {/* --- Address --- */}
-              <div>
-                <p className='text-xs font-black uppercase text-slate-400 mb-2'>Practice Address</p>
+              <div className='active:scale-[0.98] transition-transform'>
+                <p className='text-[10px] font-black uppercase text-slate-400 mb-2 tracking-wider'>Practice Address</p>
                 {isEdit && tempData ? (
                   <div className='flex flex-col gap-2'>
                     <input
-                      className='bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-sm outline-none'
+                      className='w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all'
                       type="text"
                       onChange={(e) => setTempData({ ...tempData, address: { ...tempData.address, line1: e.target.value } })}
                       value={tempData.address.line1}
                     />
                     <input
-                      className='bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-sm outline-none'
+                      className='w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all'
                       type="text"
                       onChange={(e) => setTempData({ ...tempData, address: { ...tempData.address, line2: e.target.value } })}
                       value={tempData.address.line2}
                     />
                   </div>
                 ) : (
-                  <div className='text-sm text-slate-600 font-medium'>
+                  <div className='text-sm text-slate-600 font-medium leading-relaxed'>
                     <p>{profileData.address.line1}</p>
                     <p>{profileData.address.line2}</p>
                   </div>
@@ -122,27 +123,27 @@ const DoctorProfile: React.FC = () => {
             </div>
 
             {/* --- Availability --- */}
-            <div className='flex items-center gap-3 mt-8 p-4 bg-slate-50 rounded-2xl w-fit'>
+            <div className='flex items-center gap-3 mt-8 p-4 bg-slate-50 rounded-2xl w-full sm:w-fit active:scale-95 transition-all cursor-pointer'>
               <input
-                className='w-5 h-5 accent-primary cursor-pointer'
+                className='w-5 h-5 accent-teal-600 cursor-pointer'
                 onChange={() => isEdit && tempData && setTempData({ ...tempData, available: !tempData.available })}
                 checked={isEdit && tempData ? tempData.available : profileData.available}
                 type="checkbox"
                 id='available'
               />
-              <label htmlFor="available" className='text-sm font-bold text-slate-700 cursor-pointer'>
+              <label htmlFor="available" className='text-sm font-bold text-slate-700 cursor-pointer flex-1'>
                 Accepting New Patients
               </label>
             </div>
 
-            <div className='mt-10'>
+            <div className='mt-8 md:mt-10 flex flex-col sm:flex-row gap-3'>
               {isEdit ? (
-                <div className='flex gap-3'>
-                  <button onClick={updateProfile} className='bg-primary text-white px-8 py-3 rounded-2xl font-black uppercase text-[10px] tracking-[2px] shadow-lg shadow-primary/20 hover:scale-105 transition-transform'>Save</button>
-                  <button onClick={() => { setIsEdit(false); setTempData(profileData); }} className='bg-slate-200 text-slate-600 px-8 py-3 rounded-2xl font-black uppercase text-[10px] tracking-[2px]'>Cancel</button>
-                </div>
+                <>
+                  <button onClick={updateProfile} className='w-full sm:w-auto bg-teal-600 text-white px-8 py-3.5 rounded-2xl font-black uppercase text-[10px] tracking-[2px] shadow-lg shadow-teal-500/20 active:scale-95 transition-all'>Save Changes</button>
+                  <button onClick={() => { setIsEdit(false); setTempData(profileData); }} className='w-full sm:w-auto bg-slate-200 text-slate-600 px-8 py-3.5 rounded-2xl font-black uppercase text-[10px] tracking-[2px] active:scale-95 transition-all'>Cancel</button>
+                </>
               ) : (
-                <button onClick={() => setIsEdit(true)} className='bg-slate-900 text-white px-10 py-3 rounded-2xl font-black uppercase text-[10px] tracking-[2px] shadow-lg shadow-slate-900/20 hover:scale-105 transition-transform'>Edit Profile</button>
+                <button onClick={() => setIsEdit(true)} className='w-full sm:w-auto bg-slate-900 text-white px-10 py-3.5 rounded-2xl font-black uppercase text-[10px] tracking-[2px] shadow-lg shadow-slate-900/20 active:scale-95 transition-all'>Edit Profile</button>
               )}
             </div>
           </div>
