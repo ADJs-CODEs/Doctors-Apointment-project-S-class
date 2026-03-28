@@ -1,9 +1,22 @@
-import React, { useContext } from 'react'
+import React, { useState } from 'react'
 import { Route, Routes } from 'react-router-dom'
-// ... (your existing imports)
-import { AppContext } from './Context/AppContext.js';
-import type { AppContextType } from './types/index.js';
-import LoadingBar from 'react-top-loading-bar';
+import Home from './pages/Home.js'
+import Doctors from './pages/Doctors.js'
+import Login from './pages/Login.js'
+import About from './pages/About.js'
+import Contact from './pages/Contact.js'
+import MyProfile from './pages/MyProfile.js'
+import MyAppointments from './pages/MyAppointments.js'
+import Appointments from './pages/Appointments.js'
+import Navbar from './components/Navbar.js'
+import Footer from './components/Footer.js'
+import { Toaster } from 'sonner'
+import LoadingBar from 'react-top-loading-bar'
+import Verify from './pages/Verify.js'
+import MedHistory from './pages/MedHistory.js'
+import AccountSettings from './pages/AccountSetting.js'
+import ForgotPassword from './pages/ForgotPassword.js'
+import ResetPassword from './pages/ResetPassword.js'
 
 const App: React.FC = () => {
   // Pull the progress state from your Context so it actually moves!
