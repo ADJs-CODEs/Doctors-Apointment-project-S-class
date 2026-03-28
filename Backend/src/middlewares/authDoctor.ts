@@ -1,6 +1,8 @@
 import jwt from 'jsonwebtoken'
 import { type Request, type Response, type NextFunction } from 'express';
 
+//Doctor Authentication middleware
+
 const authDoctor = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { dtoken } = req.headers

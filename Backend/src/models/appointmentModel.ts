@@ -1,7 +1,8 @@
 import mongoose, { Document, Model, Schema } from 'mongoose'
 
 interface IMessage {
-  sender: 'Doctor' | 'System';
+
+  sender: 'Doctor' | 'System'; //only these two are allowed to send the message or use the message function 
   content: string;
   sentAt: Date;
   isRead: boolean;
@@ -88,6 +89,7 @@ const appointmentSchema: Schema<IAppointment> = new mongoose.Schema({
     }],
     doctorNotes: { type: String, default: "" }
   }
+  //used time stamp to creates a cratedAt and an updatedAt value 
 }, { minimize: false, timestamps: true })
 
 const appointmentModel: Model<IAppointment> = mongoose.models.appointment || mongoose.model<IAppointment>('appointment', appointmentSchema)

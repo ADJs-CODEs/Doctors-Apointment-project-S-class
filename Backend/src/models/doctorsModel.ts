@@ -17,6 +17,7 @@ export interface IDoctor extends Document {
     line2: string;
   };
   date: number;
+  //Record<string, string[]> storing my key and value as strings, key which is the date and value which is the time.
   slots_booked: Record<string, string[]>;
 }
 
@@ -74,7 +75,7 @@ const doctorSchema: Schema<IDoctor> = new mongoose.Schema({
     type: Object,
     default: {},
   },
-
+//Minimize false since i'm leaving my slots booked as an empty object to prevent mongoose from deleting it to save space and causing a front end crash, i used minimize false
 }, { minimize: false })
 
 const doctorModel: Model<IDoctor> = mongoose.models.doctor || mongoose.model<IDoctor>('doctor', doctorSchema)
