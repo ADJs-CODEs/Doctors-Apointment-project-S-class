@@ -17,6 +17,7 @@ import MedHistory from './pages/MedHistory.js'
 import AccountSettings from './pages/AccountSetting.js'
 import ForgotPassword from './pages/ForgotPassword.js'
 import ResetPassword from './pages/ResetPassword.js'
+import { AppContext } from './Context/AppContext.js'
 
 const App: React.FC = () => {
   // Pull the progress state from your Context so it actually moves!
