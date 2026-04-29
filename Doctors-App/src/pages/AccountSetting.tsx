@@ -1,20 +1,20 @@
-import React, { useState, useContext } from 'react'
-import { AppContext } from '../Context/AppContext'
-import axios from 'axios'
+import React, { useState, useContext } from 'react';
+import { AppContext } from '../Context/AppContext.js';
 import { toast } from 'sonner'
 import { RiLockPasswordLine, RiDeleteBin6Line, RiShieldUserLine } from '@remixicon/react'
+import axiosInstance from '../utils/axiosInstance.js'
+import { API_PATHS } from '../utils/apiPath.js'
 
 const AccountSettings = () => {
-  const { backendUrl, token, setToken } = useContext(AppContext)
+  const { token, setToken } = useContext(AppContext)
   const [oldPassword, setOldPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const { data } = await axios.post(`${backendUrl}/api/user/change-password`,
-        { oldPassword, newPassword },
-        { headers: { token } }
+      const { data } = await axiosInstance.post(API_PATHS.AUTH.HANDLE_CHANGE_PASSWORD,
+        { oldPassword, newPassword }
       )
       if (data.success) {
         toast.success(data.message)
@@ -30,7 +30,7 @@ const AccountSettings = () => {
   const handleDeleteAccount = async () => {
     if (window.confirm("WARNING: This will permanently delete your medical records. Proceed?")) {
       try {
-        const { data } = await axios.post(`${backendUrl}/api/user/delete-account`, {}, { headers: { token } })
+        const { data } = await axiosInstance.post(API_PATHS.AUTH.HANDLE_DELETE_ACCOUNT, {})
         if (data.success) {
           setToken(false)
           localStorage.removeItem('token')

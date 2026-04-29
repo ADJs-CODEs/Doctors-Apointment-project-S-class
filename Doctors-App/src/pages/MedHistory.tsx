@@ -1,19 +1,26 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { AppContext } from '../Context/AppContext.js'
-import axios from 'axios'
 import type { AppContextType, Appointment } from '../types/index.js'
 import { motion } from 'framer-motion'
-import { RiMedicineBottleLine, RiHistoryLine, RiHeartPulseLine, RiDashboardLine, RiTempHotLine } from "@remixicon/react"
+import {
+  RiMedicineBottleLine,
+  RiHistoryLine,
+  RiHeartPulseLine,
+  RiDashboardLine,
+  RiTempHotLine
+} from "@remixicon/react"
+import axiosInstance from '../utils/axiosInstance.js'
+import { API_PATHS } from '../utils/apiPath.js'
 
 const MedHistory: React.FC = () => {
-  const { token, backendUrl, setProgress } = useContext(AppContext) as AppContextType
+  const { token, setProgress } = useContext(AppContext) as AppContextType
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [latestVitals, setLatestVitals] = useState<any>(null)
 
   const fetchData = async () => {
     try {
       setProgress(30) // Progress bar start
-      const { data } = await axios.get(backendUrl + '/api/user/appointments', { headers: { token } })
+      const { data } = await axiosInstance.get(API_PATHS.USER.FETCH_APPOINTMENT)
       setProgress(70) // Progress bar mid
       if (data.success) {
         setAppointments(data.appointments.reverse())

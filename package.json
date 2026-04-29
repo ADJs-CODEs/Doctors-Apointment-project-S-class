@@ -1,5 +1,8 @@
 {
   "devDependencies": {
     "tsx": "^4.21.0"
+  },
+  "dependencies": {
+    "react-hot-toast": "^2.6.0"
   }
 }

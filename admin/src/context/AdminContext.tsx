@@ -1,8 +1,9 @@
 import { createContext, useState, useCallback } from "react";
 import type { ReactNode } from "react"
-import axios from 'axios';
 import { toast } from 'sonner';
 import type { AdminContextType, Doctor, Appointment } from "../types/index.js";
+import axiosInstance from "../utils/axiosInstance.js";
+import { API_PATHS } from "../utils/apiPath.js";
 
 export const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
@@ -18,29 +19,29 @@ const AdminContextProvider = ({ children }: AdminContextProviderProps) => {
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
-  // 1. Stable Get All Doctors
+  // Get All Doctors
   const getAllDoctors = useCallback(async () => {
     try {
-      const { data } = await axios.post(backendUrl + '/api/admin/all-doctors', {}, { headers: { aToken } });
+      const { data } = await axiosInstance.post(API_PATHS.ADMIN.GET_ALL_DOCTORS);
       if (data.success) {
         setDoctors(data.doctors);
       } else {
         toast.error(data.message);
       }
     } catch (error: any) {
-      // 🛡️ Guard against showing technical JS errors in the toast
       const msg = error.response?.data?.message || "Failed to fetch doctors";
       toast.error(msg);
     }
   }, [aToken, backendUrl]);
 
-  // 2. Stable Change Availability
+  //  Change Availability
   const changeAvailability = useCallback(async (docId: string) => {
     try {
-      const { data } = await axios.post(backendUrl + '/api/admin/change-availability', { docId }, { headers: { aToken } });
+      const { data } = await axiosInstance.post(API_PATHS.ADMIN.CHANGE_AVAILABILITY, { docId });
       if (data.success) {
         toast.success(data.message);
-        // We wait for the state to refresh
+
+        // Awaiting state to refresh
         await getAllDoctors();
       } else {
         toast.error(data.message);
@@ -51,9 +52,10 @@ const AdminContextProvider = ({ children }: AdminContextProviderProps) => {
     }
   }, [aToken, backendUrl, getAllDoctors]);
 
+  // Get All Appointment
   const getAllAppointments = useCallback(async () => {
     try {
-      const { data } = await axios.get(backendUrl + '/api/admin/appointments', { headers: { aToken } });
+      const { data } = await axiosInstance.get(API_PATHS.ADMIN.GET_ALL_APPOINTMENT);
       if (data.success) {
         setAppointments(data.appointments);
       } else {
@@ -64,9 +66,10 @@ const AdminContextProvider = ({ children }: AdminContextProviderProps) => {
     }
   }, [aToken, backendUrl]);
 
+  // Get Dashdata
   const getDashData = useCallback(async () => {
     try {
-      const { data } = await axios.get(backendUrl + '/api/admin/dashboard', { headers: { aToken } });
+      const { data } = await axiosInstance.get(API_PATHS.ADMIN.GET_DASH_DATA);
       if (data.success) {
         setDashData(data.dashData);
       } else {
@@ -77,9 +80,10 @@ const AdminContextProvider = ({ children }: AdminContextProviderProps) => {
     }
   }, [aToken, backendUrl]);
 
+  //Cancel Appointment
   const cancelAppointment = useCallback(async (appointmentId: string) => {
     try {
-      const { data } = await axios.post(backendUrl + '/api/admin/cancel-appointment', { appointmentId }, { headers: { aToken } });
+      const { data } = await axiosInstance.post(API_PATHS.ADMIN.CANCEL_APPOINTMENT, { appointmentId });
       if (data.success) {
         toast.success(data.message);
         getAllAppointments();
@@ -92,13 +96,10 @@ const AdminContextProvider = ({ children }: AdminContextProviderProps) => {
     }
   }, [aToken, backendUrl, getAllAppointments, getDashData]);
 
+  //Delete Doctor
   const deleteDoctor = async (docId: string): Promise<void> => {
     try {
-      const { data } = await axios.post(
-        `${backendUrl}/api/admin/delete-doctor`,
-        { docId },
-        { headers: { aToken } }
-      );
+      const { data } = await axiosInstance.post(API_PATHS.ADMIN.DELETE_DOCTOR, { docId });
 
       if (data.success) {
         toast.success(data.message);

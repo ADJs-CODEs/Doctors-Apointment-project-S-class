@@ -5,11 +5,17 @@ import { type Request, type Response, type NextFunction } from 'express'
 
 const authUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-
-    const { token } = req.headers
-    if (!token) {
-      return res.json({ success: false, message: 'Not Authorized Login Again' })
+    const authHeader = req.headers.authorization
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ success: false, message: "unauthorized user, Login again" })
     }
+
+    const token = authHeader.split(" ")[1]
+
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'Not Authorized Login Again' })
+    }
+
     const token_decode = jwt.verify(token as string, process.env.JWT_SECRET as string) as { id: string }
 
     if (!req.body) { req.body = {} }
@@ -22,7 +28,7 @@ const authUser = async (req: Request, res: Response, next: NextFunction) => {
 
   } catch (error: any) {
     console.log("User Auth Error:", error)
-    res.json({ success: false, message: error.message })
+    res.status(401).json({ success: false, message: error.message })
   }
 }
 

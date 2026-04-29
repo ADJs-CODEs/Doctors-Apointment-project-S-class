@@ -1,12 +1,13 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { AppContext } from '../../context/AppContext.js'
 import { DoctorContext } from '../../context/DoctorContext.js'
-import axios from 'axios'
 import { toast } from 'sonner'
 import type { DoctorContextType, AppContextType, Doctor } from '../../types/index.js'
+import axiosInstance from '../../utils/axiosInstance.js'
+import { API_PATHS } from '../../utils/apiPath.js'
 
 const DoctorProfile: React.FC = () => {
-  const { dToken, profileData, getProfileData, backendUrl } = useContext(DoctorContext) as DoctorContextType
+  const { profileData, getProfileData } = useContext(DoctorContext) as DoctorContextType
   const { currency, setProgress } = useContext(AppContext) as AppContextType
 
   const [isEdit, setIsEdit] = useState<boolean>(false)
@@ -29,11 +30,7 @@ const DoctorProfile: React.FC = () => {
         available: tempData.available
       }
 
-      const { data } = await axios.post(
-        `${backendUrl}/api/doctor/update-profile`,
-        payload,
-        { headers: { dtoken: dToken } }
-      )
+      const { data } = await axiosInstance.post(API_PATHS.AUTH.GET_PROFILE, payload)
 
       if (data.success) {
         setProgress(70);
@@ -64,11 +61,11 @@ const DoctorProfile: React.FC = () => {
   return (
     <div className='p-4 sm:p-6 md:p-10 bg-slate-50/50 min-h-screen animate-reveal'>
       <div className='max-w-4xl mx-auto'>
-        <div className='flex flex-col md:flex-row gap-6 md:gap-8 bg-white p-6 sm:p-8 md:p-10 rounded-[32px] md:rounded-[40px] shadow-sm border border-slate-100'>
+        <div className='flex flex-col md:flex-row gap-6 md:gap-8 bg-white p-6 sm:p-8 md:p-10 rounded-4xl md:rounded-[40px] shadow-sm border border-slate-100'>
 
-          {/* Image Container - Responsive sizing */}
+          {/* Image Container - Responsive si*/}
           <div className='w-full md:w-64 flex justify-center md:block'>
-            <img className='bg-primary/10 w-48 h-48 sm:w-64 sm:h-64 md:w-full md:h-auto aspect-square object-cover rounded-3xl shadow-inner' src={displayData.image} alt="" />
+            <img className='bg-primary/10 w-48 h-48 sm:w-64 sm:h-64 md:w-full md:h-auto aspect-square object-cover rounded-3xl shadow-inner' src={displayData.image.replace('/upload/', '/upload/f_jpg,q_auto:best/')} alt="" />
           </div>
 
           <div className='flex-1 text-center md:text-left'>

@@ -10,9 +10,11 @@ import {
   RiHeartPulseLine,
   RiTimeLine,
   RiTempHotLine,
-  RiDeleteBin6Line
+  RiDeleteBin6Line,
+  RiCheckboxCircleFill,
+  RiCloseCircleFill
 } from "@remixicon/react"
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, progress } from 'framer-motion'
 import { toast } from 'sonner'
 
 const DoctorDashboard: React.FC = () => {
@@ -34,11 +36,31 @@ const DoctorDashboard: React.FC = () => {
   }])
 
   useEffect(() => {
-    if (dToken) {
-      setProgress(40)
-      getDashData().finally(() => setProgress(100))
-    }
-  }, [dToken, getDashData])
+    let isMounted = true;
+
+
+
+    const loadDashboard = async () => {
+      if (!dToken) return;
+      try {
+        setProgress(20);
+
+        setTimeout(() => isMounted && setProgress(45), 150);
+        await getDashData();
+
+        if (isMounted) {
+          setProgress(100);
+          setTimeout(() => isMounted && setProgress(0), 600)
+        }
+      } catch (error) {
+        console.error("Dashboard load error:", error);
+        setProgress(0);
+      }
+    };
+    loadDashboard();
+    return () => { isMounted = false; };
+
+  }, [dToken, getDashData, setProgress])
 
   const resetForm = () => {
     setVitals({ bloodPressure: '', heartRate: '', temperature: '', notes: '' })
@@ -128,13 +150,34 @@ const DoctorDashboard: React.FC = () => {
                     ) : item.isCompleted ? (
                       <span className='px-2 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[9px] sm:text-xs font-bold uppercase'>Completed</span>
                     ) : (
-                      <div className='flex items-center gap-1'>
-                        {isUrgent && <span className='hidden xs:block text-[8px] font-black text-red-500 mr-1 animate-pulse'>URGENT</span>}
-                        <button onClick={() => handleCancel(item._id)} className='p-2 hover:bg-red-50 rounded-full transition-all active:scale-90'>
-                          <img className='w-6 sm:w-7 opacity-70 hover:opacity-100' src={assets.cancel_icon} alt="Cancel" />
+                      <div className='flex items-center gap-3 lg:gap-2 w-full lg:w-auto'>
+                        {/* Cancel Button */}
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            setProgress(40);
+                            await cancelAppointment(item._id);
+                            setProgress(100);
+                          }}
+                          className='flex-1 lg:flex-none flex justify-center items-center bg-red-50 hover:bg-red-100 border border-red-100 p-2.5 lg:p-2 rounded-xl lg:rounded-full active:scale-90 transition-all group'
+                          title="Cancel Appointment"
+                        >
+                          <RiCloseCircleFill className="text-red-500 group-hover:text-red-600 size-6 lg:size-5" />
+                          <span className='lg:hidden ml-2 font-bold text-red-600 text-xs'>Cancel</span>
                         </button>
-                        <button onClick={() => { setSelectedApptId(item._id); setShowModal(true); }} className='p-2 hover:bg-emerald-50 rounded-full transition-all active:scale-90'>
-                          <img className='w-6 sm:w-7 opacity-70 hover:opacity-100' src={assets.tick_icon} alt="Complete" />
+
+                        {/* Complete/Consult Button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedApptId(item._id);
+                            setShowModal(true);
+                          }}
+                          className='flex-1 lg:flex-none flex justify-center items-center bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 p-2.5 lg:p-2 rounded-xl lg:rounded-full active:scale-90 transition-all group'
+                          title="Mark Complete"
+                        >
+                          <RiCheckboxCircleFill className="text-emerald-500 group-hover:text-emerald-600 size-6 lg:size-5" />
+                          <span className='lg:hidden ml-2 font-bold text-emerald-600 text-xs'>Consult</span>
                         </button>
                       </div>
                     )}
@@ -151,12 +194,12 @@ const DoctorDashboard: React.FC = () => {
       {/* --- CONSULTATION POPUP --- */}
       <AnimatePresence>
         {showModal && (
-          <div className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4">
+          <div className="fixed inset-0 z-1000 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4">
             <motion.div
               initial={{ y: "100%", opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: "100%", opacity: 0 }}
-              className="bg-white w-full max-w-3xl rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden max-h-[95vh] flex flex-col"
+              className="bg-white w-full max-w-3xl rounded-t-4xl sm:rounded-4xl shadow-2xl overflow-hidden max-h-[95vh] flex flex-col"
             >
 
               <div className="p-5 sm:p-8 border-b flex justify-between items-center bg-white sticky top-0 z-10">
@@ -198,7 +241,7 @@ const DoctorDashboard: React.FC = () => {
 
                   <div className="space-y-4">
                     {medicines.map((med, index) => (
-                      <div key={index} className="p-4 sm:p-5 bg-slate-50 rounded-[20px] sm:rounded-[24px] border border-slate-100 grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4 items-end">
+                      <div key={index} className="p-4 sm:p-5 bg-slate-50 rounded-[20px] sm:rounded-3xl border border-slate-100 grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4 items-end">
                         <div className="md:col-span-4 space-y-1">
                           <label className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase ml-1">Drug Name</label>
                           <input className="w-full p-2.5 sm:p-3 bg-white rounded-xl text-sm border-none shadow-sm outline-none font-bold" placeholder="Name" value={med.name} onChange={(e) => { const n = [...medicines]; n[index].name = e.target.value; setMedicines(n); }} />
@@ -228,7 +271,7 @@ const DoctorDashboard: React.FC = () => {
 
                 <div className="space-y-2">
                   <label className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase ml-2">Clinical Notes</label>
-                  <textarea rows={3} className="w-full p-4 sm:p-5 bg-slate-50 rounded-[20px] sm:rounded-[24px] border-none outline-none text-sm font-medium" placeholder="Additional instructions..." value={vitals.notes} onChange={(e) => setVitals({ ...vitals, notes: e.target.value })} />
+                  <textarea rows={3} className="w-full p-4 sm:p-5 bg-slate-50 rounded-[20px] sm:rounded-3xl border-none outline-none text-sm font-medium" placeholder="Additional instructions..." value={vitals.notes} onChange={(e) => setVitals({ ...vitals, notes: e.target.value })} />
                 </div>
               </div>
 
@@ -248,7 +291,7 @@ const DoctorDashboard: React.FC = () => {
                       setProgress(100)
                     }
                   }}
-                  className="order-1 sm:order-2 flex-[2] py-4 bg-emerald-500 text-white rounded-xl sm:rounded-[20px] text-[10px] sm:text-xs font-black uppercase shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
+                  className="order-1 sm:order-2 flex-2 py-4 bg-emerald-500 text-white rounded-xl sm:rounded-[20px] text-[10px] sm:text-xs font-black uppercase shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
                 >
                   Finalize Booking
                 </button>

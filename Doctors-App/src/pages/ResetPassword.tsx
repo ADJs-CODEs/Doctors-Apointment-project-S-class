@@ -1,19 +1,18 @@
 import React, { useState, useContext } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { AppContext } from '../Context/AppContext'
-import axios from 'axios'
 import { toast } from 'sonner'
+import axiosInstance from '../utils/axiosInstance.js'
+import { API_PATHS } from '../utils/apiPath.js'
 
 const ResetPassword = () => {
   const { token } = useParams()
   const navigate = useNavigate()
-  const { backendUrl } = useContext(AppContext)
   const [newPassword, setNewPassword] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const { data } = await axios.post(`${backendUrl}/api/user/reset-password`, { token, newPassword })
+      const { data } = await axiosInstance.post(API_PATHS.AUTH.RESET_PASSWORD, { token, newPassword })
       if (data.success) {
         toast.success(data.message)
         navigate('/login')

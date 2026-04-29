@@ -2,15 +2,16 @@ import React, { useContext, useEffect, useState } from 'react'
 import { AppContext } from '../Context/AppContext.js'
 import { assets } from '../assets/assets/assets_frontend/assets.js'
 import { toast } from 'sonner'
-import axios from 'axios'
 import type { AppContextType, Appointment } from '../types/index.js'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom' // --- ADDED ---
 import { RiHeartPulseLine, RiDashboardLine, RiTempHotLine, RiMedicineBottleLine, RiArrowRightSLine } from "@remixicon/react"
+import axiosInstance from '../utils/axiosInstance.js'
+import { API_PATHS } from '../utils/apiPath.js'
 
 const MyProfile: React.FC = () => {
   const context = useContext(AppContext) as AppContextType;
-  const { userData, setUserData, token, backendUrl, loadUserProfileData, setProgress } = context;
+  const { userData, setUserData, token, loadUserProfileData, setProgress } = context;
   const navigate = useNavigate(); // --- ADDED ---
 
   const [isEdit, setIsEdit] = useState<boolean>(false)
@@ -19,7 +20,7 @@ const MyProfile: React.FC = () => {
 
   const getLatestHealthData = async () => {
     try {
-      const { data } = await axios.get(backendUrl + '/api/user/appointments', { headers: { token } })
+      const { data } = await axiosInstance.get(API_PATHS.USER.FETCH_APPOINTMENT)
       if (data.success && data.appointments.length > 0) {
         const completedWithData = data.appointments
           .reverse()
@@ -43,7 +44,7 @@ const MyProfile: React.FC = () => {
       formData.append('dob', userData.dob)
       image && formData.append('image', image)
 
-      const { data } = await axios.post(backendUrl + '/api/user/update-profile', formData, { headers: { token } })
+      const { data } = await axiosInstance.post(API_PATHS.USER.UPDATE_USER_PROFILE_DATA, formData,)
       if (data.success) {
         toast.success(data.message)
         await loadUserProfileData()

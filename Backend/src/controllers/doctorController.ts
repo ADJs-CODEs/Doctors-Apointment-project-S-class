@@ -233,7 +233,7 @@ const sendPatientAlert = async (req: Request, res: Response) => {
     const appointment = await appointmentModel.findById(appointmentId).populate('userData');
 
     if (!appointment) {
-      return res.json({ success: false, message: "Appointment not found" });
+      return res.status(404).json({ success: false, message: "Appointment not found" });
     }
 
     // 2. Update the Database (UI Trigger)
@@ -256,7 +256,7 @@ const sendPatientAlert = async (req: Request, res: Response) => {
 
     // 3. Trigger the Email (Nodemailer)
     const mailOptions = {
-       from: process.env.SMTP_USER,
+      from: process.env.SMTP_USER,
       replyTo: appointment.docData.email,
       to: appointment.userData.email, // Ensure userData has email
       subject: isCritical ? "URGENT: Medical Alert from your Doctor" : "New Message from your Doctor",
@@ -274,16 +274,27 @@ const sendPatientAlert = async (req: Request, res: Response) => {
             `
     };
     console.log("Recipient Email:", appointment.userData?.email);
-console.log("Sender Config:", process.env.SMTP_USER);
+    console.log("Sender Config:", process.env.SMTP_USER);
 
     await transporter.sendMail(mailOptions);
 
-    res.json({ success: true, message: "Alert sent to patient successfully" });
+    res.status(200).json({ success: true, message: "Alert sent to patient successfully" });
 
   } catch (error: any) {
     console.error("ALERT ERROR:", error);
-    res.json({ success: false, message: "Failed to send alert: " + error.message });
+    res.status(500).json({ success: false, message: "Failed to send alert: " + error.message });
   }
 };
 
-export { changeAvailability, doctorList, loginDoctor, appointmentsDoctor, appointmentCancel, appointmentComplete, doctorDashboard, doctorProfile, updateDoctorProfile, sendPatientAlert }
+export {
+  changeAvailability,
+  doctorList,
+  loginDoctor,
+  appointmentsDoctor,
+  appointmentCancel,
+  appointmentComplete,
+  doctorDashboard,
+  doctorProfile,
+  updateDoctorProfile,
+  sendPatientAlert
+}

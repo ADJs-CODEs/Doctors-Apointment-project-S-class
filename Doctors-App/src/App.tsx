@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react'
+import React, { useContext } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import Home from './pages/Home.js'
 import Doctors from './pages/Doctors.js'
@@ -25,11 +25,6 @@ const App: React.FC = () => {
   const { progress, setProgress } = useContext(AppContext) as AppContextType;
 
   return (
-    /* CHANGE: Updated the container classes. 
-       - Removed mx-4 (too much for small phones).
-       - Added px-2 (slight breathing room for mobile).
-       - kept sm:mx-[10%] for desktop elegance.
-    */
     <div className='px-2 sm:px-0 sm:mx-[10%] min-h-screen flex flex-col'>
       <LoadingBar
         color='#14b8a6' // Changed to match your Teal branding
@@ -41,8 +36,6 @@ const App: React.FC = () => {
       <Toaster position="top-right" richColors expand={false} />
 
       <Navbar />
-
-      {/* Wrapping Routes in a main tag helps with layout consistency */}
       <main className='grow'>
         <Routes>
           <Route path='/' element={<Home />} />

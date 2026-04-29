@@ -1,9 +1,10 @@
 import React, { useContext, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AppContext } from '../Context/AppContext.js'
-import axios from 'axios'
 import { toast } from 'sonner'
 import type { AppContextType } from '../types/index.js'
+import axiosInstance from '../utils/axiosInstance.js'
+import { API_PATHS } from '../utils/apiPath.js'
 
 const Verify: React.FC = () => {
   const [searchParams] = useSearchParams()
@@ -12,7 +13,7 @@ const Verify: React.FC = () => {
 
 
   const context = useContext(AppContext) as AppContextType
-  const { backendUrl, token, setProgress } = context
+  const { token, setProgress } = context
 
   const navigate = useNavigate()
 
@@ -28,10 +29,8 @@ const Verify: React.FC = () => {
       // Start Progress Bar
       setProgress(40)
 
-      const { data } = await axios.post(
-        backendUrl + '/api/user/verify-stripe',
-        { success, appointmentId },
-        { headers: { token } }
+      const { data } = await axiosInstance.post(
+        API_PATHS.AUTH.VERIFY_STRIPE, { success, appointmentId }
       )
 
       //Medium Progress Bar

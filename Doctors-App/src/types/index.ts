@@ -49,11 +49,17 @@ export interface UserData {
 
 export interface AppContextType {
   // Functions
+  currency: string;
   currencySymbol: string;
   calculateAge: (dob: string) => number;
   slotDateFormat: (slotDate: string) => string;
   getDoctorsData: () => Promise<void>;
   loadUserProfileData: () => Promise<void>;
+  updateDose: (
+    appointmentId: string,
+    medicineName: string,
+    overdoseAlert?: boolean
+  ) => Promise<boolean>;
 
   // State & Setters
 

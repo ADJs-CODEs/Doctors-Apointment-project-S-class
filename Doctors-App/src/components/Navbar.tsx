@@ -50,7 +50,7 @@ const Navbar: React.FC = () => {
     <nav className='sticky top-0 z-50 py-4 px-6 md:px-10 bg-white/70 backdrop-blur-xl border-b border-slate-100 md:mt-4 md:mx-4 md:rounded-[28px] shadow-sm'>
       <div className='max-w-7xl mx-auto flex items-center justify-between'>
 
-        {/* --- DESKTOP LOGO & LOGIC (UNTOUCHED) --- */}
+        {/* --- DESKTOP LOGO & LOGIC --- */}
         <motion.div
           whileHover={{ scale: 1.02 }}
           onClick={() => { navigate('/'); window.scrollTo(0, 0) }}
@@ -69,10 +69,14 @@ const Navbar: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* --- DESKTOP MENU (UNTOUCHED) --- */}
+        {/* --- DESKTOP MENU --- */}
         <ul className='hidden md:flex items-center gap-10 text-[11px] tracking-[2px] font-bold'>
           {['HOME', 'DOCTORS', 'ABOUT', 'CONTACT'].map((item) => (
-            <NavLink key={item} to={item === 'HOME' ? '/' : `/${item.toLowerCase()}`}>
+            <NavLink
+              key={item}
+              to={item === 'HOME' ? '/' : `/${item.toLowerCase()}`}
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            >
               {({ isActive }) => (
                 <li className={isActive ? activeClass : normalClass}>{item}</li>
               )}
@@ -98,19 +102,19 @@ const Navbar: React.FC = () => {
 
               <div className='absolute top-full right-0 pt-4 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-300 z-50'>
                 <div className='min-w-64 bg-white border border-slate-100 rounded-[24px] p-2 shadow-[0_20px_40px_rgba(0,0,0,0.08)]'>
-                  <div onClick={() => navigate('/my-profile')} className='flex items-center gap-3 px-4 py-3 hover:bg-slate-50 rounded-xl transition-all group/item'>
+                  <div onClick={() => { navigate('/my-profile'); window.scrollTo(0, 0) }} className='flex items-center gap-3 px-4 py-3 hover:bg-slate-50 rounded-xl transition-all group/item'>
                     <UserGear size={20} weight="duotone" className="text-slate-400 group-hover/item:text-teal-600" />
                     <span className='text-xs font-bold text-slate-600'>Medical Profile</span>
                   </div>
-                  <div onClick={() => navigate('/my-appointments')} className='flex items-center gap-3 px-4 py-3 hover:bg-slate-50 rounded-xl transition-all group/item'>
+                  <div onClick={() => { navigate('/my-appointments'); window.scrollTo(0, 0) }} className='flex items-center gap-3 px-4 py-3 hover:bg-slate-50 rounded-xl transition-all group/item'>
                     <CalendarCheck size={20} weight="duotone" className="text-slate-400 group-hover/item:text-teal-600" />
                     <span className='text-xs font-bold text-slate-600'>My Appointments</span>
                   </div>
-                  <div onClick={() => navigate('/account-settings')} className='flex items-center gap-3 px-4 py-3 hover:bg-teal-50/50 rounded-xl transition-all group/item'>
+                  <div onClick={() => { navigate('/account-settings'); window.scrollTo(0, 0) }} className='flex items-center gap-3 px-4 py-3 hover:bg-teal-50/50 rounded-xl transition-all group/item'>
                     <Fingerprint size={20} weight="duotone" className="text-slate-400 group-hover/item:text-teal-600" />
                     <span className='text-xs font-bold text-slate-600'>Security & Credentials</span>
                   </div>
-                  <div className='h-[1px] bg-slate-50 my-1 mx-2' />
+                  <div className='h-px bg-slate-50 my-1 mx-2' />
                   <div onClick={logout} className='flex items-center gap-3 px-4 py-3 hover:bg-rose-50 rounded-xl transition-all group/item'>
                     <SignOut size={20} weight="duotone" className="text-rose-500" />
                     <span className='text-xs font-bold text-rose-500'>Sign Out</span>
@@ -132,7 +136,7 @@ const Navbar: React.FC = () => {
           </div>
         </div>
 
-        {/* --- MOBILE MENU (ONLY SECTION MODIFIED) --- */}
+        {/* --- MOBILE MENU --- */}
         <AnimatePresence>
           {showMenu && (
             <motion.div

@@ -2,9 +2,21 @@
 @import "tailwindcss";
 
 /* --- Global Resets & Typography --- */
-* {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  @apply transition-all duration-300 ease-in-out;
+@theme {
+  --font-main: "Plus Jakarta Sans";
+  --transition-smooth: all 0.3s ease-in-out;
+}
+
+
+@layer base {
+  html {
+    font-family: var(--font-main);
+  }
+
+  body {
+    transition: var(--transition-smooth);
+  }
+
 }
 
 @theme {

@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { AppContext } from '../Context/AppContext.js'
 import { toast } from 'sonner'
-import axios from 'axios'
 import SkeletonCard from '../components/SkeletonCard.js'
 import type { AppContextType, Appointment } from '../types/index.js'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -18,10 +17,12 @@ import {
   RiCheckDoubleLine,
   RiArrowDownSLine
 } from "@remixicon/react"
+import { API_PATHS } from '../utils/apiPath.js'
+import axiosInstance from '../utils/axiosInstance.js'
 
 const MyAppointments: React.FC = () => {
   const context = useContext(AppContext) as AppContextType;
-  const { backendUrl, token, setProgress } = context;
+  const { token, setProgress } = context;
   const navigate = useNavigate();
 
   const [appointments, setAppointments] = useState<Appointment[]>([])
@@ -38,7 +39,7 @@ const MyAppointments: React.FC = () => {
   const getUserAppointments = async () => {
     try {
       setProgress(20);
-      const { data } = await axios.get(backendUrl + '/api/user/appointments', { headers: { token } })
+      const { data } = await axiosInstance.get(API_PATHS.USER.FETCH_APPOINTMENT)
       setProgress(70);
       if (data.success) {
         setAppointments(data.appointments.reverse())
@@ -54,10 +55,8 @@ const MyAppointments: React.FC = () => {
   const payStripe = async (appointmentId: string) => {
     try {
       setProgress(30);
-      const { data } = await axios.post(
-        backendUrl + '/api/user/payment-stripe',
-        { appointmentId },
-        { headers: { token } }
+      const { data } = await axiosInstance.post(
+        API_PATHS.AUTH.STRIPE_AUTH, { appointmentId }
       );
 
       if (data.success) {
@@ -76,10 +75,8 @@ const MyAppointments: React.FC = () => {
   const cancelAppointment = async (appointmentId: string) => {
     try {
       setProgress(40);
-      const { data } = await axios.post(
-        backendUrl + '/api/user/cancel-appointment',
-        { appointmentId },
-        { headers: { token } }
+      const { data } = await axiosInstance.post(
+        API_PATHS.USER.CANCEL_APPOINTMENT, { appointmentId },
       );
 
       if (data.success) {
@@ -134,9 +131,8 @@ const MyAppointments: React.FC = () => {
     try {
       setProcessingMed(`${appointmentId}-${medicineName}`);
       setProgress(40);
-      const { data } = await axios.post(`${backendUrl}/api/user/update-dose`,
-        { appointmentId, medicineName, overdoseAlert },
-        { headers: { token } }
+      const { data } = await axiosInstance.post(API_PATHS.USER.LOG_DOSE,
+        { appointmentId, medicineName, overdoseAlert }
       );
       if (data.success) {
         toast.success(data.message || `${medicineName} logged!`);

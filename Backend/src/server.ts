@@ -13,6 +13,8 @@ import userRoute from './routes/userRoute.js';
 
 const app: Application = express();
 const port: string | number = process.env.PORT || 4000
+
+// External connections 
 connectDB()
 connectCloudinary()
 
@@ -22,11 +24,12 @@ app.use(express.json())
 app.use(cors())
 
 // api endpoints
-app.use('/api/admin', adminRouter)
-app.use('/api/doctor', doctorRouter)
+app.use('/api/admin', adminRouter) //endpoints for admin
+app.use('/api/doctor', doctorRouter) //endpoints for doctor
+app.use('/api/user', userRoute)  //endpoints for user
 
-//api endpoints for user
-app.use('/api/user', userRoute)
+
+
 // localhost:4000/api/admin/add-doctor
 app.get('/', (req: Request, res: Response) => {
   res.send('API is fully WORKING')

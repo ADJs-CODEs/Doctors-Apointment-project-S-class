@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { DoctorContext } from '../../context/DoctorContext.js'
 import { AppContext } from '../../context/AppContext.js'
-import { assets } from '../../assets/assets/assets_admin/assets.js'
 import type { DoctorContextType, AppContextType } from '../../types/index.js'
 import {
   RiCloseLine,
@@ -13,11 +12,14 @@ import {
   RiHistoryLine,
   RiSendPlaneFill,
   RiErrorWarningLine,
-  RiDeleteBin6Line
+  RiDeleteBin6Line,
+  RiCheckboxCircleFill,
+  RiCloseCircleFill
 } from "@remixicon/react"
 import { motion, AnimatePresence } from 'framer-motion'
-import axios from 'axios'
+import axiosInstance from "../../utils/axiosInstance.js"
 import { toast } from 'sonner'
+import { API_PATHS } from '../../utils/apiPath.js'
 
 const DoctorAppointment: React.FC = () => {
   const { dToken, appointments, getAppointments, completeAppointment, cancelAppointment } = useContext(DoctorContext) as DoctorContextType
@@ -61,11 +63,11 @@ const DoctorAppointment: React.FC = () => {
       setIsSendingAlert(true);
       setProgress(40);
 
-      const { data } = await axios.post(`${backendUrl}/api/doctor/send-alert`,
-        { appointmentId: selectedApptId, messageContent: alertForm.message, isCritical: alertForm.isCritical },
+      const { data } = await axiosInstance.post(API_PATHS.DOCTOR.SEND_ALERT,
         {
-          headers: { dToken },
-          timeout: 8000
+          appointmentId: selectedApptId,
+          messageContent: alertForm.message,
+          isCritical: alertForm.isCritical
         }
       );
 
@@ -180,6 +182,7 @@ const DoctorAppointment: React.FC = () => {
                   {item.cancelled ? <p className='text-red-400 text-[10px] font-black uppercase bg-red-50 px-3 py-1 rounded-full'>Cancelled</p> :
                     item.isCompleted ? <p className='text-emerald-500 text-[10px] font-black uppercase bg-emerald-50 px-3 py-1 rounded-full'>Completed</p> :
                       <div className='flex items-center gap-4 lg:gap-2 w-full lg:w-auto'>
+                        {/* Cancel Button */}
                         <button
                           onClick={async (e) => {
                             e.stopPropagation();
@@ -187,16 +190,24 @@ const DoctorAppointment: React.FC = () => {
                             await cancelAppointment(item._id);
                             setProgress(100);
                           }}
-                          className='flex-1 lg:flex-none flex justify-center items-center bg-red-50 lg:bg-transparent hover:bg-red-100 lg:hover:bg-red-50 p-2.5 lg:p-2 rounded-xl lg:rounded-full active:scale-90 transition-all'
+                          className='flex-1 lg:flex-none flex justify-center items-center bg-red-50 hover:bg-red-100 border border-red-100 p-2.5 lg:p-2 rounded-xl lg:rounded-full active:scale-90 transition-all group'
+                          title="Cancel Appointment"
                         >
-                          <img className='w-6 sm:w-5' src={assets.cancel_icon} alt="Cancel" />
-                          <span className='lg:hidden ml-2 font-bold text-red-500 text-xs'>Cancel</span>
+                          <RiCloseCircleFill className="text-red-500 group-hover:text-red-600 size-6 lg:size-5" />
+                          <span className='lg:hidden ml-2 font-bold text-red-600 text-xs'>Cancel</span>
                         </button>
+
+                        {/* Complete/Consult Button */}
                         <button
-                          onClick={(e) => { e.stopPropagation(); setSelectedApptId(item._id); setShowModal(true); }}
-                          className='flex-1 lg:flex-none flex justify-center items-center bg-emerald-50 lg:bg-transparent hover:bg-emerald-100 lg:hover:bg-emerald-50 p-2.5 lg:p-2 rounded-xl lg:rounded-full active:scale-90 transition-all'
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedApptId(item._id);
+                            setShowModal(true);
+                          }}
+                          className='flex-1 lg:flex-none flex justify-center items-center bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 p-2.5 lg:p-2 rounded-xl lg:rounded-full active:scale-90 transition-all group'
+                          title="Mark Complete"
                         >
-                          <img className='w-6 sm:w-5' src={assets.tick_icon} alt="Complete" />
+                          <RiCheckboxCircleFill className="text-emerald-500 group-hover:text-emerald-600 size-6 lg:size-5" />
                           <span className='lg:hidden ml-2 font-bold text-emerald-600 text-xs'>Consult</span>
                         </button>
                       </div>}
@@ -260,7 +271,7 @@ const DoctorAppointment: React.FC = () => {
       {/* --- ALERT MODAL --- */}
       <AnimatePresence>
         {showAlertModal && (
-          <div className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4">
+          <div className="fixed inset-0 z-1000 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4">
             <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-white w-full max-w-md rounded-t-[32px] sm:rounded-[32px] shadow-2xl p-6 sm:p-8">
               <div className='flex items-center gap-3 mb-6'>
                 <div className='p-3 bg-red-100 text-red-600 rounded-2xl'><RiErrorWarningLine size={24} /></div>

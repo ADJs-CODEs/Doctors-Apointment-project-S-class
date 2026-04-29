@@ -1,7 +1,8 @@
-import axios from "axios";
 import { createContext, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import type { AppContextType, Doctor } from "../types/index.js";
+import { API_PATHS } from "../utils/apiPath.js";
+import axiosInstance from "../utils/axiosInstance.js";
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -10,8 +11,6 @@ interface AppContextProviderProps {
 }
 
 const AppContextProvider = (props: AppContextProviderProps) => {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
-
   // --- State ---
   const [token, setToken] = useState<string>(localStorage.getItem('token') || '');
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -48,7 +47,7 @@ const AppContextProvider = (props: AppContextProviderProps) => {
     try {
       setProgress(30);
       setLoading(true);
-      const { data } = await axios.get(backendUrl + '/api/doctor/list');
+      const { data } = await axiosInstance.get(API_PATHS.USER.GET_DOCTORS_DATA);
       if (data.success) {
         setDoctors(data.doctors);
       } else {
@@ -67,7 +66,7 @@ const AppContextProvider = (props: AppContextProviderProps) => {
     if (!token) return;
     try {
       setProgress(40);
-      const { data } = await axios.get(backendUrl + '/api/user/get-profile', { headers: { token } });
+      const { data } = await axiosInstance.get(API_PATHS.AUTH.LOAD_USER_PROFILE_DATA);
       if (data.success) {
         setUserData(data.userData);
       } else {
@@ -84,10 +83,9 @@ const AppContextProvider = (props: AppContextProviderProps) => {
   const updateDose = async (appointmentId: string, medicineName: string, overdoseAlert: boolean = false) => {
     try {
       setProgress(40);
-      const { data } = await axios.post(
-        backendUrl + '/api/user/update-dose',
+      const { data } = await axiosInstance.post(
+        API_PATHS.USER.UPDATE_DOSE,
         { appointmentId, medicineName, overdoseAlert },
-        { headers: { token } }
       )
       if (data.success) {
         toast.success(data.message);
@@ -129,7 +127,6 @@ const AppContextProvider = (props: AppContextProviderProps) => {
     calculateAge,
     slotDateFormat,
     currency,
-    backendUrl,
     token,
     setToken,
     doctors,

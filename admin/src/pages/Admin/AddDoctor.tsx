@@ -1,11 +1,11 @@
 import React, { useContext, useState } from 'react'
 import { assets } from '../../assets/assets/assets_admin/assets.js'
-import { AdminContext } from '../../context/AdminContext.js'
 import { AppContext } from '../../context/AppContext.js' // Added for progress
 import { toast } from 'sonner'
-import axios from 'axios'
 import { RiUserAddLine, RiImageAddLine, RiMapPin2Line, RiGraduationCapLine } from '@remixicon/react'
 import type { AdminContextType, AppContextType } from '../../types/index.js'
+import axiosInstance from '../../utils/axiosInstance.js'
+import { API_PATHS } from '../../utils/apiPath.js'
 
 const AddDoctor: React.FC = () => {
   const [docImg, setDocImg] = useState<File | false>(false)
@@ -20,7 +20,6 @@ const AddDoctor: React.FC = () => {
   const [address1, setAddress1] = useState<string>('')
   const [address2, setAddress2] = useState<string>('')
 
-  const { backendUrl, aToken } = useContext(AdminContext) as AdminContextType
   const { setProgress } = useContext(AppContext) as AppContextType
 
   const onSubmitHandler = async (event: React.BaseSyntheticEvent) => {
@@ -46,7 +45,7 @@ const AddDoctor: React.FC = () => {
       formData.append('available', 'true')
 
       setProgress(60)
-      const { data } = await axios.post(backendUrl + '/api/admin/add-doctor', formData, { headers: { aToken } })
+      const { data } = await axiosInstance.post(API_PATHS.ADMIN.ADD_DOCTORS, formData)
 
       if (data.success) {
         toast.success(data.message)

@@ -1,7 +1,8 @@
-import { createContext, useEffect, useState } from "react";
-import axios from "axios";
+import { createContext, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { DoctorContextType, Appointment, Doctor, ProviderProps } from "../types/index.js";
+import axiosInstance from "../utils/axiosInstance.js";
+import { API_PATHS } from "../utils/apiPath.js";
 
 export const DoctorContext = createContext<DoctorContextType | undefined>(undefined);
 
@@ -18,9 +19,7 @@ const DoctorContextProvider = ({ children }: ProviderProps) => {
 
     const getAppointments = async () => {
         try {
-            const { data } = await axios.get(backendUrl + '/api/doctor/appointments', {
-                headers: { dtoken: dToken }
-            });
+            const { data } = await axiosInstance.get(API_PATHS.DOCTOR.GET_APPOINTMENTS);
             if (data.success) {
                 setAppointments(data.appointments.reverse());
             } else {
@@ -33,9 +32,8 @@ const DoctorContextProvider = ({ children }: ProviderProps) => {
 
     const cancelAppointment = async (appointmentId: string) => {
         try {
-            const { data } = await axios.post(backendUrl + '/api/doctor/cancel-appointment',
-                { appointmentId },
-                { headers: { dtoken: dToken } }
+            const { data } = await axiosInstance.post(API_PATHS.DOCTOR.CANCEL_APPOINTMENT,
+                { appointmentId }
             );
             if (data.success) {
                 toast.success(data.message);
@@ -49,11 +47,9 @@ const DoctorContextProvider = ({ children }: ProviderProps) => {
         }
     };
 
-    const getDashData = async () => {
+    const getDashData = useCallback(async () => {
         try {
-            const { data } = await axios.get(backendUrl + '/api/doctor/dashboard', {
-                headers: { dtoken: dToken }
-            });
+            const { data } = await axiosInstance.get(API_PATHS.DOCTOR.DASHBOARD);
             if (data.success) {
                 setDashData(data.dashData);
             } else {
@@ -62,13 +58,11 @@ const DoctorContextProvider = ({ children }: ProviderProps) => {
         } catch (error: any) {
             toast.error(error.response?.data?.message || error.message);
         }
-    };
+    }, [dToken])
 
     const getProfileData = async () => {
         try {
-            const { data } = await axios.get(backendUrl + '/api/doctor/profile', {
-                headers: { dtoken: dToken }
-            });
+            const { data } = await axiosInstance.get(API_PATHS.DOCTOR.PROFILE);
             if (data.success) {
                 setProfileData(data.profileData);
             }
@@ -79,10 +73,8 @@ const DoctorContextProvider = ({ children }: ProviderProps) => {
 
     const updateProfile = async (updateData: any): Promise<boolean> => {
         try {
-            const { data } = await axios.post(backendUrl + '/api/doctor/update-profile',
-                updateData,
-                { headers: { dtoken: dToken } }
-            );
+            const { data } = await axiosInstance.post(API_PATHS.DOCTOR.UPDATE_PROFILE,
+                updateData);
             if (data.success) {
                 toast.success(data.message);
                 getProfileData();
@@ -99,10 +91,8 @@ const DoctorContextProvider = ({ children }: ProviderProps) => {
 
     const completeAppointment = async (appointmentId: string, healthData: any): Promise<boolean> => {
         try {
-            const { data } = await axios.post(
-                backendUrl + '/api/doctor/complete-appointment',
+            const { data } = await axiosInstance.post(API_PATHS.DOCTOR.COMPLETE_APPOINTMENT,
                 { appointmentId, healthData },
-                { headers: { dtoken: dToken } } // Ensure lowercase 'dtoken'
             );
 
             if (data.success) {
@@ -123,10 +113,8 @@ const DoctorContextProvider = ({ children }: ProviderProps) => {
     // --- FIXED: The missing sendAlert function ---
     const sendAlert = async (appointmentId: string, messageContent: string, isCritical: boolean): Promise<boolean> => {
         try {
-            const { data } = await axios.post(
-                backendUrl + '/api/doctor/send-alert',
-                { appointmentId, messageContent, isCritical },
-                { headers: { dtoken: dToken } }
+            const { data } = await axiosInstance.post(API_PATHS.DOCTOR.SEND_ALERT,
+                { appointmentId, messageContent, isCritical }
             );
 
             if (data.success) {
@@ -175,7 +163,7 @@ const DoctorContextProvider = ({ children }: ProviderProps) => {
         setProfileData,
         getProfileData,
         updateProfile,
-        sendAlert // Now correctly defined above
+        sendAlert
     };
 
     return (

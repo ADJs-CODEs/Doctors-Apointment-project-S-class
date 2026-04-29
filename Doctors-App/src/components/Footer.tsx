@@ -14,6 +14,7 @@ import {
 } from "@remixicon/react"
 
 const Footer: React.FC = () => {
+
   const navigate = useNavigate();
 
   return (

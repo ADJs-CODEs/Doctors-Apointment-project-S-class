@@ -1,12 +1,13 @@
-import React, { useContext, useState } from 'react'
-import { AdminContext } from '../context/AdminContext.js'
-import axios from 'axios'
-import { toast } from 'sonner'
-import { DoctorContext } from '../context/DoctorContext.js'
-import { AppContext } from '../context/AppContext.js' // Added AppContext for progress bar
-import type { AdminContextType, DoctorContextType, AppContextType } from '../types/index.js'
-import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import React, { useContext, useState } from "react"
+import { AdminContext } from "../context/AdminContext.js"
+import { toast } from "sonner"
+import { DoctorContext } from "../context/DoctorContext.js"
+import { AppContext } from "../context/AppContext.js" // Added AppContext for progress bar
+import type { AdminContextType, DoctorContextType, AppContextType } from "../types/index.js"
+import { useNavigate } from "react-router-dom"
+import { motion } from "framer-motion"
+import { API_PATHS } from "../utils/apiPath.js"
+import axiosInstance from "../utils/axiosInstance.js"
 
 const Login: React.FC = () => {
   const navigate = useNavigate()
@@ -15,7 +16,7 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState<string>('')
   const [password, setPassword] = useState<string>('')
 
-  const { setAToken, backendUrl } = useContext(AdminContext) as AdminContextType;
+  const { setAToken } = useContext(AdminContext) as AdminContextType;
   const { setDToken } = useContext(DoctorContext) as DoctorContextType;
   const { setProgress } = useContext(AppContext) as AppContextType; // Progress Bar Logic
 
@@ -24,7 +25,7 @@ const Login: React.FC = () => {
     try {
       setProgress(30) // Start Progress
       if (state === 'Admin') {
-        const { data } = await axios.post(backendUrl + '/api/admin/login', { email, password })
+        const { data } = await axiosInstance.post(API_PATHS.AUTH.A_LOGIN, { email, password })
         if (data.success) {
           setProgress(70)
           localStorage.setItem('aToken', data.token)
@@ -35,7 +36,7 @@ const Login: React.FC = () => {
           toast.error(data.message)
         }
       } else {
-        const { data } = await axios.post(backendUrl + '/api/doctor/login', { email, password })
+        const { data } = await axiosInstance.post(API_PATHS.AUTH.D_LOGIN, { email, password })
         if (data.success) {
           setProgress(70)
           localStorage.setItem('dToken', data.token)
@@ -55,7 +56,7 @@ const Login: React.FC = () => {
 
   return (
     <div className='min-h-screen flex items-center justify-center bg-[#F8F9FD] p-4 sm:p-6 font-outfit'>
-      <div className='w-full max-w-[1100px] grid grid-cols-1 md:grid-cols-2 bg-white rounded-[32px] md:rounded-[40px] shadow-portal overflow-hidden animate-reveal'>
+      <div className='w-full max-w-275 grid grid-cols-1 md:grid-cols-2 bg-white rounded-4xl md:rounded-[40px] shadow-portal overflow-hidden animate-reveal'>
 
         {/* --- Branding Section --- */}
         <div className='hidden md:flex flex-col justify-center p-12 lg:p-16 bg-teal-50/30 border-r border-slate-50'>

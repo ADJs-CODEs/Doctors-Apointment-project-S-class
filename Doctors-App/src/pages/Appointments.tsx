@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { AppContext } from '../Context/AppContext.js';
 import RelatedDoctors from '../components/RelatedDoctors.js';
 import { toast } from 'sonner';
-import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   RiVerifiedBadgeFill,
@@ -13,6 +12,8 @@ import {
   RiCalendarEventLine
 } from '@remixicon/react';
 import type { AppContextType, Doctor } from '../types/index.js';
+import axiosInstance from '../utils/axiosInstance.js';
+import { API_PATHS } from '../utils/apiPath.js';
 
 interface Slot {
   datetime: Date;
@@ -22,7 +23,7 @@ interface Slot {
 const Appointments: React.FC = () => {
   const { docId } = useParams<{ docId: string }>();
   const context = useContext(AppContext) as AppContextType;
-  const { doctors, currencySymbol, backendUrl, token, getDoctorsData } = context;
+  const { doctors, currencySymbol, token, getDoctorsData } = context;
 
   const daysOfWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
   const navigate = useNavigate()
@@ -83,7 +84,7 @@ const Appointments: React.FC = () => {
       if (!date) return toast.error("No slots available")
 
       const slotDate = `${date.getDate()}_${date.getMonth() + 1}_${date.getFullYear()}`
-      const { data } = await axios.post(`${backendUrl}/api/user/book-appointment`, { docId, slotDate, slotTime }, { headers: { token } })
+      const { data } = await axiosInstance.post(API_PATHS.USER.BOOK_APPOINTMENT, { docId, slotDate, slotTime })
 
       if (data.success) {
         toast.success(data.message)

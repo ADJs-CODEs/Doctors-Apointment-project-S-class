@@ -1,23 +1,22 @@
 import React, { useState, useContext } from 'react'
-import { AppContext } from '../Context/AppContext.js'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { RiMailSendLine, RiArrowLeftLine, RiLoader4Line } from '@remixicon/react'
-import axios from 'axios'
 import { toast } from 'sonner'
+import { API_PATHS } from '../utils/apiPath.js'
+import axiosInstance from '../utils/axiosInstance.js'
 
 const ForgotPassword = () => {
-  const [email, setEmail] = useState('')
-  const [loading, setLoading] = useState(false)
-  const { backendUrl } = useContext(AppContext)
-  const navigate = useNavigate()
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
     try {
-      const { data } = await axios.post(`${backendUrl}/api/user/forgot-password`, { email })
+      const { data } = await axiosInstance.post(API_PATHS.AUTH.FORGOT_PASSWORD, { email })
       if (data.success) {
         toast.success("Check your email for the reset link!")
         setEmail('') // Clear input on success

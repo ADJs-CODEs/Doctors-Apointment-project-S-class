@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react'
 import { AppContext } from '../Context/AppContext.js'
-import axios from 'axios'
 import { toast } from 'sonner'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -15,10 +14,12 @@ import {
   RiGoogleFill,
   RiAppleFill
 } from "@remixicon/react"
+import axiosInstance from '../utils/axiosInstance.js'
+import { API_PATHS, BASE_URL } from '../utils/apiPath.js'
 
 const Login: React.FC = () => {
   const context = useContext(AppContext) as AppContextType;
-  const { backendUrl, token, setToken, setProgress } = context;
+  const { token, setToken, setProgress } = context;
 
   const navigate = useNavigate()
   const [state, setState] = useState<'Sign Up' | 'Login'>('Sign Up')
@@ -33,7 +34,7 @@ const Login: React.FC = () => {
         setProgress(30)
         toast.info("Verifying credentials with ADJ's CODEs...")
 
-        const { data } = await axios.post(`${backendUrl}/api/user/google-auth`, {
+        const { data } = await axiosInstance.post(API_PATHS.AUTH.GOOGLE_AUTH, {
           access_token: tokenResponse.access_token
         })
 
@@ -61,10 +62,10 @@ const Login: React.FC = () => {
     event.preventDefault()
     try {
       setProgress(30)
-      const endpoint = state === 'Sign Up' ? '/api/user/register' : '/api/user/login'
+      const endpoint = state === 'Sign Up' ? API_PATHS.AUTH.REGISTER : API_PATHS.AUTH.LOGIN
       const payload = state === 'Sign Up' ? { name, email, password } : { email, password }
 
-      const { data } = await axios.post(`${backendUrl}${endpoint}`, payload)
+      const { data } = await axiosInstance.post(`${BASE_URL}${endpoint}`, payload)
 
       setProgress(70)
       if (data.success) {

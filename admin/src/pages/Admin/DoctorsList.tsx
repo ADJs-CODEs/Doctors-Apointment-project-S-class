@@ -1,12 +1,10 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { AdminContext } from '../../context/AdminContext.js'
 import { AppContext } from '../../context/AppContext.js'
-// ➕ Added RiDeleteBin7Line for the delete icon
 import { RiSearchLine, RiFilter3Line, RiUserStarLine, RiLoader4Line, RiDeleteBin7Line } from '@remixicon/react'
 import type { AdminContextType, AppContextType, Doctor } from '../../types/index.js'
 
 const DoctorList: React.FC = () => {
-  // ➕ Destructure deleteDoctor and setProgress
   const { doctors, aToken, getAllDoctors, changeAvailability, deleteDoctor } = useContext(AdminContext) as AdminContextType
   const { setProgress } = useContext(AppContext) as AppContextType
 
