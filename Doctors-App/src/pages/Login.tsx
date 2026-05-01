@@ -15,7 +15,7 @@ import {
   RiAppleFill
 } from "@remixicon/react"
 import axiosInstance from '../utils/axiosInstance.js'
-import { API_PATHS, BASE_URL } from '../utils/apiPath.js'
+import { API_PATHS } from '../utils/apiPath.js'
 
 const Login: React.FC = () => {
   const context = useContext(AppContext) as AppContextType;
@@ -65,7 +65,7 @@ const Login: React.FC = () => {
       const endpoint = state === 'Sign Up' ? API_PATHS.AUTH.REGISTER : API_PATHS.AUTH.LOGIN
       const payload = state === 'Sign Up' ? { name, email, password } : { email, password }
 
-      const { data } = await axiosInstance.post(`${BASE_URL}${endpoint}`, payload)
+      const { data } = await axiosInstance.post(endpoint, payload)
 
       setProgress(70)
       if (data.success) {

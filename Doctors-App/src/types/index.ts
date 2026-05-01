@@ -93,3 +93,31 @@ export interface Appointment {
   patientStatus?: 'Normal' | 'Critical';
   messages?: { content: string; sentAt: Date; isCritical: boolean }[];
 }
+
+export interface MyAppointmentCardProps {
+  item: Appointment;
+  isCritical: boolean;
+  cancelAppointment: (id: string) => void;
+  payStripe: (id: string) => void;
+  onViewReport: (id: string) => void;
+  isExpanded: boolean;
+  toggleTracker: (id: string) => void;
+}
+
+export interface HealthDropdownProps {
+  item: Appointment;
+  isCritical: boolean;
+  // latestMessage can be null, so we use the structure from Appointment messages
+  latestMessage: { content: string; sentAt: Date; isCritical: boolean } | null | undefined;
+  logDose: (appointmentId: string, medicineName: string, med: PrescribedMedicine) => Promise<void>;
+  processingMed: string | null;
+}
+
+export interface VitalsProps {
+  latestAppointment: Appointment | null;
+}
+
+export interface DoctorsCardGridProps {
+  filteredDoctors: Doctor[];
+  handleClearFilters: () => void;
+}

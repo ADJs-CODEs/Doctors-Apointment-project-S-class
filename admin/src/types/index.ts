@@ -22,14 +22,14 @@ export interface Doctor {
 // Added Health Data and Status to match your backend model
 export interface Medicine {
   name: string;
-  dosagePerDay: number;
+  dosagePerDay?: number;
   frequencyType?: string;
   frequencyValue: number;
   note?: string;
   totalQuantity: number;
   remainingQuantity: number;
-  status: 'Active' | 'Completed';
-  lastTaken?: Date;
+  status: 'Active' | 'Completed' | string;
+  lastTaken?: Date | string;
   overdoseAlert?: boolean;
 }
 
@@ -43,7 +43,7 @@ export interface Appointment {
     name: string;
     image: string;
     dob: string;
-    email?: string; // Helpful for alerts
+    email?: string;
   };
   docData: {
     name: string;
@@ -55,7 +55,7 @@ export interface Appointment {
   cancelled: boolean;
   payment: boolean;
   isCompleted: boolean;
-  // --- NEW FIELDS SYNCED WITH BACKEND ---
+
   patientStatus?: 'Stable' | 'Critical' | 'Completed';
   healthData?: {
     bloodPressure: string;
@@ -66,7 +66,7 @@ export interface Appointment {
   };
 }
 
-// --- Context Specific Types ---
+// --- Specific Types ---
 export interface AdminContextType {
   aToken: string;
   setAToken: Dispatch<SetStateAction<string>>;
@@ -114,4 +114,38 @@ export interface AppContextType {
 
 export interface ProviderProps {
   children: ReactNode;
+}
+
+export interface VitalsState {
+  bloodPressure: string;
+  heartRate: string;
+  temperature: string;
+  notes: string;
+}
+
+
+export interface DoctorsDashboardModalProps {
+  showModal: boolean;
+  selectedApptId: string;
+  vitals: VitalsState;
+  medicines: Medicine[];
+  resetForm: () => void;
+  setVitals: Dispatch<SetStateAction<VitalsState>>;
+  setMedicines: Dispatch<SetStateAction<Medicine[]>>;
+  completeAppointment: (id: string, data: any) => Promise<boolean>;
+  getDashData: () => Promise<void>;
+  setProgress: (progress: number) => void;
+}
+
+export interface DoctorsPrescribeModalProps {
+  showModal: boolean;
+  resetForm: () => void;
+  vitals: VitalsState;
+  medicines: Medicine[];
+  setVitals: Dispatch<SetStateAction<VitalsState>>;
+  setMedicines: Dispatch<SetStateAction<Medicine[]>>;
+  completeAppointment: (id: string, data: any) => Promise<boolean>;
+  setProgress: (progress: number) => void;
+  getAppointments: () => Promise<void>;
+  selectedApptId: string;
 }

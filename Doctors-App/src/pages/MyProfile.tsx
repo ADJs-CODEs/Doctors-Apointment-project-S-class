@@ -1,36 +1,21 @@
-import React, { useContext, useEffect, useState } from 'react'
-import { AppContext } from '../Context/AppContext.js'
+import React, { useEffect } from 'react'
 import { assets } from '../assets/assets/assets_frontend/assets.js'
 import { toast } from 'sonner'
-import type { AppContextType, Appointment } from '../types/index.js'
 import { motion } from 'framer-motion'
-import { useNavigate } from 'react-router-dom' // --- ADDED ---
-import { RiHeartPulseLine, RiDashboardLine, RiTempHotLine, RiMedicineBottleLine, RiArrowRightSLine } from "@remixicon/react"
+import { RiMedicineBottleLine, RiArrowRightSLine } from "@remixicon/react"
 import axiosInstance from '../utils/axiosInstance.js'
 import { API_PATHS } from '../utils/apiPath.js'
+import VitalsCard from '../cards/VitalsCard.js'
+import useMyProfile from '../hooks/useMyProfile.js'
 
 const MyProfile: React.FC = () => {
-  const context = useContext(AppContext) as AppContextType;
-  const { userData, setUserData, token, loadUserProfileData, setProgress } = context;
-  const navigate = useNavigate(); // --- ADDED ---
+  const { userData, setProgress, image, setImage, loadUserProfileData,
+    setIsEdit, getLatestHealthData, token, isEdit, setUserData,
+    latestAppointment, navigate } = useMyProfile()
 
-  const [isEdit, setIsEdit] = useState<boolean>(false)
-  const [image, setImage] = useState<File | false | undefined>(false)
-  const [latestAppointment, setLatestAppointment] = useState<Appointment | null>(null)
 
-  const getLatestHealthData = async () => {
-    try {
-      const { data } = await axiosInstance.get(API_PATHS.USER.FETCH_APPOINTMENT)
-      if (data.success && data.appointments.length > 0) {
-        const completedWithData = data.appointments
-          .reverse()
-          .find((app: Appointment) => app.isCompleted && app.healthData);
-        setLatestAppointment(completedWithData || null);
-      }
-    } catch (error: any) {
-      console.error("Error fetching vitals:", error.message)
-    }
-  }
+
+
 
   const updateUserProfileData = async () => {
     try {
@@ -115,37 +100,9 @@ const MyProfile: React.FC = () => {
       </div>
 
       {/* --- VITALS SECTION --- */}
-      <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-10'>
-        <div className='glass-card-premium p-6 rounded-[35px] border-b-4 border-rose-500'>
-          <div className='flex items-center gap-3 mb-3'>
-            <RiHeartPulseLine className='text-rose-500' size={20} />
-            <p className='text-[10px] font-black text-slate-500 uppercase tracking-widest'>Heart Rate</p>
-          </div>
-          <p className='text-3xl font-black text-slate-900'>
-            {latestAppointment?.healthData?.heartRate || '--'} <span className='text-xs text-slate-400 font-bold'>BPM</span>
-          </p>
-        </div>
-
-        <div className='glass-card-premium p-6 rounded-[35px] border-b-4 border-blue-500'>
-          <div className='flex items-center gap-3 mb-3'>
-            <RiDashboardLine className='text-blue-500' size={20} />
-            <p className='text-[10px] font-black text-slate-500 uppercase tracking-widest'>Blood Pressure</p>
-          </div>
-          <p className='text-3xl font-black text-slate-900'>
-            {latestAppointment?.healthData?.bloodPressure || '--'}
-          </p>
-        </div>
-
-        <div className='glass-card-premium p-6 rounded-[35px] border-b-4 border-orange-500'>
-          <div className='flex items-center gap-3 mb-3'>
-            <RiTempHotLine className='text-orange-500' size={20} />
-            <p className='text-[10px] font-black text-slate-500 uppercase tracking-widest'>Temperature</p>
-          </div>
-          <p className='text-3xl font-black text-slate-900'>
-            {latestAppointment?.healthData?.temperature || '--'} <span className='text-xs text-slate-400 font-bold'>°C</span>
-          </p>
-        </div>
-      </div>
+      <VitalsCard
+        latestAppointment={latestAppointment}
+      />
 
       <div className='grid md:grid-cols-2 gap-8'>
         {/* Contact Info */}
@@ -180,7 +137,7 @@ const MyProfile: React.FC = () => {
           </div>
 
           <div className='space-y-3'>
-            {latestAppointment?.healthData?.prescribedMedicines?.map((med, idx) => (
+            {latestAppointment?.healthData?.prescribedMedicines?.map((med: any, idx: any) => (
               <div
                 key={idx}
                 onClick={() => navigate('/medication-history')}

@@ -21,6 +21,7 @@ import { AppContext } from './Context/AppContext.js'
 import type { AppContextType } from './types/index.js';
 
 const App: React.FC = () => {
+  console.log(import.meta.env.VITE_BACKEND_URL)
   // Pull the progress state from your Context so it actually moves!
   const { progress, setProgress } = useContext(AppContext) as AppContextType;
 
