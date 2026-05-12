@@ -1,18 +1,20 @@
-// src/types/index.ts
-
 export interface PrescribedMedicine {
   name: string;
   dosagePerDay: number;
-  frequencyType: 'daily' | 'interval';
+  frequencyType: "daily" | "interval";
   totalQuantity: number;
   remainingQuantity: number;
   lastTaken?: string;
+  overdoseAlert?: boolean;
+  adherenceLogs?: Date[];
+  status?: "Active" | "Completed";
 }
 
 export interface HealthData {
   heartRate: string;
   bloodPressure: string;
   temperature: string;
+  doctorNotes?: string;
   prescribedMedicines: PrescribedMedicine[];
 }
 
@@ -26,11 +28,8 @@ export interface Doctor {
   about: string;
   available: boolean;
   fees: number;
-  address: {
-    line1: string;
-    line2: string;
-  };
-  slots_booked: Record<string, string[]>; // e.g., {"20-03-2026": ["10:00 AM"]}
+  address: { line1: string; line2: string };
+  slots_booked: Record<string, string[]>;
 }
 
 export interface UserData {
@@ -39,16 +38,12 @@ export interface UserData {
   email: string;
   image: string;
   phone: string;
-  address: {
-    line1: string;
-    line2: string;
-  };
-  gender: 'Male' | 'Female' | 'Not Selected';
+  address: { line1: string; line2: string };
+  gender: "Male" | "Female" | "Not Selected";
   dob: string;
 }
 
 export interface AppContextType {
-  // Functions
   currency: string;
   currencySymbol: string;
   calculateAge: (dob: string) => number;
@@ -58,12 +53,9 @@ export interface AppContextType {
   updateDose: (
     appointmentId: string,
     medicineName: string,
-    overdoseAlert?: boolean
+    overdoseAlert?: boolean,
   ) => Promise<boolean>;
-
-  // State & Setters
-
-  backendUrl: string;
+  backendUrl?: string;
   token: string;
   setToken: (token: string) => void;
   doctors: Doctor[];
@@ -80,7 +72,8 @@ export interface Appointment {
   _id: string;
   docId: string;
   userId: string;
-  docData: Doctor; // This uses the Doctor interface we already made
+  docData: Doctor;
+  userData?: any;
   slotDate: string;
   slotTime: string;
   amount: number;
@@ -88,9 +81,9 @@ export interface Appointment {
   cancelled: boolean;
   payment: boolean;
   isCompleted: boolean;
-  isPaid: boolean;
+  isPaid?: boolean;
   healthData?: HealthData;
-  patientStatus?: 'Normal' | 'Critical';
+  patientStatus?: "Normal" | "Stable" | "Critical";
   messages?: { content: string; sentAt: Date; isCritical: boolean }[];
 }
 
@@ -107,9 +100,15 @@ export interface MyAppointmentCardProps {
 export interface HealthDropdownProps {
   item: Appointment;
   isCritical: boolean;
-  // latestMessage can be null, so we use the structure from Appointment messages
-  latestMessage: { content: string; sentAt: Date; isCritical: boolean } | null | undefined;
-  logDose: (appointmentId: string, medicineName: string, med: PrescribedMedicine) => Promise<void>;
+  latestMessage:
+    | { content: string; sentAt: Date; isCritical: boolean }
+    | null
+    | undefined;
+  logDose: (
+    appointmentId: string,
+    medicineName: string,
+    med: PrescribedMedicine,
+  ) => Promise<void>;
   processingMed: string | null;
 }
 

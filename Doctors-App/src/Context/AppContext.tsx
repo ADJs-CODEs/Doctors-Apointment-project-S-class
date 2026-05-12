@@ -11,48 +11,57 @@ interface AppContextProviderProps {
 }
 
 const AppContextProvider = (props: AppContextProviderProps) => {
-  // --- State ---
-  const [token, setToken] = useState<string>(localStorage.getItem('token') || '');
+  const [token, setToken] = useState<string>(
+    localStorage.getItem("token") || "",
+  );
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [userData, setUserData] = useState<any>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [progress, setProgress] = useState<number>(0);
 
-  const currency = '$';
+  const currency = "$";
+  const currencySymbol = "$";
 
-  // --- Helpers ---
   const calculateAge = (dob: string): number => {
     const today = new Date();
     const birthDate = new Date(dob);
     let age = today.getFullYear() - birthDate.getFullYear();
     const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
     return age;
   };
 
-  const months: string[] = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "July", "Aug", "Sept", "Oct", "Nov", "Dec"];
+  const months: string[] = [
+    "",
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "July",
+    "Aug",
+    "Sept",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
 
   const slotDateFormat = (slotDate: string): string => {
     if (!slotDate) return "";
-    const dateArray = slotDate.split('_');
-    return dateArray[0] + " " + months[Number(dateArray[1])] + " " + dateArray[2];
+    const dateArray = slotDate.split("_");
+    return (
+      dateArray[0] + " " + months[Number(dateArray[1])] + " " + dateArray[2]
+    );
   };
 
-  // --- API Actions ---
-
-  // Fetch all doctors
   const getDoctorsData = async () => {
     try {
       setProgress(30);
       setLoading(true);
       const { data } = await axiosInstance.get(API_PATHS.USER.GET_DOCTORS_DATA);
-      if (data.success) {
-        setDoctors(data.doctors);
-      } else {
-        toast.error(data.message);
-      }
+      if (data.success) setDoctors(data.doctors);
+      else toast.error(data.message);
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -61,17 +70,15 @@ const AppContextProvider = (props: AppContextProviderProps) => {
     }
   };
 
-  // Fetch User Profile
   const loadUserProfileData = async () => {
     if (!token) return;
     try {
       setProgress(40);
-      const { data } = await axiosInstance.get(API_PATHS.AUTH.LOAD_USER_PROFILE_DATA);
-      if (data.success) {
-        setUserData(data.userData);
-      } else {
-        toast.error(data.message);
-      }
+      const { data } = await axiosInstance.get(
+        API_PATHS.AUTH.LOAD_USER_PROFILE_DATA,
+      );
+      if (data.success) setUserData(data.userData);
+      else toast.error(data.message);
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -79,17 +86,20 @@ const AppContextProvider = (props: AppContextProviderProps) => {
     }
   };
 
-  // Log Medication Dose (Supports Overdose Alert)
-  const updateDose = async (appointmentId: string, medicineName: string, overdoseAlert: boolean = false) => {
+  const updateDose = async (
+    appointmentId: string,
+    medicineName: string,
+    overdoseAlert: boolean = false,
+  ): Promise<boolean> => {
     try {
       setProgress(40);
-      const { data } = await axiosInstance.post(
-        API_PATHS.USER.UPDATE_DOSE,
-        { appointmentId, medicineName, overdoseAlert },
-      )
+      const { data } = await axiosInstance.post(API_PATHS.USER.UPDATE_DOSE, {
+        appointmentId,
+        medicineName,
+        overdoseAlert,
+      });
       if (data.success) {
         toast.success(data.message);
-        // We refresh profile data in case any user-level health stats changed
         loadUserProfileData();
         return true;
       } else {
@@ -104,29 +114,25 @@ const AppContextProvider = (props: AppContextProviderProps) => {
     }
   };
 
-  // --- Effects ---
-
-  // Initial Load
   useEffect(() => {
     getDoctorsData();
   }, []);
 
-  // Sync token and load user data on login/logout
   useEffect(() => {
     if (token) {
-      localStorage.setItem('token', token);
+      localStorage.setItem("token", token);
       loadUserProfileData();
     } else {
-      localStorage.removeItem('token');
+      localStorage.removeItem("token");
       setUserData(false);
     }
   }, [token]);
 
-  // --- Context Value ---
   const value: AppContextType = {
     calculateAge,
     slotDateFormat,
     currency,
+    currencySymbol,
     token,
     setToken,
     doctors,
@@ -139,13 +145,11 @@ const AppContextProvider = (props: AppContextProviderProps) => {
     setLoading,
     progress,
     setProgress,
-    updateDose
+    updateDose,
   };
 
   return (
-    <AppContext.Provider value={value}>
-      {props.children}
-    </AppContext.Provider>
+    <AppContext.Provider value={value}>{props.children}</AppContext.Provider>
   );
 };
 

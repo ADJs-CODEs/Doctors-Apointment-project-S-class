@@ -1,4 +1,4 @@
-export const BASE_URL = import.meta.env.VITE_BACKEND_URL // || "http://localhost:4000"
+export const BASE_URL = import.meta.env.VITE_BACKEND_URL; // || "http://localhost:4000"
 
 export const API_PATHS = {
   AUTH: {
@@ -11,7 +11,7 @@ export const API_PATHS = {
     GOOGLE_AUTH: "/api/user/google-auth",
     STRIPE_AUTH: "/api/user/payment-stripe",
     RESET_PASSWORD: "/api/user/reset-password",
-    VERIFY_STRIPE: "/api/user/verify-stripe"
+    VERIFY_STRIPE: "/api/user/verify-stripe",
   },
 
   USER: {
@@ -22,6 +22,6 @@ export const API_PATHS = {
     GET_USER_APPOINTMENT: "/api/user/appointments",
     CANCEL_APPOINTMENT: "/api/user/cancel-appointment",
     LOG_DOSE: "/api/user/update-dose",
-    UPDATE_USER_PROFILE_DATA: "/api/user/update-profile"
-  }
-}
+    UPDATE_USER_PROFILE_DATA: "/api/user/update-profile",
+  },
+};
