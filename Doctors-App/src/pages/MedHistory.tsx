@@ -7,8 +7,6 @@ import {
   RiHeartPulseLine,
   RiDashboardLine,
   RiTempHotLine,
-  RiCheckboxCircleFill,
-  RiTimeLine,
   RiArrowRightLine,
 } from "@remixicon/react";
 import axiosInstance from "../utils/axiosInstance.js";
@@ -46,10 +44,15 @@ const MedHistory: React.FC = () => {
     if (token) fetchData();
   }, [token]);
 
+  const handleViewAppointment = (appointmentId: string) => {
+    navigate("/my-appointments", { state: { highlightId: appointmentId } });
+    window.scrollTo(0, 0);
+  };
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-10 md:py-16">
       {/* Header */}
-      <div className="mb-10">
+      <div className="mb-8 md:mb-10">
         <div className="flex items-center gap-3 mb-2">
           <div className="p-2.5 bg-slate-900 rounded-xl text-teal-400">
             <RiMedicineBottleLine size={20} />
@@ -67,7 +70,7 @@ const MedHistory: React.FC = () => {
       </div>
 
       {/* Quick vitals */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 md:mb-10">
         {[
           {
             icon: <RiHeartPulseLine size={20} />,
@@ -102,16 +105,16 @@ const MedHistory: React.FC = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.08 }}
-            className={`bg-white ${v.border} rounded-[28px] p-6 shadow-sm border border-slate-100 flex items-center gap-4`}
+            className={`bg-white ${v.border} rounded-[24px] p-5 shadow-sm border border-slate-100 flex items-center gap-4`}
           >
-            <div className={`p-3 ${v.bg} rounded-2xl ${v.iconColor}`}>
+            <div className={`p-3 ${v.bg} rounded-2xl ${v.iconColor} shrink-0`}>
               {v.icon}
             </div>
             <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
                 {v.label}
               </p>
-              <p className="text-2xl font-black text-slate-900">
+              <p className="text-xl md:text-2xl font-black text-slate-900">
                 {v.value || "--"}
                 {v.value && v.unit && (
                   <span className="text-xs text-slate-400 font-normal ml-1">
@@ -125,7 +128,7 @@ const MedHistory: React.FC = () => {
       </div>
 
       {/* Prescription history */}
-      <div className="space-y-5">
+      <div className="space-y-4 md:space-y-5">
         {appointments.map((app, idx) =>
           app.healthData?.prescribedMedicines?.length ? (
             <motion.div
@@ -133,14 +136,14 @@ const MedHistory: React.FC = () => {
               initial={{ opacity: 0, y: 12 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: idx * 0.06 }}
-              className="bg-white border border-slate-100 border-l-4 border-l-teal-500 rounded-[28px] md:rounded-[36px] p-6 md:p-8 shadow-sm"
+              transition={{ delay: Math.min(idx * 0.06, 0.3) }}
+              className="bg-white border border-slate-100 border-l-4 border-l-teal-500 rounded-[24px] md:rounded-[32px] p-5 md:p-8 shadow-sm"
             >
               {/* Card header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-5 border-b border-slate-50">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-slate-50">
                 <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                    Prescribed On
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                    Prescribed
                   </p>
                   <p className="font-black text-slate-800 text-sm">
                     {app.slotDate.replace(/_/g, " / ")}
@@ -150,13 +153,9 @@ const MedHistory: React.FC = () => {
                   </p>
                 </div>
                 <span
-                  className={`self-start sm:self-auto text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full border ${
-                    app.isCompleted
-                      ? "bg-teal-50 text-teal-600 border-teal-100"
-                      : "bg-amber-50 text-amber-600 border-amber-100"
-                  }`}
+                  className={`self-start text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${app.isCompleted ? "bg-teal-50 text-teal-600 border-teal-100" : "bg-amber-50 text-amber-600 border-amber-100"}`}
                 >
-                  {app.isCompleted ? "Completed Course" : "In Progress"}
+                  {app.isCompleted ? "Completed" : "In Progress"}
                 </span>
               </div>
 
@@ -165,25 +164,20 @@ const MedHistory: React.FC = () => {
                 {app.healthData!.prescribedMedicines.map((med, i) => {
                   const remaining = med.remainingQuantity ?? 0;
                   const total = med.totalQuantity ?? 1;
-                  const progress = Math.round(
-                    ((total - remaining) / total) * 100,
-                  );
-
+                  const pct = Math.round(((total - remaining) / total) * 100);
                   return (
                     <div
                       key={i}
-                      onClick={() => navigate("/my-appointments")}
-                      className="bg-slate-50 border border-slate-100 rounded-[20px] p-5 cursor-pointer hover:bg-white hover:border-teal-200 hover:shadow-md transition-all group"
+                      className="bg-slate-50 border border-slate-100 rounded-[16px] p-4"
                     >
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="p-2 bg-white border border-slate-100 rounded-xl text-teal-500 group-hover:bg-teal-50 transition-colors">
-                          <RiMedicineBottleLine size={16} />
+                      <div className="flex items-center gap-2.5 mb-3">
+                        <div className="p-1.5 bg-white border border-slate-100 rounded-xl text-teal-500 shrink-0">
+                          <RiMedicineBottleLine size={15} />
                         </div>
                         <p className="font-black text-slate-900 text-sm truncate">
                           {med.name}
                         </p>
                       </div>
-
                       <div className="flex justify-between items-center mb-2">
                         <p className="text-[10px] font-bold text-slate-400 uppercase">
                           {med.dosagePerDay} doses/day
@@ -192,25 +186,22 @@ const MedHistory: React.FC = () => {
                           {remaining} left
                         </p>
                       </div>
-
-                      {/* Progress bar */}
                       <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-teal-500 rounded-full transition-all duration-500"
-                          style={{ width: `${progress}%` }}
+                          style={{ width: `${pct}%` }}
                         />
                       </div>
                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1.5">
-                        {progress}% taken
+                        {pct}% taken
                       </p>
                     </div>
                   );
                 })}
               </div>
 
-              {/* View details link */}
               <button
-                onClick={() => navigate("/my-appointments")}
+                onClick={() => handleViewAppointment(app._id)}
                 className="flex items-center gap-2 mt-5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-teal-600 transition-colors group"
               >
                 View full appointment
@@ -223,11 +214,10 @@ const MedHistory: React.FC = () => {
           ) : null,
         )}
 
-        {/* Empty state */}
         {appointments.filter((a) => a.healthData?.prescribedMedicines?.length)
           .length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 bg-white border border-dashed border-slate-200 rounded-[32px] text-center">
-            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-4">
+          <div className="flex flex-col items-center justify-center py-16 bg-white border border-dashed border-slate-200 rounded-[28px] text-center px-4">
+            <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-4">
               <RiMedicineBottleLine size={28} />
             </div>
             <h3 className="font-black text-slate-900 text-lg mb-1">

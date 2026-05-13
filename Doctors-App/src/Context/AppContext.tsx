@@ -1,4 +1,10 @@
-import { createContext, useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useEffect,
+  useState,
+  useCallback,
+  type ReactNode,
+} from "react";
 import { toast } from "sonner";
 import type { AppContextType, Doctor } from "../types/index.js";
 import { API_PATHS } from "../utils/apiPath.js";
@@ -31,7 +37,7 @@ const AppContextProvider = (props: AppContextProviderProps) => {
     return age;
   };
 
-  const months: string[] = [
+  const months = [
     "",
     "Jan",
     "Feb",
@@ -50,46 +56,59 @@ const AppContextProvider = (props: AppContextProviderProps) => {
   const slotDateFormat = (slotDate: string): string => {
     if (!slotDate) return "";
     const dateArray = slotDate.split("_");
-    return (
-      dateArray[0] + " " + months[Number(dateArray[1])] + " " + dateArray[2]
-    );
+    return `${dateArray[0]} ${months[Number(dateArray[1])]} ${dateArray[2]}`;
   };
 
-  const getDoctorsData = async () => {
+  // getDoctorsData: retries up to 3 times with backoff on failure
+  const getDoctorsData = useCallback(async (attempt = 1): Promise<void> => {
     try {
-      setProgress(30);
       setLoading(true);
+      setProgress(30);
       const { data } = await axiosInstance.get(API_PATHS.USER.GET_DOCTORS_DATA);
-      if (data.success) setDoctors(data.doctors);
-      else toast.error(data.message);
+      if (data.success) {
+        setDoctors(data.doctors);
+      } else {
+        throw new Error(data.message);
+      }
     } catch (error: any) {
-      toast.error(error.message);
+      if (attempt < 3) {
+        // Exponential backoff: 2s, 4s
+        await new Promise((res) => setTimeout(res, attempt * 2000));
+        return getDoctorsData(attempt + 1);
+      }
+      // After 3 attempts, show error but don't leave loading spinner stuck
+      toast.error("Could not load doctors. Please refresh.");
+      setDoctors([]);
     } finally {
       setLoading(false);
       setProgress(100);
     }
-  };
+  }, []);
 
-  const loadUserProfileData = async () => {
+  const loadUserProfileData = useCallback(async (): Promise<void> => {
     if (!token) return;
     try {
       setProgress(40);
       const { data } = await axiosInstance.get(
         API_PATHS.AUTH.LOAD_USER_PROFILE_DATA,
       );
-      if (data.success) setUserData(data.userData);
-      else toast.error(data.message);
+      if (data.success) {
+        setUserData(data.userData);
+      } else {
+        toast.error(data.message);
+      }
     } catch (error: any) {
-      toast.error(error.message);
+      // Silent fail on profile — don't block the app
+      console.warn("Profile load failed:", error.message);
     } finally {
       setProgress(100);
     }
-  };
+  }, [token]);
 
   const updateDose = async (
     appointmentId: string,
     medicineName: string,
-    overdoseAlert: boolean = false,
+    overdoseAlert = false,
   ): Promise<boolean> => {
     try {
       setProgress(40);
@@ -102,10 +121,9 @@ const AppContextProvider = (props: AppContextProviderProps) => {
         toast.success(data.message);
         loadUserProfileData();
         return true;
-      } else {
-        toast.error(data.message);
-        return false;
       }
+      toast.error(data.message);
+      return false;
     } catch (error: any) {
       toast.error(error.response?.data?.message || error.message);
       return false;
@@ -114,10 +132,12 @@ const AppContextProvider = (props: AppContextProviderProps) => {
     }
   };
 
+  // Initial load
   useEffect(() => {
     getDoctorsData();
   }, []);
 
+  // Sync token
   useEffect(() => {
     if (token) {
       localStorage.setItem("token", token);
