@@ -41,6 +41,17 @@ const registerUser = async (req: Request, res: Response) => {
       password: hashedPassword,
     }).save();
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET as string);
+
+    if (process.env.N8N_SIGNUP_WEBHOOK) {
+      axios
+        .post(process.env.N8N_SIGNUP_WEBHOOK, {
+          name: user.name,
+          email: user.email,
+        })
+        .catch((err) =>
+          console.warn("n8n signup webhook failed:", err.message),
+        );
+    }
     res.status(201).json({ success: true, token });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -62,6 +73,19 @@ const loginUser = async (req: Request, res: Response) => {
         { id: user._id },
         process.env.JWT_SECRET as string,
       );
+      if (process.env.N8N_LOGIN_WEBHOOK) {
+        axios
+          .post(process.env.N8N_LOGIN_WEBHOOK, {
+            name: user.name,
+            email: user.email,
+            time: new Date().toLocaleString("en-GB", {
+              timeZone: "Africa/Lagos",
+            }),
+          })
+          .catch((err) =>
+            console.warn("n8n login webhook failed:", err.message),
+          );
+      }
       res.status(200).json({ success: true, token });
     } else {
       res.status(401).json({ success: false, message: "invalid credentials" });
@@ -195,7 +219,7 @@ const bookAppointment = async (req: Request, res: Response) => {
 
     await new appointmentModel(appointmentData).save();
     await doctorModel.findByIdAndUpdate(docId, { slots_booked });
-
+    //Trigger n8n mail automation on successful booking
     if (process.env.N8N_BOOKING_WEBHOOK) {
       axios
         .post(process.env.N8N_BOOKING_WEBHOOK, {
@@ -257,6 +281,20 @@ const cancelAppointment = async (req: Request, res: Response) => {
         slots_booked: doctorData.slots_booked,
       });
     }
+    if (process.env.N8N_CANCEL_WEBHOOK) {
+      axios
+        .post(process.env.N8N_CANCEL_WEBHOOK, {
+          patientName: appointmentData.userData?.name,
+          patientEmail: appointmentData.userData?.email,
+          doctorName: appointmentData.docData?.name,
+          doctorEmail: appointmentData.docData?.email,
+          slotDate: appointmentData.slotDate.replace(/_/g, "/"),
+          slotTime: appointmentData.slotTime,
+        })
+        .catch((err) =>
+          console.warn("n8n cancel webhook failed:", err.message),
+        );
+    }
     res.status(200).json({ success: true, message: "Appointment Canceled" });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -309,6 +347,21 @@ const updateMedicationDose = async (req: Request, res: Response) => {
     if (overdoseAlert) {
       medicine.overdoseAlert = true;
       appointment.patientStatus = "Critical";
+
+      if (process.env.N8N_OVERDOSE_WEBHOOK) {
+        axios
+          .post(process.env.N8N_OVERDOSE_WEBHOOK, {
+            patientName: appointment.userData?.name,
+            patientEmail: appointment.userData?.email,
+            doctorEmail: appointment.docData?.email,
+            doctorName: appointment.docData?.name,
+            medicineName,
+            appointmentId: appointment._id,
+          })
+          .catch((err) =>
+            console.warn("n8n overdose webhook failed:", err.message),
+          );
+      }
     }
 
     if (medicine.remainingQuantity === 0) medicine.status = "Completed";
@@ -319,6 +372,33 @@ const updateMedicationDose = async (req: Request, res: Response) => {
     // Use validateModifiedOnly: true to prevent it from complaining about
     // existing fields like dosagePerDay that aren't being changed right now.
     await appointment.save({ validateModifiedOnly: true });
+
+    if (
+      process.env.N8N_DOSE_REMINDER_WEBHOOK &&
+      medicine.remainingQuantity > 0
+    ) {
+      const intervalHours = 24 / medicine.dosagePerDay;
+      const nextDoseTime = new Date(
+        Date.now() + intervalHours * 60 * 60 * 1000,
+      );
+      const reminderAt30 = new Date(nextDoseTime.getTime() - 30 * 60 * 1000);
+      const reminderAt5 = new Date(nextDoseTime.getTime() - 5 * 60 * 1000);
+
+      axios
+        .post(process.env.N8N_DOSE_REMINDER_WEBHOOK, {
+          patientName: appointment.userData?.name,
+          patientEmail: appointment.userData?.email,
+          medicineName: medicine.name,
+          dosagePerDay: medicine.dosagePerDay,
+          nextDoseTime: nextDoseTime.toISOString(),
+          reminderAt30: reminderAt30.toISOString(),
+          reminderAt5: reminderAt5.toISOString(),
+          remainingQuantity: medicine.remainingQuantity,
+          appointmentId: appointment._id.toString(),
+          userId: appointment.userId.toString(),
+        })
+        .catch((err) => console.warn("n8n dose reminder failed:", err.message));
+    }
 
     res.status(200).json({
       success: true,
