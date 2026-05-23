@@ -24,4 +24,7 @@ export const API_PATHS = {
     LOG_DOSE: "/api/user/update-dose",
     UPDATE_USER_PROFILE_DATA: "/api/user/update-profile",
   },
+  CHAT: {
+    MESSAGE: "/api/chat/message",
+  },
 };
