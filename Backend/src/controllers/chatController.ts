@@ -16,7 +16,10 @@ const chatWithGemini = async (req: Request, res: Response) => {
     // Fetch patient context from DB
     const [user, appointments] = await Promise.all([
       userModel.findById(userId).select("-password"),
-      appointmentModel.find({ userId }).sort({ date: -1 }).limit(5),
+      appointmentModel
+        .find({ userId, "healthData.heartRate": { $ne: "" } })
+        .sort({ date: -1 })
+        .limit(1),
     ]);
 
     // Build context summary
