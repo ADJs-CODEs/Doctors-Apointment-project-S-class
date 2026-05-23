@@ -41,7 +41,7 @@ const chatWithGemini = async (req: Request, res: Response) => {
       .join("\n");
 
     const latestVitals = appointments.find(
-      (a) => a.isCompleted && a.healthData?.heartRate,
+      (a) => a.healthData?.heartRate && a.healthData.heartRate !== "",
     );
     const vitals = latestVitals
       ? `Heart rate: ${latestVitals.healthData.heartRate} BPM, Blood pressure: ${latestVitals.healthData.bloodPressure}, Temperature: ${latestVitals.healthData.temperature}°C`
