@@ -22,7 +22,7 @@ const Login: React.FC = () => {
   const { token, setToken, setProgress } = context;
 
   const navigate = useNavigate();
-  const [state, setState] = useState<"Sign Up" | "Login">("Sign Up");
+  const [state, setState] = useState<"Sign Up" | "Login">("Login");
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [name, setName] = useState<string>("");
@@ -199,7 +199,7 @@ const Login: React.FC = () => {
                 to="/forgot-password"
                 className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-teal-600 transition-colors"
               >
-                Reset Access Credentials?
+                Reset Login Details
               </Link>
             </div>
           )}
