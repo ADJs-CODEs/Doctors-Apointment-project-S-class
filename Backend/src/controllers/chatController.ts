@@ -3,6 +3,7 @@ import appointmentModel from "../models/appointmentModel.js";
 import userModel from "../models/userModel.js";
 
 const chatWithGemini = async (req: Request, res: Response) => {
+  console.log("GEMINI KEY present?", !!process.env.GEMINI_API_KEY);
   try {
     const userId = (req as any).userId;
     const { message, history } = req.body;
