@@ -100,8 +100,23 @@ const DoctorDashboard: React.FC = () => {
       </div>
     );
 
-  const latestBookings =
-    dashData.latestAppointments || dashData.latestAppointment || [];
+  const latestBookings = [
+    ...(dashData.latestAppointments || dashData.latestAppointment || []),
+  ].sort((a: any, b: any) => {
+    const aCritical =
+      a.patientStatus === "Critical" ||
+      a.healthData?.prescribedMedicines?.some((m: any) => m.overdoseAlert);
+    const bCritical =
+      b.patientStatus === "Critical" ||
+      b.healthData?.prescribedMedicines?.some((m: any) => m.overdoseAlert);
+    if (aCritical && !bCritical) return -1;
+    if (!aCritical && bCritical) return 1;
+    const aActive = !a.isCompleted && !a.cancelled;
+    const bActive = !b.isCompleted && !b.cancelled;
+    if (aActive && !bActive) return -1;
+    if (!aActive && bActive) return 1;
+    return b.date - a.date;
+  });
 
   const statCards = [
     {

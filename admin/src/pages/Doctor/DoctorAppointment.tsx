@@ -43,6 +43,7 @@ const DoctorAppointment: React.FC = () => {
 
   const sortedAppointments = appointments
     ? [...appointments].sort((a, b) => {
+        // 1. Critical patients first
         const aCritical =
           a.patientStatus === "Critical" ||
           a.healthData?.prescribedMedicines?.some((m) => m.overdoseAlert);
@@ -51,9 +52,21 @@ const DoctorAppointment: React.FC = () => {
           b.healthData?.prescribedMedicines?.some((m) => m.overdoseAlert);
         if (aCritical && !bCritical) return -1;
         if (!aCritical && bCritical) return 1;
-        if (a.isCompleted && !b.isCompleted) return 1;
-        if (!a.isCompleted && b.isCompleted) return -1;
-        return 0;
+
+        // 2. Active (not completed, not cancelled) next
+        const aActive = !a.isCompleted && !a.cancelled;
+        const bActive = !b.isCompleted && !b.cancelled;
+        if (aActive && !bActive) return -1;
+        if (!aActive && bActive) return 1;
+
+        // 3. Unpaid before paid within active
+        if (aActive && bActive) {
+          if (!a.payment && b.payment) return -1;
+          if (a.payment && !b.payment) return 1;
+        }
+
+        // 4. Newest first by date
+        return b.date - a.date;
       })
     : [];
 
