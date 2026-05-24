@@ -108,7 +108,7 @@ const DoctorAI: React.FC<DoctorAIProps> = ({ appointmentContext }) => {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => setOpen(true)}
-            className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-slate-900 text-white px-4 py-3 rounded-full shadow-2xl border border-white/10 group"
+            className="fixed bottom-6 right-6 z-[9999] flex items-center gap-2 bg-slate-900 text-white px-4 py-3 rounded-full shadow-2xl border border-white/10 group"
           >
             <RiSparklingLine size={18} className="text-teal-400" />
             <span className="text-[11px] font-black uppercase tracking-widest">
@@ -127,7 +127,7 @@ const DoctorAI: React.FC<DoctorAIProps> = ({ appointmentContext }) => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 40, scale: 0.95 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-6 right-6 z-50 w-[360px] sm:w-[420px] h-[580px] bg-white border border-slate-100 rounded-[28px] shadow-2xl flex flex-col overflow-hidden"
+            className="fixed bottom-6 right-6 z-[9999] w-[360px] sm:w-[420px] h-[580px] bg-white border border-slate-100 rounded-[28px] shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="bg-slate-900 px-5 py-4 flex items-center justify-between shrink-0">
