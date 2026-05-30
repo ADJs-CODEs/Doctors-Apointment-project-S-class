@@ -1,5 +1,5 @@
 import { type Request, type Response } from "express";
-import connectionModel from "../models/connectionModel.js";
+import connectionModel from "../models/connectionModels.js";
 import userModel from "../models/userModel.js";
 import appointmentModel from "../models/appointmentModel.js";
 import nodemailer from "nodemailer";
@@ -277,7 +277,7 @@ const getPatientData = async (req: Request, res: Response) => {
     // Fetch patient data
     const [patient, appointments] = await Promise.all([
       userModel.findById(patientId).select("-password"),
-      appointmentModel.find({ userId: patientId }).sort({ date: -1 }),
+      appointmentModel.find({ userId: patientId as string }).sort({ date: -1 }),
     ]);
 
     res.status(200).json({ success: true, patient, appointments });
