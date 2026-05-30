@@ -168,7 +168,7 @@ const getMyRequests = async (req: Request, res: Response) => {
 
     // Attach requester info to each request
     const enriched = await Promise.all(
-      pending.map(async (conn) => {
+      pending.map(async (conn: any) => {
         const requester = await userModel
           .findById(conn.requesterId)
           .select("name email image");
@@ -193,7 +193,7 @@ const getWatchingOver = async (req: Request, res: Response) => {
     });
 
     const enriched = await Promise.all(
-      connections.map(async (conn) => {
+      connections.map(async (conn: any) => {
         const patient = await userModel
           .findById(conn.patientId)
           .select("name email image phone");
@@ -218,7 +218,7 @@ const getMyWatchers = async (req: Request, res: Response) => {
     });
 
     const enriched = await Promise.all(
-      connections.map(async (conn) => {
+      connections.map(async (conn: any) => {
         const watcher = await userModel
           .findById(conn.requesterId)
           .select("name email image");
@@ -269,12 +269,10 @@ const getPatientData = async (req: Request, res: Response) => {
     });
 
     if (!connection)
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "No active connection with this patient",
-        });
+      return res.status(403).json({
+        success: false,
+        message: "No active connection with this patient",
+      });
 
     // Fetch patient data
     const [patient, appointments] = await Promise.all([
