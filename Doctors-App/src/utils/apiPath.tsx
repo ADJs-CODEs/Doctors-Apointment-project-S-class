@@ -27,4 +27,14 @@ export const API_PATHS = {
   CHAT: {
     MESSAGE: "/api/chat/message",
   },
+  CONNECTIONS: {
+    REQUEST: "/api/connections/request",
+    RESPOND: "/api/connections/respond",
+    MY_REQUESTS: "/api/connections/my-requests",
+    WATCHING_OVER: "/api/connections/watching-over",
+    MY_WATCHERS: "/api/connections/my-watchers",
+    REMOVE: "/api/connections/remove",
+    PATIENT_DATA: (patientId: string) =>
+      `/api/connections/patient/${patientId}`,
+  },
 };
