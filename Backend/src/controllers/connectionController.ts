@@ -260,11 +260,12 @@ const getPatientData = async (req: Request, res: Response) => {
   try {
     const watcherId = (req as any).userId;
     const { patientId } = req.params;
+    const patientIdStr = patientId as string;
 
     // Verify an accepted connection exists
     const connection = await connectionModel.findOne({
       requesterId: watcherId,
-      patientId,
+      patientId: patientIdStr,
       status: "accepted",
     });
 
