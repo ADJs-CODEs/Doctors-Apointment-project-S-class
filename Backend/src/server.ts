@@ -1,4 +1,6 @@
 import "dotenv/config";
+import connectionRouter from "./routes/connectionRoute.js";
+
 console.log("file is running");
 import express, {
   type Application,
@@ -31,6 +33,7 @@ app.use("/api/admin", adminRouter); //endpoints for admin
 app.use("/api/doctor", doctorRouter); //endpoints for doctor
 app.use("/api/user", userRoute); //endpoints for user
 app.use("/api/chat", chatRouter); // endpoint for chat with gemini
+app.use("/api/connections", connectionRouter); // endpoints for connection management
 
 // localhost:4000/api/admin/add-doctor
 app.get("/", (req: Request, res: Response) => {
