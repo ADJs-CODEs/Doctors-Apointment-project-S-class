@@ -23,7 +23,9 @@ const sendConnectionRequest = async (req: Request, res: Response) => {
         .json({ success: false, message: "Patient email required" });
 
     // Find the patient by email
-    const patient = await userModel.findOne({ email: patientEmail });
+    const patient = await userModel.findOne({
+      email: { $regex: new RegExp(`^${patientEmail.trim()}$`, "i") },
+    });
     if (!patient)
       return res
         .status(404)

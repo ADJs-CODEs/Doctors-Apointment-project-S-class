@@ -13,6 +13,7 @@ import {
   Fingerprint,
   ArrowUpRight,
 } from "@phosphor-icons/react";
+import { RiEyeLine } from "@remixicon/react";
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
@@ -128,6 +129,11 @@ const Navbar: React.FC = () => {
                       icon: <Fingerprint size={18} weight="duotone" />,
                       label: "Security & Credentials",
                       path: "/account-settings",
+                    },
+                    {
+                      icon: <RiEyeLine size={18} weight="duotone" />,
+                      label: "Watching Over",
+                      path: "/watching-over",
                     },
                   ].map((item) => (
                     <div
@@ -256,6 +262,11 @@ const Navbar: React.FC = () => {
                         icon: <Fingerprint size={26} weight="duotone" />,
                         label: "Security & Credentials",
                         path: "/account-settings",
+                      },
+                      {
+                        icon: <RiEyeLine size={18} weight="duotone" />,
+                        label: "Watching Over",
+                        path: "/watching-over",
                       },
                     ].map((item) => (
                       <button

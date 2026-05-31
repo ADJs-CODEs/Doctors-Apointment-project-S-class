@@ -20,6 +20,10 @@ import ResetPassword from "./pages/ResetPassword.js";
 import { AppContext } from "./Context/AppContext.js";
 import type { AppContextType } from "./types/index.js";
 import ChatBot from "./components/ChatBot.js";
+import WatchingOver from "./pages/WatchingOver.js";
+import WatchPatient from "./pages/WatchPatient.js";
+
+// Inside your routes, add:
 
 const App: React.FC = () => {
   console.log(import.meta.env.VITE_BACKEND_URL);
@@ -54,6 +58,8 @@ const App: React.FC = () => {
           <Route path="/account-settings" element={<AccountSettings />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/watching-over" element={<WatchingOver />} />
+          <Route path="/watching/:patientId" element={<WatchPatient />} />
         </Routes>
       </main>
 
