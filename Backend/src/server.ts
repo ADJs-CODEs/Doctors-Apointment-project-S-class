@@ -16,6 +16,7 @@ import chatRouter from "./routes/chatRoute.js";
 import connectionRouter from "./routes/connectionRoute.js";
 import wishWellRouter from "./routes/wishWellRoute.js";
 import notificationRouter from "./routes/notificationRoute.js";
+import emojiRouter from "./routes/emojiRoute.js";
 
 const app: Application = express();
 const httpServer = createServer(app);
@@ -76,6 +77,7 @@ app.use("/api/chat", chatRouter);
 app.use("/api/connections", connectionRouter);
 app.use("/api/wish-well", wishWellRouter);
 app.use("/api/notifications", notificationRouter);
+app.use("/api/emoji", emojiRouter);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("API is fully WORKING");
