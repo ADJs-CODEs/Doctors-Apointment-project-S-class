@@ -37,4 +37,11 @@ export const API_PATHS = {
     PATIENT_DATA: (patientId: string) =>
       `/api/connections/patient/${patientId}`,
   },
+  NOTIFICATIONS: {
+    CREATE: "/api/notifications/create",
+    GET: "/api/notifications/get",
+    MARK_ALL_READ: "/api/notifications/mark-all-read",
+    MARK_ONE_READ: "/api/notifications/mark-one-read",
+    CLEAR: "/api/notifications/clear",
+  },
 };

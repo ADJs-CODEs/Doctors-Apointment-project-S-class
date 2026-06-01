@@ -216,8 +216,7 @@ const bookAppointment = async (req: Request, res: Response) => {
       slotDate,
       date: Date.now(),
     };
-
-    await new appointmentModel(appointmentData).save();
+    const newAppointment = await new appointmentModel(appointmentData).save();
     await doctorModel.findByIdAndUpdate(docId, { slots_booked });
     //Trigger n8n mail automation on successful booking
     if (process.env.N8N_BOOKING_WEBHOOK) {
@@ -232,7 +231,11 @@ const bookAppointment = async (req: Request, res: Response) => {
           console.warn("n8n booking webhook failed:", err.message),
         );
     }
-    res.status(201).json({ success: true, message: "Appointment Booked" });
+    res.status(201).json({
+      success: true,
+      message: "Appointment Booked",
+      appointmentId: newAppointment._id,
+    });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }

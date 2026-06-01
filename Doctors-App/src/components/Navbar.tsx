@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { AppContext } from "../Context/AppContext.js";
 import type { AppContextType } from "../types/index.js";
 import { motion, AnimatePresence } from "framer-motion";
+import NotificationBell from "./NotificationBell.js";
 import {
   List,
   X,
@@ -88,6 +89,7 @@ const Navbar: React.FC = () => {
 
         {/* Desktop right */}
         <div className="flex items-center gap-3 md:gap-5">
+          {token && <NotificationBell />}
           {token && userData ? (
             <div className="hidden md:flex items-center gap-3 cursor-pointer group relative">
               <div className="relative isolate">
