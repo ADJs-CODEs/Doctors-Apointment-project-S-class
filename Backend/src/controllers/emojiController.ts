@@ -16,21 +16,25 @@ const sendEmojiPing = async (req: Request, res: Response) => {
         .status(400)
         .json({ success: false, message: "Missing fields" });
 
+    const VALID_EMOJIS = ["❤️", "🌸", "👏", "⭐", "🙏"];
     if (!VALID_EMOJIS.includes(emoji))
       return res.status(400).json({ success: false, message: "Invalid emoji" });
 
-    // Verify connection exists
+    // Fix: use flexible connection check — either direction
     const connection = await connectionModel.findOne({
-      requesterId: fromUserId,
-      patientId: toUserId,
-      status: "accepted",
+      $or: [
+        { requesterId: fromUserId, patientId: toUserId, status: "accepted" },
+        { requesterId: toUserId, patientId: fromUserId, status: "accepted" },
+      ],
     });
 
     if (!connection)
-      return res.status(403).json({
-        success: false,
-        message: "No active connection with this user",
-      });
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "No active connection with this user",
+        });
 
     const fromUser = await userModel.findById(fromUserId).select("name");
 
@@ -42,7 +46,6 @@ const sendEmojiPing = async (req: Request, res: Response) => {
       delivered: false,
     }).save();
 
-    // Try real-time delivery
     const delivered = sendEmojiToUser(toUserId, {
       pingId: ping._id,
       emoji,
@@ -56,10 +59,10 @@ const sendEmojiPing = async (req: Request, res: Response) => {
 
     res.status(201).json({ success: true, message: "Emoji sent", delivered });
   } catch (error: any) {
+    console.error("Emoji send error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
 // Get undelivered pings for a user (for when they come back online)
 const getUndeliveredPings = async (req: Request, res: Response) => {
   try {

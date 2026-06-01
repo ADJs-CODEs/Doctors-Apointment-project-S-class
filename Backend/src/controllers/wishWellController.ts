@@ -15,14 +15,13 @@ const nominatePatient = async (req: Request, res: Response) => {
         .status(400)
         .json({ success: false, message: "Missing fields" });
 
-    // Check patient exists
     const patient = await userModel.findById(patientId).select("name image");
     if (!patient)
       return res
         .status(404)
         .json({ success: false, message: "Patient not found" });
 
-    // Check not already listed
+    // Check not already listed as critical
     const existing = await wishWellModel.findOne({
       patientId,
       status: "critical",
@@ -32,13 +31,13 @@ const nominatePatient = async (req: Request, res: Response) => {
         .status(400)
         .json({ success: false, message: "Patient already on the Wish Well" });
 
-    // Get doctor info from appointment
     const appointment = await appointmentModel.findOne({
       docId,
       userId: patientId,
     });
     const doctorName = appointment?.docData?.name || "Doctor";
 
+    // Doctor adds directly — no consent needed per your spec
     const entry = await new wishWellModel({
       patientId,
       patientName: patient.name,
@@ -47,20 +46,18 @@ const nominatePatient = async (req: Request, res: Response) => {
       doctorName,
       condition,
       story,
-      consentGiven: false, // Patient must accept first
+      consentGiven: true, // auto-approved by doctor
     }).save();
 
     res
       .status(201)
-      .json({
-        success: true,
-        message: "Nomination sent — awaiting patient consent",
-        entry,
-      });
+      .json({ success: true, message: "Patient added to Wish Well", entry });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// Update status — when doctor marks recovered, emojis stop, total is preserved
 
 // Patient gives consent
 const giveConsent = async (req: Request, res: Response) => {
@@ -96,8 +93,7 @@ const getWishWell = async (req: Request, res: Response) => {
   try {
     const entries = await wishWellModel
       .find({ consentGiven: true, optedOut: false })
-      .sort({ createdAt: -1 });
-
+      .sort({ status: 1, createdAt: -1 }); // critical first, then recovered
     res.status(200).json({ success: true, entries });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -120,12 +116,10 @@ const sendWishWellEmoji = async (req: Request, res: Response) => {
         .json({ success: false, message: "Entry not found" });
 
     if (entry.status !== "critical")
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Patient has been updated — emojis disabled",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Patient has been updated — emojis disabled",
+      });
 
     // Update counts
     const emojiMap: Record<string, string> = {
@@ -182,14 +176,13 @@ const updatePatientStatus = async (req: Request, res: Response) => {
     entry.status = status;
     await entry.save();
 
-    // If recovered, send congratulations emoji to patient
     if (status === "recovered") {
+      // Send congratulations to patient
       sendEmojiToUser(entry.patientId, {
         emoji: "🎉",
         fromName: "ADJ's CODEs",
         isCongratulations: true,
-        message:
-          "Your doctor has marked you as recovered! The community celebrates with you.",
+        message: `You've recovered! The community sent you ${entry.totalEmojis} wishes of love. 💕`,
       });
     }
 

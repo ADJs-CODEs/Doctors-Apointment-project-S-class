@@ -22,6 +22,7 @@ import type { AppContextType } from "./types/index.js";
 import ChatBot from "./components/ChatBot.js";
 import WatchingOver from "./pages/WatchingOver.js";
 import WatchPatient from "./pages/WatchPatient.js";
+import WishWell from "./pages/WishWell.js";
 
 // Inside your routes, add:
 
@@ -60,6 +61,7 @@ const App: React.FC = () => {
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/watching-over" element={<WatchingOver />} />
           <Route path="/watching/:patientId" element={<WatchPatient />} />
+          <Route path="/wish-well" element={<WishWell />} />
         </Routes>
       </main>
 

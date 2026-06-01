@@ -44,4 +44,9 @@ export const API_PATHS = {
     MARK_ONE_READ: "/api/notifications/mark-one-read",
     CLEAR: "/api/notifications/clear",
   },
+  WISH_WELL: {
+    ALL: "/api/wish-well/all",
+    SEND_EMOJI: "/api/wish-well/send-emoji",
+    OPT_OUT: "/api/wish-well/opt-out",
+  },
 };
