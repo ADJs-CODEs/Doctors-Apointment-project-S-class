@@ -74,10 +74,16 @@ const Navbar: React.FC = () => {
 
         {/* Desktop nav */}
         <ul className="hidden md:flex items-center gap-8 text-[11px] tracking-[2px] font-bold">
-          {["HOME", "DOCTORS", "ABOUT", "CONTACT"].map((item) => (
+          {["HOME", "DOCTORS", "ABOUT", "WISH WELL", "CONTACT"].map((item) => (
             <NavLink
               key={item}
-              to={item === "HOME" ? "/" : `/${item.toLowerCase()}`}
+              to={
+                item === "HOME"
+                  ? "/"
+                  : item === "WISH WELL"
+                    ? "/wish-well"
+                    : `/${item.toLowerCase()}`
+              }
               onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
             >
               {({ isActive }) => (
@@ -221,20 +227,28 @@ const Navbar: React.FC = () => {
                   Navigation
                 </p>
                 <ul className="flex flex-col gap-5">
-                  {["HOME", "DOCTORS", "ABOUT", "CONTACT"].map((item, i) => (
-                    <motion.li
-                      key={item}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.05 }}
-                      onClick={() =>
-                        go(item === "HOME" ? "/" : `/${item.toLowerCase()}`)
-                      }
-                      className="text-3xl font-black text-slate-800 tracking-tighter uppercase cursor-pointer hover:text-teal-600 transition-colors active:scale-95"
-                    >
-                      {item}
-                    </motion.li>
-                  ))}
+                  {["HOME", "DOCTORS", "ABOUT", "WISH WELL", "CONTACT"].map(
+                    (item, i) => (
+                      <motion.li
+                        key={item}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                        onClick={() =>
+                          go(
+                            item === "HOME"
+                              ? "/"
+                              : item === "WISH WELL"
+                                ? "/wish-well"
+                                : `/${item.toLowerCase()}`,
+                          )
+                        }
+                        className="text-3xl font-black text-slate-800 tracking-tighter uppercase cursor-pointer hover:text-teal-600 transition-colors active:scale-95"
+                      >
+                        {item}
+                      </motion.li>
+                    ),
+                  )}
                 </ul>
               </div>
 

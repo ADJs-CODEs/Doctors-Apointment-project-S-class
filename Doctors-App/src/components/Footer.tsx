@@ -87,18 +87,26 @@ const Footer: React.FC = () => {
               Quick Links
             </h3>
             <ul className="flex flex-row flex-wrap lg:flex-col justify-center lg:justify-start gap-x-6 gap-y-3 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
-              {["Home", "Doctors", "About", "Contact"].map((item) => (
-                <li
-                  key={item}
-                  onClick={() =>
-                    go(item === "Home" ? "/" : `/${item.toLowerCase()}`)
-                  }
-                  className="cursor-pointer hover:text-teal-600 transition-all flex items-center justify-center lg:justify-start gap-2 group"
-                >
-                  <div className="hidden lg:block w-1.5 h-1.5 bg-teal-500 rounded-full scale-0 group-hover:scale-100 transition-transform" />
-                  {item}
-                </li>
-              ))}
+              {["Home", "Doctors", "About", "Wish Well", "Contact"].map(
+                (item) => (
+                  <li
+                    key={item}
+                    onClick={() =>
+                      go(
+                        item === "Home"
+                          ? "/"
+                          : item === "Wish Well"
+                            ? "/wish-well"
+                            : `/${item.toLowerCase()}`,
+                      )
+                    }
+                    className="cursor-pointer hover:text-teal-600 transition-all flex items-center justify-center lg:justify-start gap-2 group"
+                  >
+                    <div className="hidden lg:block w-1.5 h-1.5 bg-teal-500 rounded-full scale-0 group-hover:scale-100 transition-transform" />
+                    {item}
+                  </li>
+                ),
+              )}
             </ul>
           </div>
 
