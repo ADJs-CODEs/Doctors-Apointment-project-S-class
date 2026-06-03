@@ -7,7 +7,6 @@ export const API_PATHS = {
     A_LOGIN: "/api/admin/login",
     GET_PROFILE: "/api/doctor/update-profile",
   },
-
   DOCTOR: {
     SEND_ALERT: "/api/doctor/send-alert",
     GET_APPOINTMENTS: "/api/doctor/appointments",
@@ -17,7 +16,6 @@ export const API_PATHS = {
     UPDATE_PROFILE: "/api/doctor/update-profile",
     COMPLETE_APPOINTMENT: "/api/doctor/complete-appointment",
   },
-
   ADMIN: {
     GET_ALL_DOCTORS: "/api/admin/all-doctors",
     CHANGE_AVAILABILITY: "/api/admin/change-availability",
@@ -26,6 +24,12 @@ export const API_PATHS = {
     CANCEL_APPOINTMENT: "/api/admin/cancel-appointment",
     DELETE_DOCTOR: "/api/admin/delete-doctor",
     ADD_DOCTORS: "/api/admin/add-doctor",
+  },
+  WISH_WELL: {
+    ALL: "/api/wish-well/all",
+    NOMINATE: "/api/wish-well/nominate",
+    UPDATE_STATUS: "/api/wish-well/update-status",
+    REMOVE: "/api/wish-well/remove",
   },
   CHAT: {
     DOCTOR_MESSAGE: "/api/chat/doctor-message",

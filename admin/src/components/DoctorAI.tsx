@@ -22,7 +22,7 @@ const QUICK_PROMPTS = [
   "Draft an alert for a patient with high BP and missed doses",
   "What are common drug interactions with Metformin?",
   "Suggest clinical notes for a patient with 36.5°C temp and 72 BPM",
-  "Explain low medication adherence consequences",
+  "How should I handle a patient with low medication adherence?",
 ];
 
 interface DoctorAIProps {
@@ -74,7 +74,6 @@ const DoctorAI: React.FC<DoctorAIProps> = ({ appointmentContext }) => {
         history: newMessages.slice(-6),
         appointmentContext: appointmentContext || null,
       });
-
       if (data.success) {
         setMessages((prev) => [
           ...prev,
@@ -105,10 +104,10 @@ const DoctorAI: React.FC<DoctorAIProps> = ({ appointmentContext }) => {
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => setOpen(true)}
-            className="fixed bottom-6 right-6 z-[9999] flex items-center gap-2 bg-slate-900 text-white px-4 py-3 rounded-full shadow-2xl border border-white/10 group"
+            className="fixed bottom-6 right-6 z-[9999] flex items-center gap-2.5 bg-slate-900 text-white px-5 py-3.5 rounded-full shadow-2xl border border-white/10"
           >
             <RiSparklingLine size={18} className="text-teal-400" />
             <span className="text-[11px] font-black uppercase tracking-widest">
@@ -139,12 +138,11 @@ const DoctorAI: React.FC<DoctorAIProps> = ({ appointmentContext }) => {
                   <p className="text-white font-black text-sm uppercase tracking-tight">
                     Clinical AI
                   </p>
-                  {appointmentContext && (
+                  {appointmentContext ? (
                     <p className="text-teal-400 text-[10px] font-bold truncate max-w-[180px]">
                       {appointmentContext.userData?.name} loaded
                     </p>
-                  )}
-                  {!appointmentContext && (
+                  ) : (
                     <div className="flex items-center gap-1.5">
                       <div className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
                       <p className="text-teal-400 text-[10px] font-bold uppercase tracking-widest">
@@ -156,7 +154,7 @@ const DoctorAI: React.FC<DoctorAIProps> = ({ appointmentContext }) => {
               </div>
               <button
                 onClick={() => setOpen(false)}
-                className="p-2 hover:bg-white/10 rounded-xl transition-all"
+                className="p-2 hover:bg-white/10 rounded-xl transition-all active:scale-90"
               >
                 <RiCloseLine size={18} className="text-white" />
               </button>
@@ -223,7 +221,7 @@ const DoctorAI: React.FC<DoctorAIProps> = ({ appointmentContext }) => {
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
+                  transition={{ delay: 0.2 }}
                   className="flex flex-col gap-2 mt-2"
                 >
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
@@ -240,6 +238,7 @@ const DoctorAI: React.FC<DoctorAIProps> = ({ appointmentContext }) => {
                   ))}
                 </motion.div>
               )}
+
               <div ref={bottomRef} />
             </div>
 
@@ -258,7 +257,7 @@ const DoctorAI: React.FC<DoctorAIProps> = ({ appointmentContext }) => {
                 <button
                   onClick={() => sendMessage()}
                   disabled={!input.trim() || loading}
-                  className="p-1.5 bg-slate-900 text-white rounded-xl disabled:opacity-30 hover:bg-teal-600 transition-all active:scale-90"
+                  className="p-1.5 bg-slate-900 text-white rounded-xl disabled:opacity-30 hover:bg-teal-600 transition-all active:scale-90 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <RiLoader4Line size={14} className="animate-spin" />
@@ -268,7 +267,7 @@ const DoctorAI: React.FC<DoctorAIProps> = ({ appointmentContext }) => {
                 </button>
               </div>
               <p className="text-[9px] text-slate-300 font-bold uppercase tracking-widest text-center mt-2">
-                Clinical AI · ADJ's CODEs
+                Powered by Gemini · Clinical use only
               </p>
             </div>
           </motion.div>
