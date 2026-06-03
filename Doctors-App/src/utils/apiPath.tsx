@@ -49,12 +49,8 @@ export const API_PATHS = {
     SEND_EMOJI: "/api/wish-well/send-emoji",
     OPT_OUT: "/api/wish-well/opt-out",
   },
- EMOJI: {
-  SEND: '/api/emoji/send',
-  UNDELIVERED: '/api/emoji/undelivered',
-},
-WISH_WELL: {
-  ALL: '/api/wish-well/all',
-  SEND_EMOJI: '/api/wish-well/send-emoji',
-  OPT_OUT: '/api/wish-well/opt-out',
-},
+  EMOJI: {
+    SEND: "/api/emoji/send",
+    UNDELIVERED: "/api/emoji/undelivered",
+  },
+};
