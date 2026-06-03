@@ -21,26 +21,16 @@ import emojiRouter from "./routes/emojiRoute.js";
 const app: Application = express();
 const httpServer = createServer(app);
 
-// Socket.io setup
 export const io = new Server(httpServer, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-  },
+  cors: { origin: "*", methods: ["GET", "POST"] },
 });
 
-// Track connected users
-const connectedUsers = new Map<string, string>(); // userId -> socketId
+const connectedUsers = new Map<string, string>();
 
 io.on("connection", (socket) => {
-  console.log("Socket connected:", socket.id);
-
-  // User registers their socket
   socket.on("register", (userId: string) => {
     connectedUsers.set(userId, socket.id);
-    console.log(`User ${userId} registered with socket ${socket.id}`);
   });
-
   socket.on("disconnect", () => {
     for (const [userId, socketId] of connectedUsers.entries()) {
       if (socketId === socket.id) {
@@ -48,12 +38,10 @@ io.on("connection", (socket) => {
         break;
       }
     }
-    console.log("Socket disconnected:", socket.id);
   });
 });
 
-// Export function to send emoji to a user
-export const sendEmojiToUser = (userId: string, data: any) => {
+export const sendEmojiToUser = (userId: string, data: any): boolean => {
   const socketId = connectedUsers.get(userId);
   if (socketId) {
     io.to(socketId).emit("emoji_received", data);
@@ -63,7 +51,6 @@ export const sendEmojiToUser = (userId: string, data: any) => {
 };
 
 const port = process.env.PORT || 4000;
-
 connectDB();
 connectCloudinary();
 
@@ -79,8 +66,6 @@ app.use("/api/wish-well", wishWellRouter);
 app.use("/api/notifications", notificationRouter);
 app.use("/api/emoji", emojiRouter);
 
-app.get("/", (req: Request, res: Response) => {
-  res.send("API is fully WORKING");
-});
+app.get("/", (req: Request, res: Response) => res.send("API is fully WORKING"));
 
 httpServer.listen(port, () => console.log("Server Started on port", port));
