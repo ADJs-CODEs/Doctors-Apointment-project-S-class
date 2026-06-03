@@ -23,6 +23,7 @@ import ChatBot from "./components/ChatBot.js";
 import WatchingOver from "./pages/WatchingOver.js";
 import WatchPatient from "./pages/WatchPatient.js";
 import WishWell from "./pages/WishWell.js";
+import { EmojiProvider } from "./Context/EmojiContext.js";
 
 // Inside your routes, add:
 
@@ -32,42 +33,44 @@ const App: React.FC = () => {
   const { progress, setProgress } = useContext(AppContext) as AppContextType;
 
   return (
-    <div className="px-2 sm:px-0 sm:mx-[10%] min-h-screen flex flex-col">
-      <LoadingBar
-        color="#14b8a6" // Changed to match your Teal branding
-        progress={progress}
-        onLoaderFinished={() => setProgress(0)}
-        height={3}
-      />
+    <EmojiProvider userId={userData?._id}>
+      <div className="px-2 sm:px-0 sm:mx-[10%] min-h-screen flex flex-col">
+        <LoadingBar
+          color="#14b8a6" // Changed to match your Teal branding
+          progress={progress}
+          onLoaderFinished={() => setProgress(0)}
+          height={3}
+        />
 
-      <Toaster position="top-right" richColors expand={false} />
+        <Toaster position="top-right" richColors expand={false} />
 
-      <Navbar />
-      <main className="grow">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/doctors" element={<Doctors />} />
-          <Route path="/doctors/:speciality" element={<Doctors />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/my-profile" element={<MyProfile />} />
-          <Route path="/my-appointments" element={<MyAppointments />} />
-          <Route path="/appointments/:docId" element={<Appointments />} />
-          <Route path="/verify" element={<Verify />} />
-          <Route path="/medication-history" element={<MedHistory />} />
-          <Route path="/account-settings" element={<AccountSettings />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password/:token" element={<ResetPassword />} />
-          <Route path="/watching-over" element={<WatchingOver />} />
-          <Route path="/watching/:patientId" element={<WatchPatient />} />
-          <Route path="/wish-well" element={<WishWell />} />
-        </Routes>
-      </main>
+        <Navbar />
+        <main className="grow">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/doctors" element={<Doctors />} />
+            <Route path="/doctors/:speciality" element={<Doctors />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/my-profile" element={<MyProfile />} />
+            <Route path="/my-appointments" element={<MyAppointments />} />
+            <Route path="/appointments/:docId" element={<Appointments />} />
+            <Route path="/verify" element={<Verify />} />
+            <Route path="/medication-history" element={<MedHistory />} />
+            <Route path="/account-settings" element={<AccountSettings />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
+            <Route path="/watching-over" element={<WatchingOver />} />
+            <Route path="/watching/:patientId" element={<WatchPatient />} />
+            <Route path="/wish-well" element={<WishWell />} />
+          </Routes>
+        </main>
 
-      <Footer />
-      <ChatBot />
-    </div>
+        <Footer />
+        <ChatBot />
+      </div>
+    </EmojiProvider>
   );
 };
 

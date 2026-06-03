@@ -4,6 +4,7 @@ import type { AppContextType } from "../types/index.js";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useEmoji } from "../Context/EmojiContext.js";
 import {
   RiEyeLine,
   RiUserAddLine,
@@ -57,6 +58,17 @@ const WatchingOver: React.FC = () => {
     } finally {
       setLoading(false);
       setProgress(100);
+    }
+  };
+  const { addEmoji } = useEmoji();
+
+  const sendEmojiToPatient = async (toUserId: string, emoji: string) => {
+    addEmoji(emoji, 1); // local animation immediately
+
+    try {
+      await axiosInstance.post(API_PATHS.EMOJI.SEND, { toUserId, emoji });
+    } catch (error) {
+      // silent
     }
   };
 

@@ -3,15 +3,10 @@ import { AppContext } from "../Context/AppContext.js";
 import type { AppContextType } from "../types/index.js";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import {
-  RiHeart3Fill,
-  RiLoader4Line,
-  RiFlowerLine,
-  RiStarLine,
-  RiHandHeartLine,
-} from "@remixicon/react";
+import { RiHeart3Fill, RiLoader4Line, RiCloseLine } from "@remixicon/react";
 import axiosInstance from "../utils/axiosInstance.js";
 import { API_PATHS } from "../utils/apiPath.js";
+import { useEmoji } from "../Context/EmojiContext.js";
 
 interface WishWellEntry {
   _id: string;
@@ -32,13 +27,6 @@ interface WishWellEntry {
   createdAt: string;
 }
 
-interface EmojiFloat {
-  id: string;
-  emoji: string;
-  x: number;
-  entryId: string;
-}
-
 const EMOJIS = [
   { emoji: "❤️", label: "Love" },
   { emoji: "🌸", label: "Flower" },
@@ -49,9 +37,9 @@ const EMOJIS = [
 
 const WishWell: React.FC = () => {
   const { token, setProgress } = useContext(AppContext) as AppContextType;
+  const { addEmoji } = useEmoji();
   const [entries, setEntries] = useState<WishWellEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [floaters, setFloaters] = useState<EmojiFloat[]>([]);
 
   const fetchEntries = async () => {
     try {
@@ -59,7 +47,7 @@ const WishWell: React.FC = () => {
       const { data } = await axiosInstance.get(API_PATHS.WISH_WELL.ALL);
       if (data.success) setEntries(data.entries);
     } catch (error) {
-      console.error("Failed to fetch wish well:", error);
+      console.error("Failed to fetch:", error);
     } finally {
       setLoading(false);
       setProgress(100);
@@ -67,32 +55,21 @@ const WishWell: React.FC = () => {
   };
 
   const sendEmoji = async (entryId: string, emoji: string) => {
-    // Show animation immediately
-    const floater: EmojiFloat = {
-      id: `${Date.now()}-${Math.random()}`,
-      emoji,
-      x: Math.random() * 60 + 20,
-      entryId,
-    };
-    setFloaters((prev) => [...prev, floater]);
-    setTimeout(
-      () => setFloaters((prev) => prev.filter((f) => f.id !== floater.id)),
-      2500,
-    );
+    // Instant local animation — TikTok style
+    addEmoji(emoji, 1);
 
-    // Send silently
     try {
       if (token) {
         await axiosInstance.post(API_PATHS.WISH_WELL.SEND_EMOJI, {
           entryId,
           emoji,
         });
-        fetchEntries();
+        setTimeout(() => fetchEntries(), 800);
       } else {
         toast.info("Sign in to send wishes to patients");
       }
-    } catch (error) {
-      // Silent fail
+    } catch {
+      // Silent fail — animation already showed
     }
   };
 
@@ -103,31 +80,16 @@ const WishWell: React.FC = () => {
   const critical = entries.filter((e) => e.status === "critical");
   const recovered = entries.filter((e) => e.status === "recovered");
 
-  return (
-    <div className="max-w-4xl mx-auto px-4 py-10 md:py-16 min-h-screen relative">
-      {/* Floating emojis */}
-      <AnimatePresence>
-        {floaters.map((f) => (
-          <motion.div
-            key={f.id}
-            initial={{ opacity: 1, y: 0, scale: 0.5 }}
-            animate={{ opacity: 0, y: -300, scale: 1.5 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 2.5, ease: "easeOut" }}
-            style={{
-              position: "fixed",
-              bottom: 100,
-              left: `${f.x}%`,
-              zIndex: 9999,
-              pointerEvents: "none",
-              fontSize: 40,
-            }}
-          >
-            {f.emoji}
-          </motion.div>
-        ))}
-      </AnimatePresence>
+  const emojiMap: Record<string, string> = {
+    heart: "❤️",
+    flower: "🌸",
+    clap: "👏",
+    star: "⭐",
+    prayer: "🙏",
+  };
 
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-10 md:py-16 min-h-screen">
       {/* Header */}
       <div className="mb-10 pb-8 border-b border-slate-100">
         <div className="flex items-center gap-3 mb-2">
@@ -143,10 +105,8 @@ const WishWell: React.FC = () => {
         </div>
         <p className="text-slate-400 text-sm font-medium ml-12 leading-relaxed max-w-lg">
           Send love and support to patients fighting critical illnesses. Tap any
-          emoji to send it to their screen — your kindness matters.
+          emoji — it appears on their screen instantly.
         </p>
-
-        {/* Stats */}
         <div className="flex gap-6 mt-6 ml-12">
           {[
             {
@@ -192,11 +152,10 @@ const WishWell: React.FC = () => {
                   key={entry._id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-white border border-red-100 rounded-[28px] p-6 shadow-sm mb-4 relative overflow-hidden"
+                  className="bg-white border border-red-100 rounded-[28px] p-6 shadow-sm mb-4"
                 >
-                  {/* Patient header */}
                   <div className="flex items-start gap-4 mb-5">
-                    <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center border border-red-100 shrink-0 text-2xl">
+                    <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center border border-red-100 shrink-0 overflow-hidden">
                       {entry.patientImage ? (
                         <img
                           src={entry.patientImage.replace(
@@ -207,11 +166,11 @@ const WishWell: React.FC = () => {
                           className="w-full h-full object-cover rounded-2xl"
                         />
                       ) : (
-                        "👤"
+                        <span className="text-2xl">👤</span>
                       )}
                     </div>
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
                         <p className="text-slate-900 font-black text-lg">
                           {entry.patientName}
                         </p>
@@ -222,7 +181,7 @@ const WishWell: React.FC = () => {
                           </span>
                         </div>
                       </div>
-                      <p className="text-slate-400 text-xs font-medium mt-1">
+                      <p className="text-slate-400 text-xs font-medium">
                         Under care of Dr. {entry.doctorName}
                       </p>
                       <p className="text-slate-600 text-sm font-medium mt-3 italic leading-relaxed">
@@ -242,15 +201,8 @@ const WishWell: React.FC = () => {
                   {/* Emoji counts */}
                   {entry.totalEmojis > 0 && (
                     <div className="flex gap-3 mb-4 flex-wrap">
-                      {Object.entries(entry.emojiCounts).map(([key, count]) => {
-                        const emojiMap: Record<string, string> = {
-                          heart: "❤️",
-                          flower: "🌸",
-                          clap: "👏",
-                          star: "⭐",
-                          prayer: "🙏",
-                        };
-                        return count > 0 ? (
+                      {Object.entries(entry.emojiCounts).map(([key, count]) =>
+                        count > 0 ? (
                           <div
                             key={key}
                             className="flex items-center gap-1 bg-slate-50 rounded-full px-2.5 py-1 border border-slate-100"
@@ -260,12 +212,12 @@ const WishWell: React.FC = () => {
                               {count}
                             </span>
                           </div>
-                        ) : null;
-                      })}
+                        ) : null,
+                      )}
                     </div>
                   )}
 
-                  {/* Send emoji — TikTok style, tap directly */}
+                  {/* Send emoji — TikTok style tap */}
                   <div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
                       Tap to send a wish
@@ -275,7 +227,7 @@ const WishWell: React.FC = () => {
                         <button
                           key={emoji}
                           onClick={() => sendEmoji(entry._id, emoji)}
-                          className="flex-1 flex flex-col items-center gap-1.5 py-3 bg-slate-50 hover:bg-red-50 border border-slate-100 hover:border-red-200 rounded-2xl transition-all active:scale-90 hover:scale-105"
+                          className="flex-1 flex flex-col items-center gap-1.5 py-3 bg-slate-50 hover:bg-red-50 border border-slate-100 hover:border-red-200 rounded-2xl transition-all active:scale-90 hover:scale-105 cursor-pointer"
                         >
                           <span className="text-2xl">{emoji}</span>
                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">
@@ -312,7 +264,7 @@ const WishWell: React.FC = () => {
                             "/upload/f_jpg,q_auto:best,w_200,h_200,c_fill/",
                           )}
                           alt={entry.patientName}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover rounded-2xl"
                         />
                       ) : (
                         <span className="text-2xl">👤</span>
@@ -333,7 +285,7 @@ const WishWell: React.FC = () => {
                   </div>
 
                   {/* Love badge */}
-                  <div className="bg-white rounded-2xl p-5 border border-green-100 text-center">
+                  <div className="bg-white rounded-2xl p-5 border border-green-100 text-center mb-4">
                     <p className="text-green-500 text-4xl font-black mb-2">
                       {entry.totalEmojis}
                     </p>
@@ -341,15 +293,8 @@ const WishWell: React.FC = () => {
                       Wishes of Love Received from the Community 💕
                     </p>
                     <div className="flex justify-center gap-3 mt-4 flex-wrap">
-                      {Object.entries(entry.emojiCounts).map(([key, count]) => {
-                        const emojiMap: Record<string, string> = {
-                          heart: "❤️",
-                          flower: "🌸",
-                          clap: "👏",
-                          star: "⭐",
-                          prayer: "🙏",
-                        };
-                        return count > 0 ? (
+                      {Object.entries(entry.emojiCounts).map(([key, count]) =>
+                        count > 0 ? (
                           <div
                             key={key}
                             className="flex items-center gap-1.5 bg-green-50 border border-green-100 rounded-full px-3 py-1"
@@ -359,10 +304,21 @@ const WishWell: React.FC = () => {
                               {count}
                             </span>
                           </div>
-                        ) : null;
-                      })}
+                        ) : null,
+                      )}
                     </div>
                   </div>
+
+                  {/* Only congratulations for recovered */}
+                  <button
+                    onClick={() => sendEmoji(entry._id, "🎉")}
+                    className="w-full flex items-center justify-center gap-3 py-4 bg-green-50 hover:bg-green-100 border border-green-200 rounded-2xl transition-all active:scale-95 cursor-pointer"
+                  >
+                    <span className="text-2xl">🎉</span>
+                    <span className="text-green-700 font-black text-sm uppercase tracking-wider">
+                      Send Congratulations
+                    </span>
+                  </button>
                 </motion.div>
               ))}
             </div>
@@ -382,6 +338,25 @@ const WishWell: React.FC = () => {
                 support that appears on their screen.
               </p>
             </div>
+          )}
+
+          {/* Opt out */}
+          {token && (
+            <button
+              onClick={async () => {
+                if (!window.confirm("Remove yourself from the Wish Well?"))
+                  return;
+                try {
+                  await axiosInstance.post(API_PATHS.WISH_WELL.OPT_OUT);
+                  toast.success("You have opted out of the Wish Well");
+                } catch {
+                  toast.error("Failed to opt out");
+                }
+              }}
+              className="w-full py-4 text-slate-400 hover:text-slate-600 text-xs font-black uppercase tracking-widest transition-colors"
+            >
+              Opt out of Wish Well
+            </button>
           )}
         </div>
       )}
