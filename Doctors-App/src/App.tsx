@@ -30,7 +30,9 @@ import { EmojiProvider } from "./Context/EmojiContext.js";
 const App: React.FC = () => {
   console.log(import.meta.env.VITE_BACKEND_URL);
   // Pull the progress state from your Context so it actually moves!
-  const { progress, setProgress } = useContext(AppContext) as AppContextType;
+  const { progress, setProgress, userData } = useContext(
+    AppContext,
+  ) as AppContextType;
 
   return (
     <EmojiProvider userId={userData?._id}>
