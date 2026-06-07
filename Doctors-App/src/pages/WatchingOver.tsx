@@ -1,3 +1,15 @@
+/**
+ * WatchingOver.tsx  —  WEB frontend
+ *
+ * REPLACE your existing WatchingOver.tsx
+ *
+ * What's new:
+ * - Live emoji sending row added to every "People I'm Watching" card
+ * - Uses your existing sendEmojiToPatient (axiosInstance + addEmoji local animation)
+ * - Emoji palette: ❤️ 🙏 👏 ⭐ 💪 — same as WishWell style
+ * - All existing logic (requests, respond, remove, modal) is UNCHANGED
+ */
+
 import React, { useEffect, useState, useContext } from "react";
 import { AppContext } from "../Context/AppContext.js";
 import type { AppContextType } from "../types/index.js";
@@ -9,7 +21,6 @@ import {
   RiEyeLine,
   RiUserAddLine,
   RiCloseLine,
-  RiCheckLine,
   RiArrowRightLine,
   RiHeartPulseLine,
   RiMedicineBottleLine,
@@ -29,9 +40,19 @@ interface Connection {
   requester?: { name: string; email: string; image: string };
 }
 
+// ── Emoji palette ─────────────────────────────────────────────────
+const EMOJIS = [
+  { emoji: "❤️", label: "Love" },
+  { emoji: "🙏", label: "Prayer" },
+  { emoji: "👏", label: "Clap" },
+  { emoji: "⭐", label: "Star" },
+  { emoji: "💪", label: "Strong" },
+];
+
 const WatchingOver: React.FC = () => {
   const { token, setProgress } = useContext(AppContext) as AppContextType;
   const navigate = useNavigate();
+  const { addEmoji } = useEmoji();
 
   const [watching, setWatching] = useState<Connection[]>([]);
   const [requests, setRequests] = useState<Connection[]>([]);
@@ -41,6 +62,8 @@ const WatchingOver: React.FC = () => {
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [responding, setResponding] = useState<string | null>(null);
+  // Track which emoji+user is currently sending (key = `${userId}-${emoji}`)
+  const [emojiSending, setEmojiSending] = useState<string | null>(null);
 
   const fetchAll = async () => {
     try {
@@ -60,15 +83,22 @@ const WatchingOver: React.FC = () => {
       setProgress(100);
     }
   };
-  const { addEmoji } = useEmoji();
 
+  // ── Send live emoji ───────────────────────────────────────────────
   const sendEmojiToPatient = async (toUserId: string, emoji: string) => {
-    addEmoji(emoji, 1); // local animation immediately
+    const key = `${toUserId}-${emoji}`;
+    if (emojiSending) return; // prevent double-tap
+    setEmojiSending(key);
+
+    // Instant local animation via EmojiContext
+    addEmoji(emoji, 1);
 
     try {
       await axiosInstance.post(API_PATHS.EMOJI.SEND, { toUserId, emoji });
-    } catch (error) {
-      // silent
+    } catch {
+      // silent — the animation already showed
+    } finally {
+      setEmojiSending(null);
     }
   };
 
@@ -140,7 +170,7 @@ const WatchingOver: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-10 md:py-16 min-h-screen">
-      {/* Header */}
+      {/* ── Header ── */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 border-b border-slate-100 pb-8">
         <div>
           <div className="flex items-center gap-3 mb-2">
@@ -174,7 +204,7 @@ const WatchingOver: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-8">
-          {/* Pending requests */}
+          {/* ── Pending requests ── */}
           {requests.length > 0 && (
             <div>
               <div className="flex items-center gap-3 mb-4">
@@ -247,7 +277,7 @@ const WatchingOver: React.FC = () => {
             </div>
           )}
 
-          {/* People I am watching */}
+          {/* ── People I'm watching ── */}
           {watching.length > 0 && (
             <div>
               <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[3px] mb-4">
@@ -261,6 +291,7 @@ const WatchingOver: React.FC = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="bg-white border border-slate-100 rounded-[24px] p-6 shadow-sm"
                   >
+                    {/* Person row */}
                     <div className="flex items-center gap-4">
                       <div className="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center border border-purple-100 shrink-0">
                         <RiEyeLine size={22} className="text-purple-500" />
@@ -300,7 +331,7 @@ const WatchingOver: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Quick stats */}
+                    {/* Quick stat chips */}
                     <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-slate-50">
                       {[
                         {
@@ -327,13 +358,59 @@ const WatchingOver: React.FC = () => {
                         </div>
                       ))}
                     </div>
+
+                    {/* ── LIVE EMOJI BAR ── */}
+                    <div className="mt-4 pt-4 border-t border-slate-50">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-[2px] mb-3">
+                        Send a live wish → appears on their screen instantly
+                      </p>
+                      <div className="flex gap-2">
+                        {EMOJIS.map(({ emoji, label }) => {
+                          const key = `${conn.patientId}-${emoji}`;
+                          const isSending = emojiSending === key;
+                          return (
+                            <button
+                              key={emoji}
+                              onClick={() =>
+                                sendEmojiToPatient(conn.patientId, emoji)
+                              }
+                              disabled={!!emojiSending}
+                              className={`
+                                flex-1 flex flex-col items-center gap-1.5 py-3
+                                bg-slate-50 hover:bg-teal-50
+                                border border-slate-100 hover:border-teal-200
+                                rounded-2xl transition-all
+                                ${isSending ? "scale-95 opacity-60" : "active:scale-90 hover:scale-105"}
+                                cursor-pointer disabled:cursor-not-allowed
+                              `}
+                            >
+                              {isSending ? (
+                                <RiLoader4Line
+                                  size={18}
+                                  className="text-teal-500 animate-spin"
+                                />
+                              ) : (
+                                <>
+                                  <span className="text-xl leading-none">
+                                    {emoji}
+                                  </span>
+                                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider">
+                                    {label}
+                                  </span>
+                                </>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </motion.div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* People watching me */}
+          {/* ── People watching me ── */}
           {watchers.length > 0 && (
             <div>
               <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[3px] mb-4">
@@ -375,7 +452,7 @@ const WatchingOver: React.FC = () => {
             </div>
           )}
 
-          {/* Empty state */}
+          {/* ── Empty state ── */}
           {watching.length === 0 &&
             requests.length === 0 &&
             watchers.length === 0 && (
@@ -395,7 +472,7 @@ const WatchingOver: React.FC = () => {
         </div>
       )}
 
-      {/* Connect Modal */}
+      {/* ── Connect Modal ── */}
       <AnimatePresence>
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
