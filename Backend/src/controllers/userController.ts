@@ -18,7 +18,8 @@ const stripeInstance = new stripe(process.env.STRIPE_SECRET_KEY as string);
 
 const registerUser = async (req: Request, res: Response) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, password } = req.body;
+    const email = req.body.email ? req.body.email.toLowerCase().trim() : "";
     if (!name || !email || !password)
       return res
         .status(400)
@@ -60,7 +61,8 @@ const registerUser = async (req: Request, res: Response) => {
 
 const loginUser = async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
+    const { password } = req.body;
+    const email = req.body.email ? req.body.email.toLowerCase().trim() : "";
     const user = await userModel.findOne({ email });
     if (!user)
       return res
@@ -106,7 +108,8 @@ const googleAuth = async (req: Request, res: Response) => {
     const googleResponse = await axios.get(
       `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${access_token}`,
     );
-    const { email, name, picture } = googleResponse.data;
+    let { email, name, picture } = googleResponse.data;
+    if (email) email = email.toLowerCase().trim();
 
     let user = await userModel.findOne({ email });
     if (!user) {
@@ -495,7 +498,7 @@ const changePassword = async (req: Request, res: Response) => {
 
 const forgotPassword = async (req: Request, res: Response) => {
   try {
-    const { email } = req.body;
+    const email = req.body.email ? req.body.email.toLowerCase().trim() : "";
     const user = await userModel.findOne({ email });
     if (!user)
       return res

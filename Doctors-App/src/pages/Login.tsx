@@ -64,8 +64,9 @@ const Login: React.FC = () => {
       setProgress(30);
       const endpoint =
         state === "Sign Up" ? API_PATHS.AUTH.REGISTER : API_PATHS.AUTH.LOGIN;
+      const normalizedEmail = email.toLowerCase().trim();
       const payload =
-        state === "Sign Up" ? { name, email, password } : { email, password };
+        state === "Sign Up" ? { name, email: normalizedEmail, password } : { email: normalizedEmail, password };
 
       const { data } = await axiosInstance.post(endpoint, payload);
 

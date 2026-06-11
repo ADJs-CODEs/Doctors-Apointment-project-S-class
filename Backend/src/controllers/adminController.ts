@@ -13,7 +13,8 @@ import { type Request, type Response } from 'express';
 const addDoctor = async (req: Request, res: Response) => {
 
   try {
-    const { name, email, password, speciality, degree, experience, about, fees, address } = req.body
+    const { name, password, speciality, degree, experience, about, fees, address } = req.body
+    const email = req.body.email ? req.body.email.toLowerCase().trim() : "";
     const imageFile = req.file
 
     // checkin for all data to add doctor

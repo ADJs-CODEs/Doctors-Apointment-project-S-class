@@ -1,0 +1,1 @@
+{"version":3,"file":"emojiController.d.ts","sourceRoot":"","sources":["../../src/controllers/emojiController.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,KAAK,OAAO,EAAE,KAAK,QAAQ,EAAE,MAAM,SAAS,CAAC;AAQtD,QAAA,MAAM,aAAa,GAAU,KAAK,OAAO,EAAE,KAAK,QAAQ,4DAwDvD,CAAC;AAEF,QAAA,MAAM,mBAAmB,GAAU,KAAK,OAAO,EAAE,KAAK,QAAQ,kBAmB7D,CAAC;AAEF,OAAO,EAAE,aAAa,EAAE,mBAAmB,EAAE,CAAC"}

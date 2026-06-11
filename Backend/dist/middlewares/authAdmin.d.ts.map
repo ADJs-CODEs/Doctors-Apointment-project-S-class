@@ -1,0 +1,1 @@
+{"version":3,"file":"authAdmin.d.ts","sourceRoot":"","sources":["../../src/middlewares/authAdmin.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,KAAK,OAAO,EAAE,KAAK,QAAQ,EAAE,KAAK,YAAY,EAAE,MAAM,SAAS,CAAC;AAIzE,QAAA,MAAM,SAAS,GAAU,KAAK,OAAO,EAAE,KAAK,QAAQ,EAAE,MAAM,YAAY,4DAsBvE,CAAA;AAED,eAAe,SAAS,CAAA"}

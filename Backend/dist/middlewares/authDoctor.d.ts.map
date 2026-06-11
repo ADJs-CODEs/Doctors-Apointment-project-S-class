@@ -1,0 +1,1 @@
+{"version":3,"file":"authDoctor.d.ts","sourceRoot":"","sources":["../../src/middlewares/authDoctor.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,KAAK,OAAO,EAAE,KAAK,QAAQ,EAAE,KAAK,YAAY,EAAE,MAAM,SAAS,CAAC;AAGzE,UAAU,aAAc,SAAQ,OAAO;IACrC,KAAK,CAAC,EAAE,MAAM,CAAC;CAChB;AAED,QAAA,MAAM,UAAU,GAAU,KAAK,aAAa,EAAE,KAAK,QAAQ,EAAE,MAAM,YAAY,4DAiB9E,CAAA;AAED,eAAe,UAAU,CAAA"}
