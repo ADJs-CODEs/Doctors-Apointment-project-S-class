@@ -3,17 +3,14 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AppContext } from "@/Context/AppContext";
-import type { AppContextType, Appointment, PrescribedMedicine } from "@/types";
+import { useDoseLogger } from "@/hooks/useDoseLogger";
+import type { AppContextType, Appointment } from "@/types";
 import { API_PATHS } from "@/utils/apiPath";
 import axiosInstance from "@/utils/axiosInstance";
-import { getDoseState, getDoseStatus, slotToDate, type DoseState } from "@/utils/medicationUtils";
+import { slotToDate } from "@/utils/medicationUtils";
+import { activeMedicines, latestRecordedVisit } from "@/utils/patientRecords";
 
-export type ActiveMedicine = {
-  appointmentId: string;
-  doctorName: string;
-  med: PrescribedMedicine;
-  state: DoseState;
-};
+export type { ActiveMedicine } from "@/utils/patientRecords";
 
 export type WishWellEntry = {
   _id: string;
@@ -42,7 +39,6 @@ export function useDashboard() {
   const [watchers, setWatchers] = useState<Connection[]>([]);
   const [pendingRequests, setPendingRequests] = useState<Connection[]>([]);
   const [wishWell, setWishWell] = useState<WishWellEntry[]>([]);
-  const [loggingDose, setLoggingDose] = useState<string | null>(null);
   // re-evaluated every minute so "due"/"missed" stay current while the page is open
   const [now, setNow] = useState(() => Date.now());
 
@@ -88,28 +84,8 @@ export function useDashboard() {
       .filter(({ at }) => at && at.getTime() > now - 60 * 60 * 1000)
       .sort((x, y) => x.at!.getTime() - y.at!.getTime());
 
-    const completed = appointments
-      .filter((a) => a.isCompleted && a.healthData)
-      .sort(
-        (x, y) =>
-          (slotToDate(y.slotDate, y.slotTime)?.getTime() ?? 0) -
-          (slotToDate(x.slotDate, x.slotTime)?.getTime() ?? 0),
-      );
-
-    const medicines: ActiveMedicine[] = completed
-      .flatMap((a) =>
-        (a.healthData?.prescribedMedicines ?? []).map((med) => ({
-          appointmentId: a._id,
-          doctorName: a.docData?.name ?? "Your doctor",
-          med,
-          state: getDoseState(med, now),
-        })),
-      )
-      .filter((m) => m.state.kind !== "finished");
-
-    const latestReport =
-      completed.find((a) => a.healthData?.heartRate || a.healthData?.bloodPressure || a.healthData?.doctorNotes) ??
-      null;
+    const medicines = activeMedicines(appointments, now);
+    const latestReport = latestRecordedVisit(appointments);
 
     // newest doctor message across all appointments
     const doctorMessage =
@@ -136,40 +112,7 @@ export function useDashboard() {
     };
   }, [appointments, notifications, wishWell, now]);
 
-  /** Same rules as My Appointments: an early dose asks first and alerts the doctor. */
-  const logDose = useCallback(
-    async ({ appointmentId, med }: ActiveMedicine) => {
-      if (loggingDose) return;
-      const { isEarly, hoursLeft } = getDoseStatus(med);
-      let overdoseAlert = false;
-      if (isEarly) {
-        const ok = window.confirm(
-          `⚠️ Your next ${med.name} dose isn't due for ${hoursLeft} more hours. Taking it early will notify your doctor. Log it anyway?`,
-        );
-        if (!ok) return;
-        overdoseAlert = true;
-      }
-      setLoggingDose(`${appointmentId}-${med.name}`);
-      try {
-        const { data } = await axiosInstance.post(API_PATHS.USER.LOG_DOSE, {
-          appointmentId,
-          medicineName: med.name,
-          overdoseAlert,
-        });
-        if (data.success) {
-          toast.success(`${med.name} logged`);
-          await loadAppointments();
-        } else {
-          toast.error(data.message);
-        }
-      } catch (error: any) {
-        toast.error(error.response?.data?.message || error.message);
-      } finally {
-        setLoggingDose(null);
-      }
-    },
-    [loggingDose, loadAppointments],
-  );
+  const { logDose, loggingKey } = useDoseLogger(loadAppointments);
 
   const [paying, setPaying] = useState(false);
   const payForAppointment = useCallback(async (appointmentId: string) => {
@@ -192,7 +135,7 @@ export function useDashboard() {
     watchers,
     pendingRequests,
     notifications,
-    loggingDose,
+    loggingKey,
     logDose,
     paying,
     payForAppointment,

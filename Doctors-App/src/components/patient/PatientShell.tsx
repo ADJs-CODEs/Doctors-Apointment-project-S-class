@@ -177,9 +177,16 @@ export default function PatientShell({ children }: { children: ReactNode }) {
 
       {/* --- page content --- */}
       <div className="lg:pl-72">
-        <div className="hidden lg:flex justify-end px-10 pt-6">
+        <header className="hidden lg:flex sticky top-0 z-30 h-16 items-center justify-end gap-5 px-10 bg-clinic-bg/85 backdrop-blur-xl border-b border-slate-100">
+          <Link
+            to="/doctors"
+            className="text-[12px] font-bold text-slate-500 hover:text-teal-600 transition-colors"
+          >
+            Book an appointment
+          </Link>
+          <span className="w-px h-5 bg-slate-200" />
           <NotificationBell />
-        </div>
+        </header>
         {/* bottom padding keeps content clear of the phone tab bar */}
         <main className="px-4 sm:px-6 lg:px-10 pb-28 lg:pb-12">{children}</main>
       </div>

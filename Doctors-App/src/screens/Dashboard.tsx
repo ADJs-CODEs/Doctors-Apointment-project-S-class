@@ -22,10 +22,11 @@ import {
 import { motion } from "framer-motion";
 import { type ReactNode, useContext } from "react";
 import { AppContext } from "@/Context/AppContext";
-import { type ActiveMedicine, useDashboard, type WishWellEntry } from "@/hooks/useDashboard";
+import MedicineRow from "@/components/patient/MedicineRow";
+import { useDashboard, type WishWellEntry } from "@/hooks/useDashboard";
+import { doseKey } from "@/hooks/useDoseLogger";
 import { Link } from "@/lib/navigation";
 import type { AppContextType } from "@/types";
-import { describeSchedule, getAdherenceStats } from "@/utils/medicationUtils";
 
 // --- small helpers ---
 
@@ -131,77 +132,6 @@ function WishWellTicker({ entries }: { entries: WishWellEntry[] }) {
         ))}
       </div>
     </Link>
-  );
-}
-
-function MedicineRow({
-  item,
-  busy,
-  onTake,
-}: {
-  item: ActiveMedicine;
-  busy: boolean;
-  onTake: () => void;
-}) {
-  const { med, state, doctorName } = item;
-  const { rate } = getAdherenceStats(med);
-
-  const status = {
-    "not-started": { text: "Take your first dose", tone: "text-teal-600 bg-teal-50" },
-    due: { text: "Due now", tone: "text-amber-700 bg-amber-50" },
-    missed: {
-      text:
-        state.kind === "missed"
-          ? `${state.missedDoses} missed · due ${relativeTime(state.dueAt)}`
-          : "",
-      tone: "text-red-600 bg-red-50",
-    },
-    taken: {
-      text: state.kind === "taken" ? `Next at ${timeLabel(state.nextDueAt)}` : "",
-      tone: "text-slate-500 bg-slate-100",
-    },
-    finished: { text: "Course finished", tone: "text-slate-500 bg-slate-100" },
-  }[state.kind];
-
-  const canTakeNow = state.kind !== "taken";
-
-  return (
-    <div className="flex items-center gap-4 py-4 first:pt-0 last:pb-0">
-      <div
-        className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
-          state.kind === "missed" ? "bg-red-50 text-red-500" : "bg-teal-50 text-teal-600"
-        }`}
-      >
-        <RiCapsuleLine size={20} />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <p className="font-black text-slate-900 truncate">{med.name}</p>
-          <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${status.tone}`}>
-            {status.text}
-          </span>
-        </div>
-        <p className="text-[12px] text-slate-400 mt-0.5 truncate">
-          {describeSchedule(med)} · {med.remainingQuantity} left · {rate}% taken · {doctorName}
-        </p>
-      </div>
-      <button
-        onClick={onTake}
-        disabled={busy}
-        className={`shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all disabled:opacity-50 ${
-          canTakeNow
-            ? "bg-slate-900 text-white hover:bg-teal-600"
-            : "bg-slate-100 text-slate-400 hover:bg-slate-200"
-        }`}
-      >
-        {busy ? (
-          <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-        ) : (
-          <RiCheckLine size={15} />
-        )}
-        <span className="hidden sm:inline">I took it</span>
-      </button>
-    </div>
   );
 }
 
@@ -381,8 +311,8 @@ export default function Dashboard() {
                     </p>
                   </div>
                   <button
-                    onClick={() => d.logDose(m)}
-                    disabled={!!d.loggingDose}
+                    onClick={() => d.logDose(m.appointmentId, m.med)}
+                    disabled={!!d.loggingKey}
                     className="shrink-0 px-3 py-2 rounded-xl bg-red-500 text-white text-[11px] font-black uppercase tracking-wider disabled:opacity-50"
                   >
                     Take now
@@ -419,10 +349,13 @@ export default function Dashboard() {
             <div className="divide-y divide-slate-100">
               {d.medicines.map((item) => (
                 <MedicineRow
-                  key={`${item.appointmentId}-${item.med.name}`}
-                  item={item}
-                  busy={d.loggingDose === `${item.appointmentId}-${item.med.name}`}
-                  onTake={() => d.logDose(item)}
+                  key={doseKey(item.appointmentId, item.med.name)}
+                  med={item.med}
+                  state={item.state}
+                  doctorName={item.doctorName}
+                  busy={d.loggingKey === doseKey(item.appointmentId, item.med.name)}
+                  disabled={!!d.loggingKey}
+                  onTake={() => d.logDose(item.appointmentId, item.med)}
                 />
               ))}
             </div>

@@ -1,232 +1,227 @@
 "use client";
 
-import React, { useEffect, useState, useContext } from "react";
-import { AppContext } from "../Context/AppContext";
-import type { AppContextType, Appointment } from "../types/index";
-import { motion } from "framer-motion";
 import {
-  RiMedicineBottleLine,
+  RiArrowRightSLine,
+  RiCapsuleLine,
+  RiDashboard3Line,
+  RiFileList3Line,
   RiHeartPulseLine,
-  RiDashboardLine,
   RiTempHotLine,
-  RiArrowRightLine,
 } from "@remixicon/react";
-import axiosInstance from "../utils/axiosInstance";
-import { API_PATHS } from "../utils/apiPath";
+import { motion } from "framer-motion";
+import { type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import MedicineRow from "@/components/patient/MedicineRow";
+import { AppContext } from "@/Context/AppContext";
+import { doseKey, useDoseLogger } from "@/hooks/useDoseLogger";
 import { useNavigate } from "@/lib/navigation";
+import type { AppContextType, Appointment } from "@/types";
+import { API_PATHS } from "@/utils/apiPath";
+import axiosInstance from "@/utils/axiosInstance";
+import { describeSchedule, getAdherenceStats, getDoseState } from "@/utils/medicationUtils";
+import { activeMedicines, completedVisits, formatVisitDate, latestRecordedVisit } from "@/utils/patientRecords";
 
-const MedHistory: React.FC = () => {
-  const { token, setProgress } = useContext(AppContext) as AppContextType;
-  const navigate = useNavigate();
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [latestVitals, setLatestVitals] = useState<any>(null);
-
-  const fetchData = async () => {
-    try {
-      const { data } = await axiosInstance.get(
-        API_PATHS.USER.FETCH_APPOINTMENT,
-      );
-      if (data.success) {
-        setAppointments(data.appointments.reverse());
-        const latest = data.appointments.find(
-          (app: Appointment) => app.isCompleted && app.healthData,
-        );
-        if (latest) setLatestVitals(latest.healthData);
-      }
-    } catch (error: any) {
-      console.error(error.message);
-    }
-  };
-
-  useEffect(() => {
-    if (token) fetchData();
-  }, [token]);
-
-  const handleViewAppointment = (appointmentId: string) => {
-    navigate("/my-appointments", { state: { highlightId: appointmentId } });
-    window.scrollTo(0, 0);
-  };
-
+function Section({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10 md:py-16">
-      {/* Header */}
-      <div className="mb-8 md:mb-10">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-2.5 bg-slate-900 rounded-xl text-teal-400">
-            <RiMedicineBottleLine size={20} />
-          </div>
-          <h1 className="text-2xl md:text-3xl font-black text-slate-900 uppercase tracking-tight">
-            Pharmacy{" "}
-            <span className="text-teal-500 font-serif normal-case italic">
-              Vault
-            </span>
-          </h1>
-        </div>
-        <p className="text-slate-400 text-xs font-medium ml-12">
-          Your complete prescription and medication history.
+    <motion.section
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+      className="bg-white rounded-[28px] border border-slate-100 shadow-clinical p-5 sm:p-6"
+    >
+      <h2 className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[2px] text-slate-400 mb-5">
+        <span className="text-teal-600">{icon}</span>
+        {title}
+      </h2>
+      {children}
+    </motion.section>
+  );
+}
+
+function Vital({ icon, label, value, unit }: { icon: ReactNode; label: string; value?: string; unit: string }) {
+  return (
+    <div className="flex items-center gap-4 rounded-2xl bg-slate-50 p-4">
+      <div className="w-11 h-11 rounded-2xl bg-white flex items-center justify-center shrink-0">{icon}</div>
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
+        <p className="text-xl font-black text-slate-900">
+          {value || "--"} <span className="text-[11px] font-medium text-slate-400">{value ? unit : ""}</span>
         </p>
       </div>
+    </div>
+  );
+}
 
-      {/* Quick vitals */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 md:mb-10">
-        {[
-          {
-            icon: <RiHeartPulseLine size={20} />,
-            label: "Latest Pulse",
-            value: latestVitals?.heartRate,
-            unit: "BPM",
-            border: "border-b-4 border-rose-400",
-            iconColor: "text-rose-500",
-            bg: "bg-rose-50",
-          },
-          {
-            icon: <RiDashboardLine size={20} />,
-            label: "Latest BP",
-            value: latestVitals?.bloodPressure,
-            unit: "",
-            border: "border-b-4 border-blue-400",
-            iconColor: "text-blue-500",
-            bg: "bg-blue-50",
-          },
-          {
-            icon: <RiTempHotLine size={20} />,
-            label: "Latest Temp",
-            value: latestVitals?.temperature,
-            unit: "°C",
-            border: "border-b-4 border-orange-400",
-            iconColor: "text-orange-500",
-            bg: "bg-orange-50",
-          },
-        ].map((v, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.08 }}
-            className={`bg-white ${v.border} rounded-[24px] p-5 shadow-sm border border-slate-100 flex items-center gap-4`}
-          >
-            <div className={`p-3 ${v.bg} rounded-2xl ${v.iconColor} shrink-0`}>
-              {v.icon}
-            </div>
-            <div>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                {v.label}
-              </p>
-              <p className="text-xl md:text-2xl font-black text-slate-900">
-                {v.value || "--"}
-                {v.value && v.unit && (
-                  <span className="text-xs text-slate-400 font-normal ml-1">
-                    {v.unit}
-                  </span>
-                )}
-              </p>
-            </div>
-          </motion.div>
+const MedHistory = () => {
+  const { token } = useContext(AppContext) as AppContextType;
+  const navigate = useNavigate();
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadAppointments = useCallback(async () => {
+    try {
+      const { data } = await axiosInstance.get(API_PATHS.USER.FETCH_APPOINTMENT);
+      if (data.success) setAppointments(data.appointments);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Couldn't load your medications");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (token) loadAppointments();
+  }, [token, loadAppointments]);
+
+  const { logDose, loggingKey } = useDoseLogger(loadAppointments);
+
+  const { active, latest, prescriptions } = useMemo(
+    () => ({
+      active: activeMedicines(appointments),
+      latest: latestRecordedVisit(appointments),
+      prescriptions: completedVisits(appointments).filter((a) => a.healthData?.prescribedMedicines?.length),
+    }),
+    [appointments],
+  );
+
+  if (loading) {
+    return (
+      <div className="max-w-5xl mx-auto py-6 space-y-6">
+        {[24, 40, 64].map((h) => (
+          <div key={h} className="animate-pulse rounded-[28px] bg-slate-200/60" style={{ height: h * 4 }} />
         ))}
       </div>
+    );
+  }
 
-      {/* Prescription history */}
-      <div className="space-y-4 md:space-y-5">
-        {appointments.map((app, idx) =>
-          app.healthData?.prescribedMedicines?.length ? (
-            <motion.div
-              key={app._id}
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: Math.min(idx * 0.06, 0.3) }}
-              className="bg-white border border-slate-100 border-l-4 border-l-teal-500 rounded-[24px] md:rounded-[32px] p-5 md:p-8 shadow-sm"
-            >
-              {/* Card header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-slate-50">
-                <div>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                    Prescribed
-                  </p>
-                  <p className="font-black text-slate-800 text-sm">
-                    {app.slotDate.replace(/_/g, " / ")}
-                  </p>
-                  <p className="text-xs text-slate-400 font-medium mt-0.5">
-                    {app.docData?.name} · {app.docData?.speciality}
-                  </p>
-                </div>
-                <span
-                  className={`self-start text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${app.isCompleted ? "bg-teal-50 text-teal-600 border-teal-100" : "bg-amber-50 text-amber-600 border-amber-100"}`}
+  return (
+    <div className="max-w-5xl mx-auto py-6 space-y-6">
+      <div>
+        <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">
+          Medications
+        </h1>
+        <p className="text-slate-500 mt-1">What to take, your latest readings, and every prescription so far.</p>
+      </div>
+
+      {/* latest vitals */}
+      <Section title="Latest vitals" icon={<RiHeartPulseLine size={16} />}>
+        <div className="grid sm:grid-cols-3 gap-3">
+          <Vital
+            icon={<RiHeartPulseLine size={20} className="text-rose-500" />}
+            label="Heart rate"
+            value={latest?.healthData?.heartRate}
+            unit="BPM"
+          />
+          <Vital
+            icon={<RiDashboard3Line size={20} className="text-blue-500" />}
+            label="Blood pressure"
+            value={latest?.healthData?.bloodPressure}
+            unit="mmHg"
+          />
+          <Vital
+            icon={<RiTempHotLine size={20} className="text-orange-500" />}
+            label="Temperature"
+            value={latest?.healthData?.temperature}
+            unit="°C"
+          />
+        </div>
+        <p className="text-[12px] text-slate-400 mt-3">
+          {latest
+            ? `Recorded by ${latest.docData?.name} on ${formatVisitDate(latest)}.`
+            : "Your doctor records these during a visit."}
+        </p>
+      </Section>
+
+      {/* active medicines */}
+      <Section title={`Taking now${active.length ? ` · ${active.length}` : ""}`} icon={<RiCapsuleLine size={16} />}>
+        {active.length ? (
+          <div className="divide-y divide-slate-100">
+            {active.map((item) => {
+              const key = doseKey(item.appointmentId, item.med.name);
+              return (
+                <MedicineRow
+                  key={key}
+                  med={item.med}
+                  state={item.state}
+                  doctorName={item.doctorName}
+                  busy={loggingKey === key}
+                  disabled={!!loggingKey}
+                  onTake={() => logDose(item.appointmentId, item.med)}
+                />
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-slate-400 text-sm">You&apos;re not taking anything right now.</p>
+        )}
+      </Section>
+
+      {/* every prescription, by visit */}
+      <Section title="Prescription history" icon={<RiFileList3Line size={16} />}>
+        {prescriptions.length ? (
+          <div className="space-y-4">
+            {prescriptions.map((visit) => (
+              <div key={visit._id} className="rounded-2xl border border-slate-100 overflow-hidden">
+                <button
+                  onClick={() => navigate("/my-appointments", { state: { highlightId: visit._id } })}
+                  className="w-full flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 bg-slate-50 hover:bg-slate-100 transition-colors text-left"
                 >
-                  {app.isCompleted ? "Completed" : "In Progress"}
-                </span>
-              </div>
-
-              {/* Medicines grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {app.healthData!.prescribedMedicines.map((med, i) => {
-                  const remaining = med.remainingQuantity ?? 0;
-                  const total = med.totalQuantity ?? 1;
-                  const pct = Math.round(((total - remaining) / total) * 100);
-                  return (
-                    <div
-                      key={i}
-                      className="bg-slate-50 border border-slate-100 rounded-[16px] p-4"
-                    >
-                      <div className="flex items-center gap-2.5 mb-3">
-                        <div className="p-1.5 bg-white border border-slate-100 rounded-xl text-teal-500 shrink-0">
-                          <RiMedicineBottleLine size={15} />
-                        </div>
-                        <p className="font-black text-slate-900 text-sm truncate">
-                          {med.name}
-                        </p>
-                      </div>
-                      <div className="flex justify-between items-center mb-2">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase">
-                          {med.dosagePerDay} doses/day
-                        </p>
-                        <p className="text-xs font-black text-teal-600">
-                          {remaining} left
-                        </p>
-                      </div>
-                      <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-teal-500 rounded-full transition-all duration-500"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1.5">
-                        {pct}% taken
+                  <div className="flex items-center gap-3 min-w-0">
+                    <img
+                      src={visit.docData?.image}
+                      alt=""
+                      className="w-9 h-9 rounded-xl object-cover bg-white shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <p className="font-black text-slate-900 text-sm truncate">{visit.docData?.name}</p>
+                      <p className="text-[12px] text-slate-400 truncate">
+                        {visit.docData?.speciality} · {formatVisitDate(visit)}
                       </p>
                     </div>
-                  );
-                })}
+                  </div>
+                  <span className="flex items-center text-[11px] font-bold text-teal-600 shrink-0">
+                    View visit <RiArrowRightSLine size={16} />
+                  </span>
+                </button>
+
+                <ul className="divide-y divide-slate-100">
+                  {visit.healthData!.prescribedMedicines.map((med) => {
+                    const { rate } = getAdherenceStats(med);
+                    const finished = getDoseState(med).kind === "finished";
+                    return (
+                      <li key={med.name} className="flex items-center gap-4 px-4 sm:px-5 py-3.5">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-bold text-slate-800 capitalize truncate">{med.name}</p>
+                            <span
+                              className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                                finished ? "bg-slate-100 text-slate-500" : "bg-teal-50 text-teal-700"
+                              }`}
+                            >
+                              {finished ? "Finished" : "Active"}
+                            </span>
+                          </div>
+                          <p className="text-[12px] text-slate-400 mt-0.5">
+                            {describeSchedule(med)} · {med.totalQuantity} prescribed · {med.remainingQuantity} left
+                          </p>
+                        </div>
+                        <div className="w-24 sm:w-40 shrink-0">
+                          <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                            <div className="h-full rounded-full bg-teal-500" style={{ width: `${rate}%` }} />
+                          </div>
+                          <p className="text-[11px] font-bold text-slate-400 mt-1 text-right">{rate}% taken</p>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
-
-              <button
-                onClick={() => handleViewAppointment(app._id)}
-                className="flex items-center gap-2 mt-5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-teal-600 transition-colors group"
-              >
-                View full appointment
-                <RiArrowRightLine
-                  size={13}
-                  className="group-hover:translate-x-1 transition-transform"
-                />
-              </button>
-            </motion.div>
-          ) : null,
-        )}
-
-        {appointments.filter((a) => a.healthData?.prescribedMedicines?.length)
-          .length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 bg-white border border-dashed border-slate-200 rounded-[28px] text-center px-4">
-            <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-4">
-              <RiMedicineBottleLine size={28} />
-            </div>
-            <h3 className="font-black text-slate-900 text-lg mb-1">
-              No prescriptions yet
-            </h3>
-            <p className="text-slate-400 text-sm font-medium">
-              Complete an appointment to see your medication history here.
-            </p>
+            ))}
           </div>
+        ) : (
+          <p className="text-slate-400 text-sm">Prescriptions from your visits will be listed here.</p>
         )}
-      </div>
+      </Section>
     </div>
   );
 };
