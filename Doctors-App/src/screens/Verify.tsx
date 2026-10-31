@@ -37,13 +37,11 @@ const Verify: React.FC = () => {
         setTimeout(() => navigate("/my-appointments"), 2500);
         return;
       }
-      setProgress(40);
       const { data } = await axiosInstance.post(API_PATHS.AUTH.VERIFY_STRIPE, {
         success,
         appointmentId,
         session_id: sessionId,
       });
-      setProgress(80);
       if (data.success) {
         setStatus("success");
         toast.success(data.message || "Payment Confirmed!");
@@ -58,7 +56,6 @@ const Verify: React.FC = () => {
       toast.error(error.message);
       setTimeout(() => navigate("/"), 2500);
     } finally {
-      setProgress(100);
     }
   };
 

@@ -30,8 +30,6 @@ const Sidebar: React.FC = () => {
     "flex items-center gap-4 py-3 md:py-4 px-4 md:px-6 cursor-pointer transition-all duration-300 rounded-2xl mx-1 md:mx-4 mb-2 group active:scale-95";
 
   const handleLinkClick = () => {
-    setProgress(40);
-    setTimeout(() => setProgress(100), 500);
   };
 
   return (

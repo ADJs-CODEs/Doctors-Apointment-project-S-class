@@ -33,11 +33,9 @@ const WatchPatient: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      setProgress(30);
       const { data } = await axiosInstance.get(
         API_PATHS.CONNECTIONS.PATIENT_DATA(patientId!),
       );
-      setProgress(70);
       if (data.success) {
         setPatient(data.patient);
         setAppointments(data.appointments.reverse());
@@ -50,7 +48,6 @@ const WatchPatient: React.FC = () => {
       navigate("/watching-over");
     } finally {
       setLoading(false);
-      setProgress(100);
     }
   };
 

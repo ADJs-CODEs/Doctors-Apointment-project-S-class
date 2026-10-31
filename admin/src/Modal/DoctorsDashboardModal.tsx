@@ -95,16 +95,12 @@ const DoctorsDashboardModal: React.FC<DoctorsDashboardModalProps> = ({ showModal
               <button onClick={resetForm} className="order-2 sm:order-1 flex-1 py-3 sm:py-4 text-[10px] sm:text-xs font-black uppercase text-slate-400 active:scale-95 transition-all">Cancel</button>
               <button
                 onClick={async () => {
-                  setProgress(40)
                   const success = await completeAppointment(selectedApptId, { ...vitals, prescribedMedicines: medicines });
                   if (success) {
-                    setProgress(80)
                     toast.success("Appointment Processed");
                     resetForm();
                     await getDashData();
-                    setProgress(100)
                   } else {
-                    setProgress(100)
                   }
                 }}
                 className="order-1 sm:order-2 flex-2 py-4 bg-emerald-500 text-white rounded-xl sm:rounded-[20px] text-[10px] sm:text-xs font-black uppercase shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"

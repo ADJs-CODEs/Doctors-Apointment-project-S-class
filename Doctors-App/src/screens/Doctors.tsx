@@ -4,7 +4,7 @@ import React, { useContext, useMemo, useState } from "react";
 import { useNavigate, useParams } from "@/lib/navigation";
 import { AppContext } from "../Context/AppContext";
 import type { AppContextType } from "../types/index";
-import { motion, useScroll, useSpring } from "framer-motion";
+import { motion } from "framer-motion";
 import { RiSearchLine, RiFilter3Line } from "@remixicon/react";
 import DoctorsCardGrid from "../cards/DoctorsCardGrid";
 
@@ -23,13 +23,6 @@ const Doctors: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const navigate = useNavigate();
-
-  const { scrollYProgress } = useScroll();
-  const scaleX = useSpring(scrollYProgress, {
-    stiffness: 100,
-    damping: 30,
-    restDelta: 0.001,
-  });
 
   const filteredDoctors = useMemo(
     () =>
@@ -50,12 +43,6 @@ const Doctors: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-12 min-h-screen">
-      {/* Scroll progress */}
-      <motion.div
-        className="fixed top-0 left-0 right-0 h-1 bg-teal-500 origin-left z-[100]"
-        style={{ scaleX }}
-      />
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8 md:mb-12">
         <div className="max-w-xl">

@@ -1,25 +1,55 @@
 'use client';
 
-import { type ReactNode, useContext } from 'react';
-import LoadingBar from 'react-top-loading-bar';
+import { type ReactNode, useContext, useEffect, useRef } from 'react';
+import LoadingBar, { type LoadingBarRef } from 'react-top-loading-bar';
 import { Toaster } from 'sonner';
 import DoctorAI from '@/components/DoctorAI';
 import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
 import AdminContextProvider, { AdminContext } from '@/context/AdminContext';
-import AppContextProvider, { AppContext } from '@/context/AppContext';
+import AppContextProvider from '@/context/AppContext';
 import DoctorContextProvider, { DoctorContext } from '@/context/DoctorContext';
 import Login from '@/screens/Login';
-import type { AdminContextType, AppContextType, DoctorContextType } from '@/types';
+import type { AdminContextType, DoctorContextType } from '@/types';
+import { requestTracker } from '@/utils/requestTracker';
+
+// Requests that finish quicker than this never show the bar, so it doesn't flash.
+const SHOW_DELAY_MS = 200;
+
+/** The top bar follows real API activity (see utils/requestTracker). */
+function RequestLoadingBar() {
+  const bar = useRef<LoadingBarRef>(null);
+
+  useEffect(() => {
+    let showTimer: ReturnType<typeof setTimeout> | undefined;
+    let visible = false;
+
+    const unsubscribe = requestTracker.subscribe((busy) => {
+      if (busy) {
+        showTimer = setTimeout(() => {
+          visible = true;
+          bar.current?.continuousStart(15);
+        }, SHOW_DELAY_MS);
+        return;
+      }
+      clearTimeout(showTimer);
+      if (visible) bar.current?.complete();
+      visible = false;
+    });
+    return () => {
+      clearTimeout(showTimer);
+      unsubscribe();
+    };
+  }, []);
+
+  return <LoadingBar ref={bar} color="#0D9488" height={3} shadow={false} />;
+}
 
 function Shell({ children }: { children: ReactNode }) {
   const { aToken } = useContext(AdminContext) as AdminContextType;
   const { dToken } = useContext(DoctorContext) as DoctorContextType;
-  const { progress, setProgress } = useContext(AppContext) as AppContextType;
 
-  const loadingBar = (
-    <LoadingBar color="#0D9488" progress={progress} onLoaderFinished={() => setProgress(0)} />
-  );
+  const loadingBar = <RequestLoadingBar />;
 
   // Logged out: every address shows the login screen.
   if (!aToken && !dToken) {

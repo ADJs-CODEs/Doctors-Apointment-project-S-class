@@ -23,11 +23,9 @@ const MedHistory: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      setProgress(30);
       const { data } = await axiosInstance.get(
         API_PATHS.USER.FETCH_APPOINTMENT,
       );
-      setProgress(70);
       if (data.success) {
         setAppointments(data.appointments.reverse());
         const latest = data.appointments.find(
@@ -35,10 +33,8 @@ const MedHistory: React.FC = () => {
         );
         if (latest) setLatestVitals(latest.healthData);
       }
-      setProgress(100);
     } catch (error: any) {
       console.error(error.message);
-      setProgress(100);
     }
   };
 

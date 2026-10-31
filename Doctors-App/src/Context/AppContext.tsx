@@ -65,7 +65,6 @@ const AppContextProvider = (props: AppContextProviderProps) => {
   const getDoctorsData = useCallback(async (attempt = 1): Promise<void> => {
     try {
       setLoading(true);
-      setProgress(30);
       const { data } = await axiosInstance.get(API_PATHS.USER.GET_DOCTORS_DATA);
       if (data.success) {
         setDoctors(data.doctors);
@@ -83,14 +82,12 @@ const AppContextProvider = (props: AppContextProviderProps) => {
       setDoctors([]);
     } finally {
       setLoading(false);
-      setProgress(100);
     }
   }, []);
 
   const loadUserProfileData = useCallback(async (): Promise<void> => {
     if (!token) return;
     try {
-      setProgress(40);
       const { data } = await axiosInstance.get(
         API_PATHS.AUTH.LOAD_USER_PROFILE_DATA,
       );
@@ -103,7 +100,6 @@ const AppContextProvider = (props: AppContextProviderProps) => {
       // Silent fail on profile — don't block the app
       console.warn("Profile load failed:", error.message);
     } finally {
-      setProgress(100);
     }
   }, [token]);
 
@@ -113,7 +109,6 @@ const AppContextProvider = (props: AppContextProviderProps) => {
     overdoseAlert = false,
   ): Promise<boolean> => {
     try {
-      setProgress(40);
       const { data } = await axiosInstance.post(API_PATHS.USER.UPDATE_DOSE, {
         appointmentId,
         medicineName,
@@ -130,7 +125,6 @@ const AppContextProvider = (props: AppContextProviderProps) => {
       toast.error(error.response?.data?.message || error.message);
       return false;
     } finally {
-      setProgress(100);
     }
   };
 

@@ -52,7 +52,6 @@ const MyAppointments: React.FC = () => {
 
   const payStripe = async (appointmentId: string) => {
     try {
-      setProgress(30);
       const { data } = await axiosInstance.post(API_PATHS.AUTH.STRIPE_AUTH, {
         appointmentId,
       });
@@ -64,7 +63,6 @@ const MyAppointments: React.FC = () => {
     } catch (error: any) {
       toast.error(error.message);
     } finally {
-      setProgress(100);
     }
   };
 
@@ -87,7 +85,6 @@ const MyAppointments: React.FC = () => {
 
     try {
       setProcessingMed(`${appointmentId}-${medicineName}`);
-      setProgress(40);
       const { data } = await axiosInstance.post(API_PATHS.USER.LOG_DOSE, {
         appointmentId,
         medicineName,
@@ -102,7 +99,6 @@ const MyAppointments: React.FC = () => {
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to log dose");
     } finally {
-      setProgress(100);
       setProcessingMed(null);
     }
   };

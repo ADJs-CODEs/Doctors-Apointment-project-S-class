@@ -26,10 +26,8 @@ const AddDoctor: React.FC = () => {
 
   const onSubmitHandler = async (event: React.BaseSyntheticEvent) => {
     event.preventDefault()
-    setProgress(30) // Start progress bar
     try {
       if (!docImg) {
-        setProgress(0)
         return toast.error('Image Not Selected')
       }
 
@@ -46,7 +44,6 @@ const AddDoctor: React.FC = () => {
       formData.append('address', JSON.stringify({ line1: address1, line2: address2 }))
       formData.append('available', 'true')
 
-      setProgress(60)
       const { data } = await axiosInstance.post(API_PATHS.ADMIN.ADD_DOCTORS, formData)
 
       if (data.success) {
@@ -60,7 +57,6 @@ const AddDoctor: React.FC = () => {
     } catch (error: any) {
       toast.error(error.message)
     } finally {
-      setProgress(100) // Complete progress bar
     }
   }
 

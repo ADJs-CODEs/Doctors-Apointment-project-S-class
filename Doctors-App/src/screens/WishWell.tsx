@@ -45,14 +45,12 @@ const WishWell: React.FC = () => {
 
   const fetchEntries = async () => {
     try {
-      setProgress(30);
       const { data } = await axiosInstance.get(API_PATHS.WISH_WELL.ALL);
       if (data.success) setEntries(data.entries);
     } catch (error) {
       console.error("Failed to fetch:", error);
     } finally {
       setLoading(false);
-      setProgress(100);
     }
   };
 
