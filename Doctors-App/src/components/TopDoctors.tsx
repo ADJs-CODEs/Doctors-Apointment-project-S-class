@@ -1,9 +1,11 @@
+"use client";
+
 import React, { useContext } from 'react';
-import { AppContext } from '../Context/AppContext.js';
-import { useNavigate } from 'react-router-dom';
+import { AppContext } from '../Context/AppContext';
+import { useNavigate } from "@/lib/navigation";
 import { motion } from 'framer-motion';
 import { RiVerifiedBadgeFill, RiArrowRightLine } from '@remixicon/react';
-import type { AppContextType, Doctor } from '../types/index.js';
+import type { AppContextType, Doctor } from '../types/index';
 
 const TopDoctors: React.FC = () => {
   const navigate = useNavigate();

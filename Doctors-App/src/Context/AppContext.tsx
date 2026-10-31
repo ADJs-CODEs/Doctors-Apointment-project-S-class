@@ -1,3 +1,5 @@
+"use client";
+
 import {
   createContext,
   useEffect,
@@ -6,9 +8,9 @@ import {
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
-import type { AppContextType, Doctor } from "../types/index.js";
-import { API_PATHS } from "../utils/apiPath.js";
-import axiosInstance from "../utils/axiosInstance.js";
+import type { AppContextType, Doctor } from "../types/index";
+import { API_PATHS } from "../utils/apiPath";
+import axiosInstance from "../utils/axiosInstance";
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 

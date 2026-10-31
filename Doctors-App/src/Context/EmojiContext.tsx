@@ -1,3 +1,5 @@
+"use client";
+
 import React, {
   createContext,
   useContext,
@@ -5,8 +7,8 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
-import { getSocket } from "../utils/socket.js";
-import EmojiRain from "../components/EmojiRain.js";
+import { getSocket } from "../utils/socket";
+import EmojiRain from "../components/EmojiRain";
 
 interface EmojiParticle {
   id: string;

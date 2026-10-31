@@ -1,9 +1,11 @@
+"use client";
+
 import React, { useContext, useState, useEffect } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
-import { AppContext } from "../Context/AppContext.js";
-import type { AppContextType } from "../types/index.js";
+import { NavLink, useNavigate } from "@/lib/navigation";
+import { AppContext } from "../Context/AppContext";
+import type { AppContextType } from "../types/index";
 import { motion, AnimatePresence } from "framer-motion";
-import NotificationBell from "./NotificationBell.js";
+import NotificationBell from "./NotificationBell";
 import {
   List,
   X,
@@ -139,7 +141,7 @@ const Navbar: React.FC = () => {
                       path: "/account-settings",
                     },
                     {
-                      icon: <RiEyeLine size={18} weight="duotone" />,
+                      icon: <RiEyeLine size={18} />,
                       label: "Watching Over",
                       path: "/watching-over",
                     },
@@ -280,7 +282,7 @@ const Navbar: React.FC = () => {
                         path: "/account-settings",
                       },
                       {
-                        icon: <RiEyeLine size={18} weight="duotone" />,
+                        icon: <RiEyeLine size={18} />,
                         label: "Watching Over",
                         path: "/watching-over",
                       },

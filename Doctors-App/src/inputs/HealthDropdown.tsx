@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { motion } from "framer-motion";
 import {
@@ -8,8 +10,8 @@ import {
   RiMedicineBottleLine,
   RiCheckDoubleLine,
 } from "@remixicon/react";
-import { getDoseStatus, getAdherenceStats } from "../utils/medicationUtils.js";
-import type { HealthDropdownProps } from "../types/index.js";
+import { getDoseStatus, getAdherenceStats } from "../utils/medicationUtils";
+import type { HealthDropdownProps } from "../types/index";
 
 const HealthDropdown: React.FC<HealthDropdownProps> = ({
   isCritical,
