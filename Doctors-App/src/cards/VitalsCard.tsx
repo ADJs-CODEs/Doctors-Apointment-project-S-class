@@ -1,5 +1,7 @@
+"use client";
+
 import React from 'react'
-import type { VitalsProps } from '../types/index.js'
+import type { VitalsProps } from '../types/index'
 import { RiHeartPulseLine, RiDashboardLine, RiTempHotLine } from "@remixicon/react"
 
 const VitalsCard: React.FC<VitalsProps> = ({ latestAppointment }) => {

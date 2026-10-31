@@ -1,7 +1,9 @@
+"use client";
+
 import React from 'react'
 import { RiAddLine, RiCloseLine, RiDeleteBin6Line, RiHeartPulseLine, RiTempHotLine, RiTimeLine } from '@remixicon/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { DoctorsDashboardModalProps } from "../types/index.js"
+import type { DoctorsDashboardModalProps } from "../types/index"
 import { toast } from 'sonner';
 
 const DoctorsDashboardModal: React.FC<DoctorsDashboardModalProps> = ({ showModal, resetForm, vitals, setVitals, setMedicines, medicines, completeAppointment, selectedApptId, setProgress, getDashData }) => {

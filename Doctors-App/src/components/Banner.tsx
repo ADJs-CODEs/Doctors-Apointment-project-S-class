@@ -1,6 +1,8 @@
+"use client";
+
 import React from 'react'
-import { assets } from '../assets/assets/assets_frontend/assets.js'
-import { useNavigate } from 'react-router-dom'
+import { assets } from '../assets/assets/assets_frontend/assets'
+import { useNavigate } from "@/lib/navigation"
 import { motion } from 'framer-motion'
 import { RiArrowRightLine, RiUserFollowFill } from '@remixicon/react'
 

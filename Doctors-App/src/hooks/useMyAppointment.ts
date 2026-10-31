@@ -1,9 +1,11 @@
+"use client";
+
 import { useState, useEffect, useContext } from 'react';
-import { AppContext } from '../Context/AppContext.js';
+import { AppContext } from '../Context/AppContext';
 import { toast } from 'sonner';
-import { API_PATHS } from '../utils/apiPath.js';
-import axiosInstance from '../utils/axiosInstance.js';
-import type { AppContextType, Appointment } from '../types/index.js';
+import { API_PATHS } from '../utils/apiPath';
+import axiosInstance from '../utils/axiosInstance';
+import type { AppContextType, Appointment } from '../types/index';
 
 export const useMyAppointments = () => {
   const context = useContext(AppContext) as AppContextType;

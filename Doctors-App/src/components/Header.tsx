@@ -1,5 +1,7 @@
+"use client";
+
 import React from "react";
-import { assets } from "../assets/assets/assets_frontend/assets.js";
+import { assets } from "../assets/assets/assets_frontend/assets";
 import { motion } from "framer-motion";
 import {
   RiArrowRightUpLine,

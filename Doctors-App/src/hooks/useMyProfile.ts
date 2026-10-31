@@ -1,9 +1,11 @@
+"use client";
+
 import React, { useContext, useState } from 'react'
-import type { AppContextType, Appointment } from "../types/index.js"
-import axiosInstance from '../utils/axiosInstance.js'
-import { API_PATHS } from '../utils/apiPath.js'
-import { useNavigate } from 'react-router-dom'
-import { AppContext } from '../Context/AppContext.js'
+import type { AppContextType, Appointment } from "../types/index"
+import axiosInstance from '../utils/axiosInstance'
+import { API_PATHS } from '../utils/apiPath'
+import { useNavigate } from "@/lib/navigation"
+import { AppContext } from '../Context/AppContext'
 const useMyProfile = () => {
   const context = useContext(AppContext) as AppContextType;
   const { userData, setUserData, token, loadUserProfileData, setProgress } = context;

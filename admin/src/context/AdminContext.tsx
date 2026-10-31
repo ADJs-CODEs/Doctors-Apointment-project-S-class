@@ -1,9 +1,11 @@
+"use client";
+
 import { createContext, useState, useCallback } from "react";
 import type { ReactNode } from "react"
 import { toast } from 'sonner';
-import type { AdminContextType, Doctor, Appointment } from "../types/index.js";
-import axiosInstance from "../utils/axiosInstance.js";
-import { API_PATHS } from "../utils/apiPath.js";
+import type { AdminContextType, Doctor, Appointment } from "../types/index";
+import axiosInstance from "../utils/axiosInstance";
+import { API_PATHS } from "../utils/apiPath";
 
 export const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
@@ -17,7 +19,7 @@ const AdminContextProvider = ({ children }: AdminContextProviderProps) => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
 
   // Get All Doctors
   const getAllDoctors = useCallback(async () => {

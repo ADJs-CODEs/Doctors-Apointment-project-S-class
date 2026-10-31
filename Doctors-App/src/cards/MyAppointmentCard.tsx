@@ -1,7 +1,9 @@
+"use client";
+
 import React from 'react'
-import type { Appointment, MyAppointmentCardProps } from '../types/index.js';
+import type { Appointment, MyAppointmentCardProps } from '../types/index';
 import { RiErrorWarningLine, RiShieldCheckLine, RiArrowDownSLine } from "@remixicon/react"
-import { slotDateFormat } from '../utils/medicationUtils.js';
+import { slotDateFormat } from '../utils/medicationUtils';
 
 
 const MyAppointmentCard: React.FC<MyAppointmentCardProps> = ({ item, isCritical, cancelAppointment, payStripe, onViewReport, isExpanded, toggleTracker }) => {

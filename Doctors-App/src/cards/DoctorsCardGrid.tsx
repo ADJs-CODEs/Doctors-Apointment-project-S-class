@@ -1,7 +1,9 @@
+"use client";
+
 import React, { useContext } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
-import SkeletonCard from '../components/SkeletonCard.js';
-import type { AppContextType, Doctor, DoctorsCardGridProps } from '../types/index.js';
+import SkeletonCard from '../components/SkeletonCard';
+import type { AppContextType, Doctor, DoctorsCardGridProps } from '../types/index';
 import {
   RiArrowRightLine,
   RiShieldCheckFill,
@@ -9,8 +11,8 @@ import {
   RiRefreshLine
 } from "@remixicon/react";
 
-import { AppContext } from '../Context/AppContext.js';
-import { useNavigate } from 'react-router-dom';
+import { AppContext } from '../Context/AppContext';
+import { useNavigate } from "@/lib/navigation";
 
 
 const DoctorsCardGrid: React.FC<DoctorsCardGridProps> = ({ filteredDoctors, handleClearFilters }) => {

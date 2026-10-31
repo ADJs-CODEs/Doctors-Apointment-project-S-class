@@ -1,6 +1,8 @@
+"use client";
+
 import React from 'react'
-import { specialityData } from '../assets/assets/assets_frontend/assets.js'
-import { Link } from 'react-router-dom'
+import { specialityData } from '../assets/assets/assets_frontend/assets'
+import { Link } from "@/lib/navigation"
 import { motion } from 'framer-motion'
 import { RiArrowRightLine } from '@remixicon/react'
 

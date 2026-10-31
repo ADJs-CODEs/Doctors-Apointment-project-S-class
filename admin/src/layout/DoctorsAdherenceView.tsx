@@ -1,5 +1,7 @@
+"use client";
+
 import type { Dispatch, SetStateAction } from "react";
-import type { Appointment } from "../types/index.js";
+import type { Appointment } from "../types/index";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   RiHeartPulseLine,
@@ -7,8 +9,8 @@ import {
   RiTempHotLine,
   RiTimeLine,
 } from "@remixicon/react";
-import { toast } from "react-hot-toast";
-import axiosInstance from "../utils/axiosInstance.js";
+import { toast } from "sonner";
+import axiosInstance from "../utils/axiosInstance";
 
 interface DoctorsAdherenceViewProps {
   item: Appointment;

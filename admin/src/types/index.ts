@@ -39,6 +39,8 @@ export interface Appointment {
   docId: string;
   slotDate: string;
   slotTime: string;
+  /** when the booking was made (ms since epoch) */
+  date: number;
   userData: {
     name: string;
     image: string;

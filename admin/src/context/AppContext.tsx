@@ -1,6 +1,8 @@
+"use client";
+
 import { createContext, useState } from "react"; // Added useState
 import type { ReactNode } from "react";
-import type { AppContextType } from "../types/index.js";
+import type { AppContextType } from "../types/index";
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -10,7 +12,7 @@ interface AppContextProviderProps {
 
 const AppContextProvider = ({ children }: AppContextProviderProps) => {
 
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
 
     // --- Progress state for the loading bar ---
     const [progress, setProgress] = useState<number>(0);

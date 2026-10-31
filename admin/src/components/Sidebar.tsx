@@ -1,8 +1,10 @@
+"use client";
+
 import React, { useContext } from "react";
-import { AdminContext } from "../context/AdminContext.js";
-import { NavLink } from "react-router-dom";
-import { DoctorContext } from "../context/DoctorContext.js";
-import { AppContext } from "../context/AppContext.js";
+import { AdminContext } from "../context/AdminContext";
+import { NavLink } from "@/lib/navigation";
+import { DoctorContext } from "../context/DoctorContext";
+import { AppContext } from "../context/AppContext";
 import {
   RiDashboard3Line,
   RiCalendarCheckLine,
@@ -15,7 +17,7 @@ import type {
   AdminContextType,
   DoctorContextType,
   AppContextType,
-} from "../types/index.js";
+} from "../types/index";
 
 const Sidebar: React.FC = () => {
   const { aToken } = useContext(AdminContext) as AdminContextType;
