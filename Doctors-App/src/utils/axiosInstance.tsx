@@ -18,8 +18,9 @@ axiosInstance.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    // Retries reuse the same config, so each request is counted once.
-    if (!(config as any)._tracked) {
+    // Count each request once for the loading bar (retries reuse the same config);
+    // requests sent with { silent: true }, like background polling, aren't counted.
+    if (!(config as any)._tracked && !(config as any).silent) {
       (config as any)._tracked = true;
       requestTracker.start();
     }
@@ -31,7 +32,7 @@ axiosInstance.interceptors.request.use(
 // Response: handle 401 + simple retry on network errors
 axiosInstance.interceptors.response.use(
   (response) => {
-    requestTracker.finish();
+    if ((response.config as any)._tracked) requestTracker.finish();
     return response;
   },
   async (error) => {

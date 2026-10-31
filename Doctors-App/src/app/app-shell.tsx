@@ -9,10 +9,12 @@ import Footer from '@/components/Footer';
 import Navbar from '@/components/Navbar';
 import AppContextProvider, { AppContext } from '@/Context/AppContext';
 import { EmojiProvider } from '@/Context/EmojiContext';
+import { NavigationWatcher } from '@/lib/navigation';
 import type { AppContextType } from '@/types';
 import { requestTracker } from '@/utils/requestTracker';
 
-// Requests that finish quicker than this never show the bar, so it doesn't flash.
+// Background requests that finish quicker than this never show the bar, so it doesn't
+// flash. Page changes the user clicked show it immediately.
 const SHOW_DELAY_MS = 200;
 
 /** The top bar follows real API activity (see utils/requestTracker). */
@@ -23,15 +25,22 @@ function RequestLoadingBar() {
     let showTimer: ReturnType<typeof setTimeout> | undefined;
     let visible = false;
 
-    const unsubscribe = requestTracker.subscribe((busy) => {
+    const show = () => {
+      clearTimeout(showTimer);
+      showTimer = undefined;
+      if (visible) return;
+      visible = true;
+      bar.current?.continuousStart(15);
+    };
+
+    const unsubscribe = requestTracker.subscribe((busy, immediate) => {
       if (busy) {
-        showTimer = setTimeout(() => {
-          visible = true;
-          bar.current?.continuousStart(15);
-        }, SHOW_DELAY_MS);
+        if (immediate) show();
+        else if (!visible && !showTimer) showTimer = setTimeout(show, SHOW_DELAY_MS);
         return;
       }
       clearTimeout(showTimer);
+      showTimer = undefined;
       if (visible) bar.current?.complete();
       visible = false;
     });
@@ -56,6 +65,7 @@ function Shell({ children }: { children: ReactNode }) {
     <EmojiProvider userId={userData?._id}>
       <div className="px-2 sm:px-0 sm:mx-[10%] min-h-screen flex flex-col">
         <RequestLoadingBar />
+        <NavigationWatcher />
         <Toaster position="top-right" richColors expand={false} />
         <Navbar />
         <main className="grow">{children}</main>

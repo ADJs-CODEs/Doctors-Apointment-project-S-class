@@ -9,11 +9,13 @@ import Sidebar from '@/components/Sidebar';
 import AdminContextProvider, { AdminContext } from '@/context/AdminContext';
 import AppContextProvider from '@/context/AppContext';
 import DoctorContextProvider, { DoctorContext } from '@/context/DoctorContext';
+import { NavigationWatcher } from '@/lib/navigation';
 import Login from '@/screens/Login';
 import type { AdminContextType, DoctorContextType } from '@/types';
 import { requestTracker } from '@/utils/requestTracker';
 
-// Requests that finish quicker than this never show the bar, so it doesn't flash.
+// Background requests that finish quicker than this never show the bar, so it doesn't
+// flash. Page changes the user clicked show it immediately.
 const SHOW_DELAY_MS = 200;
 
 /** The top bar follows real API activity (see utils/requestTracker). */
@@ -24,15 +26,22 @@ function RequestLoadingBar() {
     let showTimer: ReturnType<typeof setTimeout> | undefined;
     let visible = false;
 
-    const unsubscribe = requestTracker.subscribe((busy) => {
+    const show = () => {
+      clearTimeout(showTimer);
+      showTimer = undefined;
+      if (visible) return;
+      visible = true;
+      bar.current?.continuousStart(15);
+    };
+
+    const unsubscribe = requestTracker.subscribe((busy, immediate) => {
       if (busy) {
-        showTimer = setTimeout(() => {
-          visible = true;
-          bar.current?.continuousStart(15);
-        }, SHOW_DELAY_MS);
+        if (immediate) show();
+        else if (!visible && !showTimer) showTimer = setTimeout(show, SHOW_DELAY_MS);
         return;
       }
       clearTimeout(showTimer);
+      showTimer = undefined;
       if (visible) bar.current?.complete();
       visible = false;
     });
@@ -49,7 +58,12 @@ function Shell({ children }: { children: ReactNode }) {
   const { aToken } = useContext(AdminContext) as AdminContextType;
   const { dToken } = useContext(DoctorContext) as DoctorContextType;
 
-  const loadingBar = <RequestLoadingBar />;
+  const loadingBar = (
+    <>
+      <RequestLoadingBar />
+      <NavigationWatcher />
+    </>
+  );
 
   // Logged out: every address shows the login screen.
   if (!aToken && !dToken) {

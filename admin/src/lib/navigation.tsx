@@ -12,7 +12,45 @@ import {
   useRouter,
   useSearchParams as useNextSearchParams,
 } from 'next/navigation';
-import { type ComponentProps, type ReactNode, useCallback, useEffect } from 'react';
+import { type ComponentProps, type MouseEvent, type ReactNode, useCallback, useEffect } from 'react';
+import { requestTracker } from '@/utils/requestTracker';
+
+// --- loading bar on page changes ---
+// A click that leads to another page starts the top bar straight away; the bar finishes
+// when the new page's path shows up (NavigationWatcher). The timeout is a safety net
+// for navigations that never complete.
+
+let navigating = false;
+let navigationTimeout: ReturnType<typeof setTimeout> | undefined;
+
+function beginNavigation(to: string) {
+  if (typeof window === 'undefined') return;
+  const targetPath = to.split(/[?#]/)[0] || '/';
+  if (decodeURI(window.location.pathname) === decodeURI(targetPath)) return;
+  if (navigating) return;
+  navigating = true;
+  requestTracker.start({ immediate: true });
+  navigationTimeout = setTimeout(endNavigation, 8000);
+}
+
+function endNavigation() {
+  if (!navigating) return;
+  navigating = false;
+  clearTimeout(navigationTimeout);
+  requestTracker.finish();
+}
+
+/** Render once in the app shell: finishes the bar when the page path changes. */
+export function NavigationWatcher() {
+  const pathname = usePathname();
+  useEffect(() => {
+    endNavigation();
+  }, [pathname]);
+  return null;
+}
+
+const isPlainLeftClick = (e: MouseEvent<HTMLAnchorElement>) =>
+  e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey && !e.defaultPrevented;
 
 // react-router could hand data to the next screen with navigate(to, { state }).
 // Next has no equivalent, so it's kept here until the next navigation.
@@ -30,6 +68,7 @@ export function useNavigate() {
         return;
       }
       navigationState = options?.state;
+      beginNavigation(to);
       if (options?.replace) router.replace(to);
       else router.push(to);
     },
@@ -67,8 +106,17 @@ export function useSearchParams() {
 
 type LinkProps = Omit<ComponentProps<typeof NextLink>, 'href'> & { to: string };
 
-export function Link({ to, ...props }: LinkProps) {
-  return <NextLink href={to} {...props} />;
+export function Link({ to, onClick, ...props }: LinkProps) {
+  return (
+    <NextLink
+      href={to}
+      onClick={(e) => {
+        onClick?.(e);
+        if (isPlainLeftClick(e) && props.target !== '_blank') beginNavigation(to);
+      }}
+      {...props}
+    />
+  );
 }
 
 type NavLinkProps = Omit<LinkProps, 'className' | 'children'> & {
@@ -77,13 +125,17 @@ type NavLinkProps = Omit<LinkProps, 'className' | 'children'> & {
 };
 
 /** A Link that knows whether it points at the current page. */
-export function NavLink({ to, className, children, ...props }: NavLinkProps) {
+export function NavLink({ to, className, children, onClick, ...props }: NavLinkProps) {
   const pathname = usePathname() ?? '/';
   const isActive = pathname === to || (to !== '/' && pathname.startsWith(`${to}/`));
   return (
     <NextLink
       href={to}
       className={typeof className === 'function' ? className({ isActive }) : className}
+      onClick={(e) => {
+        onClick?.(e);
+        if (isPlainLeftClick(e) && props.target !== '_blank') beginNavigation(to);
+      }}
       {...props}
     >
       {typeof children === 'function' ? children({ isActive }) : children}
