@@ -1,5 +1,7 @@
+"use client";
+
 import { useContext } from 'react';
-import { AdminContext } from '../context/AdminContext.js';
+import { AdminContext } from '../context/AdminContext';
 
 export const useAdmin = () => {
   const context = useContext(AdminContext);

@@ -1,3 +1,5 @@
+"use client";
+
 import type React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { RiErrorWarningLine } from '@remixicon/react'

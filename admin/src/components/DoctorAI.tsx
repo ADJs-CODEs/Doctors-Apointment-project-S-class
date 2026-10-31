@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useRef, useEffect, useContext } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -8,10 +10,10 @@ import {
   RiStethoscopeLine,
   RiSparklingLine,
 } from "@remixicon/react";
-import { DoctorContext } from "../context/DoctorContext.js";
-import type { DoctorContextType } from "../types/index.js";
-import axiosInstance from "../utils/axiosInstance.js";
-import { API_PATHS } from "../utils/apiPath.js";
+import { DoctorContext } from "../context/DoctorContext";
+import type { DoctorContextType } from "../types/index";
+import axiosInstance from "../utils/axiosInstance";
+import { API_PATHS } from "../utils/apiPath";
 
 interface Message {
   role: "user" | "assistant";

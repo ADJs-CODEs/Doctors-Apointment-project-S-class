@@ -1,6 +1,8 @@
+"use client";
+
 import type { Dispatch, SetStateAction } from 'react'
 import { RiCloseLine, RiHeartPulseLine, RiTimeLine, RiTempHotLine, RiAddLine, RiDeleteBin6Line } from '@remixicon/react';
-import type { DoctorsPrescribeModalProps } from "../types/index.js"
+import type { DoctorsPrescribeModalProps } from "../types/index"
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 

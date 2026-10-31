@@ -1,13 +1,15 @@
+"use client";
+
 import { createContext, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import type { DoctorContextType, Appointment, Doctor, ProviderProps } from "../types/index.js";
-import axiosInstance from "../utils/axiosInstance.js";
-import { API_PATHS } from "../utils/apiPath.js";
+import type { DoctorContextType, Appointment, Doctor, ProviderProps } from "../types/index";
+import axiosInstance from "../utils/axiosInstance";
+import { API_PATHS } from "../utils/apiPath";
 
 export const DoctorContext = createContext<DoctorContextType | undefined>(undefined);
 
 const DoctorContextProvider = ({ children }: ProviderProps) => {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
 
     // --- State Management ---
     const [dToken, setDToken] = useState<string>(localStorage.getItem('dToken') ?? '');

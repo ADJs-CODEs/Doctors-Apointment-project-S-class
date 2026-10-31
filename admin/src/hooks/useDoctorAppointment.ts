@@ -1,10 +1,12 @@
+"use client";
+
 import React, { useContext, useEffect, useState } from 'react'
-import { AppContext } from '../context/AppContext.js'
-import type { AppContextType, DoctorContextType, Medicine } from '../types/index.js'
-import { DoctorContext } from '../context/DoctorContext.js'
+import { AppContext } from '../context/AppContext'
+import type { AppContextType, DoctorContextType, Medicine } from '../types/index'
+import { DoctorContext } from '../context/DoctorContext'
 import { toast } from 'sonner'
-import axiosInstance from '../utils/axiosInstance.js'
-import { API_PATHS } from '../utils/apiPath.js'
+import axiosInstance from '../utils/axiosInstance'
+import { API_PATHS } from '../utils/apiPath'
 
 const useDoctorAppointment = () => {
 

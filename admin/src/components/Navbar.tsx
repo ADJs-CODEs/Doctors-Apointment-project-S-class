@@ -1,10 +1,12 @@
+"use client";
+
 import React, { useContext } from 'react'
-import { AdminContext } from '../context/AdminContext.js'
-import { useNavigate } from 'react-router-dom'
-import { DoctorContext } from '../context/DoctorContext.js'
-import { AppContext } from '../context/AppContext.js'
+import { AdminContext } from '../context/AdminContext'
+import { useNavigate } from "@/lib/navigation"
+import { DoctorContext } from '../context/DoctorContext'
+import { AppContext } from '../context/AppContext'
 import { RiLogoutCircleRLine, RiShieldUserLine, RiStethoscopeLine } from '@remixicon/react'
-import type { AdminContextType, DoctorContextType, AppContextType } from '../types/index.js'
+import type { AdminContextType, DoctorContextType, AppContextType } from '../types/index'
 import { motion } from 'framer-motion'
 
 const Navbar: React.FC = () => {
