@@ -27,7 +27,9 @@ const SUGGESTED_QUESTIONS = [
   "What does my prescription mean?",
 ];
 
-const ChatBot: React.FC = () => {
+/** aboveTabBar: lift the bubble above the patient app tab bar on phones */
+const ChatBot: React.FC<{ aboveTabBar?: boolean }> = ({ aboveTabBar = false }) => {
+  const bottom = aboveTabBar ? "bottom-24 lg:bottom-6" : "bottom-6";
   const { token, userData } = useContext(AppContext) as AppContextType;
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -105,7 +107,7 @@ const ChatBot: React.FC = () => {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => setOpen(true)}
-            className="fixed bottom-6 left-6 z-50 w-14 h-14 bg-slate-900 text-white rounded-full shadow-2xl flex items-center justify-center border border-white/10 group"
+            className={`fixed ${bottom} left-6 z-50 w-14 h-14 bg-slate-900 text-white rounded-full shadow-2xl flex items-center justify-center border border-white/10 group`}
           >
             <RiRobot2Line
               size={24}
@@ -124,7 +126,7 @@ const ChatBot: React.FC = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 40, scale: 0.95 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-6 left-6 z-50 w-[340px] sm:w-[380px] h-[560px] bg-white border border-slate-100 rounded-[28px] shadow-2xl flex flex-col overflow-hidden"
+            className={`fixed ${bottom} left-4 sm:left-6 z-50 w-[calc(100vw-2rem)] max-w-[380px] h-[560px] max-h-[calc(100dvh-8rem)] bg-white border border-slate-100 rounded-[28px] shadow-2xl flex flex-col overflow-hidden`}
           >
             {/* Header */}
             <div className="bg-slate-900 px-5 py-4 flex items-center justify-between shrink-0">

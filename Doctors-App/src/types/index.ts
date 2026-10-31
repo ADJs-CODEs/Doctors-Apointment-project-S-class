@@ -1,7 +1,8 @@
 export interface PrescribedMedicine {
   name: string;
   dosagePerDay: number;
-  frequencyType: "daily" | "interval";
+  /** missing on prescriptions saved before it was stored; treat as daily */
+  frequencyType?: "daily" | "interval";
   totalQuantity: number;
   remainingQuantity: number;
   lastTaken?: string;

@@ -36,6 +36,19 @@
   --shadow-portal: 0 8px 32px rgba(0, 0, 0, 0.02);
 
   /* --- Custom Animations --- */
+  /* Wish Well strip on the dashboard: content is duplicated, so -50% loops seamlessly */
+  --animate-marquee: marquee 45s linear infinite;
+
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
   --animate-critical-glow: critical-glow 2s infinite ease-in-out;
   --animate-pulse-red: pulse-red-subtle 3s infinite ease-in-out;
 

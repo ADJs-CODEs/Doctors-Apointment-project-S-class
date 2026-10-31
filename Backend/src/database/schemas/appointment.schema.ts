@@ -9,6 +9,8 @@ export interface IMessage {
 
 export interface IMedicine {
   name: string;
+  // 'daily': dosagePerDay doses spread over 24h. 'interval': one dose every dosagePerDay hours.
+  frequencyType: 'daily' | 'interval';
   dosagePerDay: number;
   totalQuantity: number;
   remainingQuantity: number;
@@ -16,6 +18,12 @@ export interface IMedicine {
   overdoseAlert: boolean;
   adherenceLogs: Date[];
   status: 'Active' | 'Completed';
+}
+
+/** Hours between two doses of a medicine. */
+export function hoursBetweenDoses(med: Pick<IMedicine, 'frequencyType' | 'dosagePerDay'>): number {
+  const value = med.dosagePerDay > 0 ? med.dosagePerDay : 1;
+  return med.frequencyType === 'interval' ? value : 24 / value;
 }
 
 export interface IHealthData {
@@ -80,6 +88,8 @@ export const AppointmentSchema = new Schema<IAppointment>(
         {
           _id: false,
           name: { type: String, required: true },
+          // older prescriptions were saved without this; they were all treated as daily
+          frequencyType: { type: String, enum: ['daily', 'interval'], default: 'daily' },
           dosagePerDay: { type: Number, required: true, default: 1 },
           totalQuantity: { type: Number, required: true },
           remainingQuantity: { type: Number, required: true },

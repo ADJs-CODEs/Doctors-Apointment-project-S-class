@@ -11,6 +11,11 @@ type ChatTurn = { role: 'user' | 'assistant'; content: string };
 const GEMINI_URL = (model: string) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
+const describeSchedule = (m: { frequencyType?: string; dosagePerDay: number }) =>
+  m.frequencyType === 'interval'
+    ? `every ${m.dosagePerDay} hours`
+    : `${m.dosagePerDay} dose(s)/day`;
+
 @Injectable()
 export class ChatService {
   private readonly logger = new Logger('ChatService');
@@ -42,7 +47,7 @@ export class ChatService {
       .flatMap((a) =>
         a.healthData.prescribedMedicines
           .filter((m) => m.remainingQuantity > 0)
-          .map((m) => `- ${m.name}: ${m.dosagePerDay} dose(s)/day, ${m.remainingQuantity} remaining`),
+          .map((m) => `- ${m.name}: ${describeSchedule(m)}, ${m.remainingQuantity} remaining`),
       )
       .join('\n');
 
@@ -104,7 +109,7 @@ You are a helpful assistant, not a gatekeeper.`;
             const adherence = m.totalQuantity
               ? Math.round(((m.totalQuantity - m.remainingQuantity) / m.totalQuantity) * 100)
               : 0;
-            return `${m.name} (${m.dosagePerDay}x/day, ${m.remainingQuantity} left, adherence: ${adherence}%)`;
+            return `${m.name} (${describeSchedule(m)}, ${m.remainingQuantity} left, adherence: ${adherence}%)`;
           })
           .join(', ') || 'None';
       patientContext = `CURRENT PATIENT CONTEXT:

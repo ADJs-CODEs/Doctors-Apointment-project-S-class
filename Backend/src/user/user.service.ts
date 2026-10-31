@@ -9,7 +9,7 @@ import Stripe from 'stripe';
 import validator from 'validator';
 import { fail } from '../common/http';
 import { MODEL } from '../database/models';
-import type { IAppointment } from '../database/schemas/appointment.schema';
+import { hoursBetweenDoses, type IAppointment } from '../database/schemas/appointment.schema';
 import type { IDoctor } from '../database/schemas/doctor.schema';
 import type { IUser } from '../database/schemas/user.schema';
 import { CloudinaryService, MailService, WebhookService } from '../integrations/integrations';
@@ -227,7 +227,7 @@ export class UserService {
     await appointment.save({ validateModifiedOnly: true });
 
     if (medicine.remainingQuantity > 0) {
-      const intervalMs = (24 / medicine.dosagePerDay) * 60 * 60 * 1000;
+      const intervalMs = hoursBetweenDoses(medicine) * 60 * 60 * 1000;
       const nextDoseTime = new Date(Date.now() + intervalMs);
       this.webhooks.trigger('N8N_DOSE_REMINDER_WEBHOOK', {
         patientName: appointment.userData?.name,

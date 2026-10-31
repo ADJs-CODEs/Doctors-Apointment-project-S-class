@@ -10,6 +10,8 @@ import Navbar from '@/components/Navbar';
 import AppContextProvider, { AppContext } from '@/Context/AppContext';
 import { EmojiProvider } from '@/Context/EmojiContext';
 import { NavigationWatcher } from '@/lib/navigation';
+import PatientShell from '@/components/patient/PatientShell';
+import { usePathname, useRouter } from 'next/navigation';
 import type { AppContextType } from '@/types';
 import { requestTracker } from '@/utils/requestTracker';
 
@@ -58,15 +60,65 @@ const GOOGLE_CLIENT_ID =
   process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ??
   '703083582094-kl10rok1pn4cev8mcq6thlr67scdevmu.apps.googleusercontent.com';
 
+// Pages only a logged-in patient can use; logged-out visitors are sent to /login.
+const PATIENT_ONLY = [
+  '/dashboard',
+  '/my-appointments',
+  '/medication-history',
+  '/my-profile',
+  '/account-settings',
+  '/watching-over',
+  '/watching/',
+  '/verify',
+];
+// Pages that keep the public website look even when logged in.
+const PUBLIC_LOOK = ['/about', '/contact', '/login', '/forgot-password', '/reset-password'];
+
+const matches = (pathname: string, prefixes: string[]) =>
+  prefixes.some((p) => pathname === p || pathname.startsWith(p.endsWith('/') ? p : `${p}/`));
+
 function Shell({ children }: { children: ReactNode }) {
-  const { userData } = useContext(AppContext) as AppContextType;
+  const { userData, token } = useContext(AppContext) as AppContextType;
+  const pathname = usePathname() ?? '/';
+  const router = useRouter();
+
+  const loggedIn = !!token;
+  // logged-in patients use the app, not the landing page
+  const redirectTo =
+    loggedIn && pathname === '/'
+      ? '/dashboard'
+      : !loggedIn && matches(pathname, PATIENT_ONLY)
+        ? '/login'
+        : null;
+
+  useEffect(() => {
+    if (redirectTo) router.replace(redirectTo);
+  }, [redirectTo, router]);
+
+  const overlays = (
+    <>
+      <RequestLoadingBar />
+      <NavigationWatcher />
+      <Toaster position="top-right" richColors expand={false} />
+    </>
+  );
+
+  if (redirectTo) return overlays;
+
+  if (loggedIn && !matches(pathname, PUBLIC_LOOK)) {
+    return (
+      <EmojiProvider userId={userData?._id}>
+        {overlays}
+        <PatientShell>{children}</PatientShell>
+        <ChatBot aboveTabBar />
+      </EmojiProvider>
+    );
+  }
 
   return (
     <EmojiProvider userId={userData?._id}>
       <div className="px-2 sm:px-0 sm:mx-[10%] min-h-screen flex flex-col">
-        <RequestLoadingBar />
-        <NavigationWatcher />
-        <Toaster position="top-right" richColors expand={false} />
+        {overlays}
         <Navbar />
         <main className="grow">{children}</main>
         <Footer />
