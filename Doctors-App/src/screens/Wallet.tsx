@@ -4,6 +4,7 @@ import {
   RiArrowDownLine,
   RiArrowUpLine,
   RiBankLine,
+  RiCheckboxCircleLine,
   RiCloseLine,
   RiCoinsLine,
   RiGiftLine,
@@ -180,7 +181,10 @@ export default function Wallet() {
           )}
           {data.fundLifetimeCents === 0 ? null : data.pendingPayout ? (
               <p className="mt-4 flex items-center gap-2 text-sm font-bold text-orange-700 bg-orange-50 rounded-2xl px-4 py-3">
-                <RiTimeLine size={18} /> {money(data.pendingPayout.cents)} withdrawal waiting for approval
+                <RiTimeLine size={18} /> {money(data.pendingPayout.cents)}{" "}
+                {data.pendingPayout.status === "processing"
+                  ? `on its way to your ${data.pendingPayout.bankName} account`
+                  : "withdrawal waiting for approval"}
               </p>
             ) : (
               <button
@@ -267,21 +271,59 @@ function WithdrawModal({
   onClose: () => void;
   onDone: () => void;
 }) {
-  const [form, setForm] = useState({ amount: "", accountName: "", bankName: "", accountNumber: "", note: "" });
+  const [form, setForm] = useState({ amount: "", accountName: "", bankName: "", bankCode: "", accountNumber: "", note: "" });
   const [saving, setSaving] = useState(false);
+  // with Paystack: pick a bank, and the bank confirms the account holder's name
+  const [options, setOptions] = useState<{ paystack: boolean; banks: { name: string; code: string }[]; ngnRate: number | null; fundCurrency: string } | null>(null);
+  const [checked, setChecked] = useState<{ name: string; key: string } | null>(null);
+  const [checking, setChecking] = useState(false);
 
   useEffect(() => {
-    if (open) setForm((f) => ({ ...f, amount: (available / 100).toFixed(2) }));
+    if (!open) return;
+    setForm((f) => ({ ...f, amount: (available / 100).toFixed(2) }));
+    setChecked(null);
+    axiosInstance
+      .get(API_PATHS.WALLET.PAYOUT_OPTIONS, { silent: true } as any)
+      .then(({ data }) => data.success && setOptions(data))
+      .catch(() => setOptions({ paystack: false, banks: [], ngnRate: null, fundCurrency: "USD" }));
   }, [open, available]);
+
+  const paystack = !!options?.paystack;
+  const accountKey = `${form.bankCode}:${form.accountNumber}`;
+  const confirmedName = checked?.key === accountKey ? checked.name : null;
+  const naira =
+    options?.fundCurrency === "NGN"
+      ? Number(form.amount)
+      : options?.ngnRate
+        ? Number(form.amount) * options.ngnRate
+        : null;
+
+  const checkAccount = async () => {
+    setChecking(true);
+    try {
+      const { data } = await axiosInstance.post(API_PATHS.WALLET.RESOLVE_ACCOUNT, {
+        bankCode: form.bankCode,
+        accountNumber: form.accountNumber,
+      });
+      if (data.success) setChecked({ name: data.accountName, key: accountKey });
+      else toast.error(data.message);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Couldn't check that account");
+    } finally {
+      setChecking(false);
+    }
+  };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    if (paystack && !confirmedName) return toast.info("Check the account first, so we know whose it is");
     setSaving(true);
     try {
       const { data } = await axiosInstance.post(API_PATHS.WALLET.PAYOUT, {
         cents: Math.round(Number(form.amount) * 100),
-        accountName: form.accountName,
+        accountName: paystack ? confirmedName : form.accountName,
         bankName: form.bankName,
+        bankCode: paystack ? form.bankCode : undefined,
         accountNumber: form.accountNumber,
         note: form.note,
       });
@@ -342,12 +384,69 @@ function WithdrawModal({
                 className={field}
               />
             </label>
-            <input required placeholder="Account holder name" value={form.accountName} onChange={(e) => setForm({ ...form, accountName: e.target.value })} className={field} />
-            <input required placeholder="Bank name" value={form.bankName} onChange={(e) => setForm({ ...form, bankName: e.target.value })} className={field} />
-            <input required placeholder="Account number" inputMode="numeric" value={form.accountNumber} onChange={(e) => setForm({ ...form, accountNumber: e.target.value })} className={field} />
+            {naira != null && options?.fundCurrency !== "NGN" && Number(form.amount) > 0 && (
+              <p className="text-[12px] text-slate-500 -mt-1 px-1">
+                You&apos;ll receive about <span className="font-bold text-slate-800">₦{naira.toLocaleString("en-NG", { maximumFractionDigits: 0 })}</span>
+              </p>
+            )}
+            {paystack ? (
+              <>
+                <select
+                  required
+                  value={form.bankCode}
+                  onChange={(e) => {
+                    const bank = options!.banks.find((b) => b.code === e.target.value);
+                    setForm({ ...form, bankCode: e.target.value, bankName: bank?.name ?? "" });
+                  }}
+                  className={field}
+                >
+                  <option value="">Choose your bank</option>
+                  {options!.banks.map((b) => (
+                    <option key={`${b.code}-${b.name}`} value={b.code}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="flex gap-2">
+                  <input
+                    required
+                    placeholder="10-digit account number"
+                    inputMode="numeric"
+                    maxLength={10}
+                    value={form.accountNumber}
+                    onChange={(e) => setForm({ ...form, accountNumber: e.target.value.replace(/\D/g, "") })}
+                    className={field}
+                  />
+                  <button
+                    type="button"
+                    onClick={checkAccount}
+                    disabled={!form.bankCode || form.accountNumber.length !== 10 || checking}
+                    className="shrink-0 px-4 rounded-2xl bg-slate-900 text-white text-[12px] font-bold disabled:opacity-40"
+                  >
+                    {checking ? "Checking…" : "Check"}
+                  </button>
+                </div>
+                {confirmedName && (
+                  <p className="flex items-center gap-2 text-sm rounded-2xl bg-teal-50 border border-teal-100 px-4 py-3 text-teal-900">
+                    <RiCheckboxCircleLine size={18} className="text-teal-600 shrink-0" />
+                    <span>
+                      This account belongs to <span className="font-black">{confirmedName}</span>
+                    </span>
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <input required placeholder="Account holder name" value={form.accountName} onChange={(e) => setForm({ ...form, accountName: e.target.value })} className={field} />
+                <input required placeholder="Bank name" value={form.bankName} onChange={(e) => setForm({ ...form, bankName: e.target.value })} className={field} />
+                <input required placeholder="Account number" inputMode="numeric" value={form.accountNumber} onChange={(e) => setForm({ ...form, accountNumber: e.target.value })} className={field} />
+              </>
+            )}
             <textarea placeholder="Note for the clinic (optional)" rows={2} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} className={`${field} resize-none`} />
             <p className="text-[12px] text-slate-500 bg-slate-50 rounded-2xl px-4 py-3">
-              The clinic will confirm it&apos;s really you before sending the money, then email you the transfer reference.
+              {paystack
+                ? "The clinic approves it, then it's sent straight to your bank (usually within minutes). If it fails, the money comes back to your fund."
+                : "The clinic will confirm it's really you before sending the money, then email you the transfer reference."}{" "}
               The amount is held from your fund until then.
             </p>
             <button

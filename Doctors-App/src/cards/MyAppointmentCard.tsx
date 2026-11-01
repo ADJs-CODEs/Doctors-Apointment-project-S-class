@@ -7,7 +7,7 @@ import { RiErrorWarningLine, RiShieldCheckLine, RiArrowDownSLine, RiCalendarClos
 import { slotDateFormat } from '../utils/medicationUtils';
 import MessageDoctorButton from '../components/patient/MessageDoctorButton';
 import { DirectionsButton } from '../components/patient/ClinicMap';
-import JoinCallButton from '../components/patient/JoinCallButton';
+import VideoCallPanel from '../components/patient/VideoCallPanel';
 
 
 /** A time that's held but not paid for yet, with a live countdown. */
@@ -100,6 +100,8 @@ const MyAppointmentCard: React.FC<MyAppointmentCardProps> = ({ item, isCritical,
             </span>
           )}
         </div>
+        {/* video calls always say where they stand: pay, starts in…, live (join), ended */}
+        {item.kind === 'video' && !held && <VideoCallPanel item={item} onPay={() => payStripe(item._id)} />}
       </div>
 
       {/* Interactive Buttons */}
@@ -127,7 +129,6 @@ const MyAppointmentCard: React.FC<MyAppointmentCardProps> = ({ item, isCritical,
         {!item.cancelled && !held && (
           <MessageDoctorButton doctorId={item.docId} appointmentId={item._id} label='Message' className='w-full' />
         )}
-        {open && !held && item.kind === 'video' && <JoinCallButton appointment={item} className='w-full' />}
         {open && !held && item.kind !== 'video' && (
           <DirectionsButton docId={item.docId} address={item.docData?.address} className='w-full' />
         )}

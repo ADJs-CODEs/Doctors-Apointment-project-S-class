@@ -226,7 +226,7 @@ export type WalletOverview = {
   fundCents: number;
   fundLifetimeCents: number;
   hasCareFund: boolean;
-  pendingPayout: { _id: string; cents: number; bankName: string; createdAt: string } | null;
+  pendingPayout: { _id: string; cents: number; bankName: string; status: "pending" | "processing"; createdAt: string } | null;
   transactions: WalletTransaction[];
   packs: CoinPack[];
   gifts: Gift[];

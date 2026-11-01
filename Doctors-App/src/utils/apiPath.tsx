@@ -50,6 +50,8 @@ export const API_PATHS = {
     GIFT: "/api/wallet/gift",
     PAY_APPOINTMENT: "/api/wallet/pay-appointment",
     PAYOUT: "/api/wallet/payout",
+    PAYOUT_OPTIONS: "/api/wallet/payout-options",
+    RESOLVE_ACCOUNT: "/api/wallet/resolve-account",
   },
   PUSH: {
     KEY: "/api/user/push/key",
