@@ -31,6 +31,8 @@ export const API_PATHS = {
     PAYOUTS: "/api/admin/payouts",
     PAYOUT_PAID: (id: string) => `/api/admin/payouts/${id}/paid`,
     PAYOUT_REJECT: (id: string) => `/api/admin/payouts/${id}/reject`,
+    PAYOUT_SEND: (id: string) => `/api/admin/payouts/${id}/send`,
+    PAYOUT_REFRESH: (id: string) => `/api/admin/payouts/${id}/refresh`,
   },
   WISH_WELL: {
     ALL: "/api/wish-well/all",

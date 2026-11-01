@@ -1,6 +1,14 @@
 "use client";
 
-import { RiBankLine, RiCheckLine, RiCloseLine, RiShieldUserLine } from "@remixicon/react";
+import {
+  RiBankLine,
+  RiCheckLine,
+  RiCloseLine,
+  RiErrorWarningLine,
+  RiRefreshLine,
+  RiSendPlaneLine,
+  RiShieldUserLine,
+} from "@remixicon/react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { API_PATHS } from "../../utils/apiPath";
@@ -15,15 +23,24 @@ type Payout = {
   bankName: string;
   accountNumber: string;
   note?: string;
-  status: "pending" | "paid" | "rejected";
+  status: "pending" | "processing" | "paid" | "rejected" | "failed";
+  provider?: "manual" | "paystack";
+  bankCode?: string;
+  resolvedAccountName?: string;
+  nameMatches: boolean | null;
+  payoutMinor?: number;
+  failureReason?: string;
   reference?: string;
   adminNote?: string;
   decidedAt?: string;
   createdAt: string;
 };
 
-const FILTERS = ["pending", "paid", "rejected", "all"] as const;
+type Setup = { paystack: boolean; ngnRate: number | null };
+
+const FILTERS = ["pending", "processing", "paid", "failed", "rejected", "all"] as const;
 const money = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+const naira = (kobo: number) => `₦${(kobo / 100).toLocaleString("en-NG", { maximumFractionDigits: 0 })}`;
 const when = (iso?: string) =>
   iso ? new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : "";
 
@@ -31,13 +48,17 @@ const when = (iso?: string) =>
 export default function Payouts() {
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("pending");
   const [payouts, setPayouts] = useState<Payout[] | null>(null);
+  const [setup, setSetup] = useState<Setup>({ paystack: false, ngnRate: null });
 
   const load = useCallback(async () => {
     try {
       const { data } = await axiosInstance.get(API_PATHS.ADMIN.PAYOUTS, {
         params: filter === "all" ? {} : { status: filter },
       });
-      if (data.success) setPayouts(data.payouts);
+      if (data.success) {
+        setPayouts(data.payouts);
+        setSetup({ paystack: data.paystack, ngnRate: data.ngnRate });
+      }
       else toast.error(data.message);
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Couldn't load payouts");
@@ -63,10 +84,12 @@ export default function Payouts() {
               </h1>
             </div>
             <p className="text-slate-500 text-sm ml-12">
-              Verify the patient, send the bank transfer, then mark it paid with the reference.
+              {setup.paystack
+                ? "Verify the patient, then send it through Paystack. Failed transfers return the money to their fund."
+                : "Verify the patient, send the bank transfer, then mark it paid with the reference."}
             </p>
           </div>
-          <div className="flex gap-1.5">
+          <div className="flex flex-wrap gap-1.5">
             {FILTERS.map((f) => (
               <button
                 key={f}
@@ -97,7 +120,7 @@ export default function Payouts() {
         ) : (
           <div className="space-y-4">
             {payouts.map((p) => (
-              <PayoutCard key={p._id} p={p} onChanged={load} />
+              <PayoutCard key={p._id} p={p} setup={setup} onChanged={load} />
             ))}
           </div>
         )}
@@ -106,14 +129,40 @@ export default function Payouts() {
   );
 }
 
-function PayoutCard({ p, onChanged }: { p: Payout; onChanged: () => void }) {
-  const [mode, setMode] = useState<"none" | "pay" | "reject">("none");
+function PayoutCard({ p, setup, onChanged }: { p: Payout; setup: Setup; onChanged: () => void }) {
+  const [mode, setMode] = useState<"none" | "send" | "pay" | "reject">("none");
   const [reference, setReference] = useState("");
   const [verified, setVerified] = useState(false);
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Paystack can only send to an account the bank confirmed when the patient asked
+  const canSend = setup.paystack && p.provider === "paystack" && !!p.bankCode;
+  const kobo = p.payoutMinor ?? (setup.ngnRate ? Math.round(p.cents * setup.ngnRate) : null);
+
+  const call = async (request: Promise<{ data: any }>) => {
+    setSaving(true);
+    try {
+      const { data } = await request;
+      if (data.success) {
+        toast.success(data.message);
+        onChanged();
+      } else {
+        toast.error(data.message);
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const refresh = () => call(axiosInstance.post(API_PATHS.ADMIN.PAYOUT_REFRESH(p._id)));
+
   const submit = async () => {
+    if (mode === "send") {
+      return call(axiosInstance.post(API_PATHS.ADMIN.PAYOUT_SEND(p._id), { identityVerified: verified, adminNote: note }));
+    }
     setSaving(true);
     try {
       const { data } =
@@ -137,18 +186,22 @@ function PayoutCard({ p, onChanged }: { p: Payout; onChanged: () => void }) {
     }
   };
 
-  const tone =
-    p.status === "pending"
-      ? "bg-orange-50 text-orange-700 border-orange-100"
-      : p.status === "paid"
-        ? "bg-teal-50 text-teal-700 border-teal-100"
-        : "bg-slate-100 text-slate-500 border-slate-200";
+  const tone = {
+    pending: "bg-orange-50 text-orange-700 border-orange-100",
+    processing: "bg-sky-50 text-sky-700 border-sky-100",
+    paid: "bg-teal-50 text-teal-700 border-teal-100",
+    failed: "bg-red-50 text-red-700 border-red-100",
+    rejected: "bg-slate-100 text-slate-500 border-slate-200",
+  }[p.status];
 
   return (
     <div className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-5 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>
-          <p className="text-3xl font-black text-slate-900">{money(p.cents)}</p>
+          <p className="text-3xl font-black text-slate-900">
+            {money(p.cents)}
+            {kobo != null && <span className="text-lg font-bold text-slate-400"> · {naira(kobo)}</span>}
+          </p>
           <p className="text-sm font-bold text-slate-700 mt-1">
             {p.userName} <span className="font-medium text-slate-400">· {p.userEmail}</span>
           </p>
@@ -171,20 +224,59 @@ function PayoutCard({ p, onChanged }: { p: Payout; onChanged: () => void }) {
           </div>
         ))}
       </div>
+      {p.resolvedAccountName && (
+        <p
+          className={`flex items-center gap-1.5 text-[12px] font-bold mt-3 ${
+            p.nameMatches ? "text-teal-700" : "text-orange-700"
+          }`}
+        >
+          {p.nameMatches ? <RiCheckLine size={15} /> : <RiErrorWarningLine size={15} />}
+          {p.nameMatches
+            ? "The bank confirmed this account, and the name matches the patient"
+            : `The bank says this account belongs to ${p.resolvedAccountName}, which doesn't match ${p.userName}. Check before sending.`}
+        </p>
+      )}
       {p.note && <p className="text-sm text-slate-500 mt-3 italic">“{p.note}”</p>}
 
-      {p.status !== "pending" ? (
+      {p.status === "processing" ? (
+        <div className="flex flex-wrap items-center gap-3 mt-4">
+          <p className="text-sm text-sky-700">Sent to Paystack, waiting for the bank to confirm.</p>
+          <button
+            onClick={refresh}
+            disabled={saving}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-slate-600 text-[12px] font-bold hover:bg-slate-50 disabled:opacity-40"
+          >
+            <RiRefreshLine size={14} /> {saving ? "Checking…" : "Check again"}
+          </button>
+        </div>
+      ) : p.status !== "pending" ? (
         <p className="text-sm text-slate-500 mt-4">
-          {p.status === "paid" ? `Paid ${when(p.decidedAt)} · ref ${p.reference}` : `Rejected ${when(p.decidedAt)}`}
+          {p.status === "paid"
+            ? `Paid ${when(p.decidedAt)} · ref ${p.reference}`
+            : p.status === "failed"
+              ? `Transfer failed ${when(p.decidedAt)}${p.failureReason ? ` (${p.failureReason})` : ""}; the money went back to their fund`
+              : `Rejected ${when(p.decidedAt)}`}
           {p.adminNote ? ` · ${p.adminNote}` : ""}
         </p>
       ) : mode === "none" ? (
-        <div className="flex gap-2 mt-5">
+        <div className="flex flex-wrap gap-2 mt-5">
+          {canSend && (
+            <button
+              onClick={() => setMode("send")}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-bold hover:bg-teal-700"
+            >
+              <RiSendPlaneLine size={16} /> Send via Paystack
+            </button>
+          )}
           <button
             onClick={() => setMode("pay")}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-bold hover:bg-teal-700"
+            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold ${
+              canSend
+                ? "border border-slate-200 text-slate-600 hover:bg-slate-50"
+                : "bg-teal-600 text-white hover:bg-teal-700"
+            }`}
           >
-            <RiCheckLine size={16} /> I&apos;ve sent it
+            <RiCheckLine size={16} /> I&apos;ve sent it by hand
           </button>
           <button
             onClick={() => setMode("reject")}
@@ -195,14 +287,21 @@ function PayoutCard({ p, onChanged }: { p: Payout; onChanged: () => void }) {
         </div>
       ) : (
         <div className="mt-5 rounded-2xl border border-slate-200 p-4 space-y-3">
-          {mode === "pay" && (
+          {(mode === "pay" || mode === "send") && (
             <>
-              <input
-                value={reference}
-                onChange={(e) => setReference(e.target.value)}
-                placeholder="Bank transfer reference"
-                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-teal-400"
-              />
+              {mode === "pay" ? (
+                <input
+                  value={reference}
+                  onChange={(e) => setReference(e.target.value)}
+                  placeholder="Bank transfer reference"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-teal-400"
+                />
+              ) : (
+                <p className="text-sm text-slate-600">
+                  Paystack will send {kobo != null ? naira(kobo) : money(p.cents)} to {p.resolvedAccountName ?? p.accountName} at{" "}
+                  {p.bankName}. This can&apos;t be undone.
+                </p>
+              )}
               <label className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer">
                 <input type="checkbox" checked={verified} onChange={(e) => setVerified(e.target.checked)} className="mt-0.5 accent-teal-600" />
                 <span className="flex items-center gap-1.5">
@@ -222,12 +321,21 @@ function PayoutCard({ p, onChanged }: { p: Payout; onChanged: () => void }) {
           <div className="flex gap-2">
             <button
               onClick={submit}
-              disabled={saving || (mode === "pay" ? !reference.trim() || !verified : !note.trim())}
+              disabled={
+                saving ||
+                (mode === "pay" ? !reference.trim() || !verified : mode === "send" ? !verified : !note.trim())
+              }
               className={`px-4 py-2.5 rounded-xl text-white text-sm font-bold disabled:opacity-40 ${
-                mode === "pay" ? "bg-teal-600 hover:bg-teal-700" : "bg-red-600 hover:bg-red-700"
+                mode === "reject" ? "bg-red-600 hover:bg-red-700" : "bg-teal-600 hover:bg-teal-700"
               }`}
             >
-              {saving ? "Saving…" : mode === "pay" ? "Mark as paid" : "Reject and return funds"}
+              {saving
+                ? "Saving…"
+                : mode === "send"
+                  ? "Send now"
+                  : mode === "pay"
+                    ? "Mark as paid"
+                    : "Reject and return funds"}
             </button>
             <button onClick={() => setMode("none")} className="px-4 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100">
               Back
