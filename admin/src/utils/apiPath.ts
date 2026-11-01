@@ -28,6 +28,7 @@ export const API_PATHS = {
     DELETE_DOCTOR: "/api/admin/delete-doctor",
     ADD_DOCTORS: "/api/admin/add-doctor",
     MARK_MISSED: "/api/admin/mark-missed",
+    FINANCE: "/api/admin/finance",
     PAYOUTS: "/api/admin/payouts",
     PAYOUT_PAID: (id: string) => `/api/admin/payouts/${id}/paid`,
     PAYOUT_REJECT: (id: string) => `/api/admin/payouts/${id}/reject`,
@@ -42,6 +43,12 @@ export const API_PATHS = {
   },
   CHAT: {
     DOCTOR_MESSAGE: "/api/chat/doctor-message",
+  },
+  NOTIFICATIONS: {
+    LIST: "/api/doctor/notifications",
+    MARK_ALL_READ: "/api/doctor/notifications/mark-all-read",
+    MARK_ONE_READ: "/api/doctor/notifications/mark-one-read",
+    CLEAR: "/api/doctor/notifications/clear",
   },
   MESSAGES: {
     CONVERSATIONS: "/api/doctor/messages",
