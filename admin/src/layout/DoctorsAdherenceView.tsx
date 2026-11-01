@@ -11,6 +11,7 @@ import {
 } from "@remixicon/react";
 import { toast } from "sonner";
 import axiosInstance from "../utils/axiosInstance";
+import { useNavigate } from "@/lib/navigation";
 
 interface DoctorsAdherenceViewProps {
   item: Appointment;
@@ -27,6 +28,7 @@ const DoctorsAdherenceView = ({
   setShowAlertModal,
   getAdherenceStats,
 }: DoctorsAdherenceViewProps) => {
+  const navigate = useNavigate();
   return (
     <AnimatePresence>
       {expandedId === item._id && item.healthData && (
@@ -41,14 +43,12 @@ const DoctorsAdherenceView = ({
               <p className="text-[10px] font-black uppercase tracking-[2px] text-slate-400">
                 Clinical Monitoring
               </p>
+              {/* alerts now go through the chat (tick "Urgent" there) */}
               <button
-                onClick={() => {
-                  setSelectedApptId(item._id);
-                  setShowAlertModal(true);
-                }}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-500 text-white px-4 py-3 sm:py-2 rounded-xl text-[10px] font-black hover:bg-red-600 active:scale-95 transition-all"
+                onClick={() => navigate(`/doctor-messages?patient=${item.userId}&appointment=${item._id}`)}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-slate-900 text-white px-4 py-3 sm:py-2 rounded-xl text-[10px] font-black hover:bg-teal-600 active:scale-95 transition-all"
               >
-                <RiSendPlaneFill size={14} /> SEND PATIENT ALERT
+                <RiSendPlaneFill size={14} /> MESSAGE PATIENT
               </button>
               <button
                 onClick={() => {

@@ -10,16 +10,19 @@ import {
   RiTimeLine,
   RiMedicineBottleLine,
   RiArrowDownSLine,
-  RiInformationLine
+  RiInformationLine,
+  RiUserUnfollowLine
 } from '@remixicon/react'
 import type { AdminContextType, AppContextType, Appointment } from '../../types/index'
 import { motion, AnimatePresence } from 'framer-motion'
+import MissedAppointmentModal, { canMarkMissed, MissedBadge } from '../../Modal/MissedAppointmentModal'
 
 const AllAppointments: React.FC = () => {
   const { aToken, appointments, getAllAppointments, cancelAppointment } = useContext(AdminContext) as AdminContextType
   const { calculateAge, slotDateFormat, currency, setProgress } = useContext(AppContext) as AppContextType
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [missedFor, setMissedFor] = useState<Appointment | null>(null);
 
   useEffect(() => {
     if (aToken) {
@@ -117,7 +120,27 @@ const AllAppointments: React.FC = () => {
 
                     {/* Status Action */}
                     <div className='flex items-center justify-center lg:justify-center gap-3 w-full lg:w-auto pt-4 lg:pt-0 border-t border-slate-50 lg:border-none'>
-                      {item.cancelled ? (
+                      {item.missed ? (
+                        <MissedBadge item={item} currency={currency} />
+                      ) : canMarkMissed(item) ? (
+                        <div className='flex items-center gap-2 w-full lg:w-auto'>
+                          <button
+                            onClick={() => setMissedFor(item)}
+                            title='Mark as missed'
+                            className='flex-1 lg:flex-none flex items-center justify-center gap-1.5 px-3 py-2 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl hover:bg-orange-100 transition-all active:scale-95'
+                          >
+                            <RiUserUnfollowLine size={16} />
+                            <span className='text-[10px] font-black uppercase tracking-widest'>Missed</span>
+                          </button>
+                          <button
+                            onClick={() => handleCancel(item._id)}
+                            title='Cancel appointment'
+                            className='p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all active:scale-95'
+                          >
+                            <RiCloseCircleLine size={20} />
+                          </button>
+                        </div>
+                      ) : item.cancelled ? (
                         <div className='flex items-center gap-1.5 px-4 py-1.5 bg-red-50 text-red-500 rounded-full border border-red-100 w-full lg:w-auto justify-center'>
                           <RiCloseCircleLine size={14} />
                           <span className='text-[10px] font-black uppercase tracking-widest'>Cancelled</span>
@@ -190,6 +213,13 @@ const AllAppointments: React.FC = () => {
           </div>
         </div>
       </div>
+      <MissedAppointmentModal
+        appointment={missedFor}
+        role='admin'
+        currency={currency}
+        onClose={() => setMissedFor(null)}
+        onDone={getAllAppointments}
+      />
     </div>
   )
 }

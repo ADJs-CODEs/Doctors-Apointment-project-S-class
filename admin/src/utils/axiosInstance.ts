@@ -20,8 +20,11 @@ axiosInstance.interceptors.request.use(
     } else if (dtoken) {
       config.headers.Authorization = `Bearer ${dtoken}`;
     }
-    (config as any)._tracked = true;
-    requestTracker.start();
+    // requests sent with { silent: true }, like background refreshes, don't move the bar
+    if (!(config as any)._tracked && !(config as any).silent) {
+      (config as any)._tracked = true;
+      requestTracker.start();
+    }
     return config;
   },
   (error) => {
@@ -31,7 +34,7 @@ axiosInstance.interceptors.request.use(
 
 axiosInstance.interceptors.response.use(
   (response) => {
-    requestTracker.finish();
+    if ((response.config as any)._tracked) requestTracker.finish();
     return response;
   },
   (error) => {

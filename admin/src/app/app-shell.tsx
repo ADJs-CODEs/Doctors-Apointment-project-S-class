@@ -9,6 +9,7 @@ import Sidebar from '@/components/Sidebar';
 import AdminContextProvider, { AdminContext } from '@/context/AdminContext';
 import AppContextProvider from '@/context/AppContext';
 import DoctorContextProvider, { DoctorContext } from '@/context/DoctorContext';
+import { DoctorMessagesProvider } from '@/context/DoctorMessagesContext';
 import { NavigationWatcher } from '@/lib/navigation';
 import Login from '@/screens/Login';
 import type { AdminContextType, DoctorContextType } from '@/types';
@@ -76,7 +77,7 @@ function Shell({ children }: { children: ReactNode }) {
     );
   }
 
-  return (
+  const page = (
     <div className="bg-[#F8F9FD] min-h-screen flex flex-col">
       {loadingBar}
       <Toaster richColors position="top-right" />
@@ -89,6 +90,9 @@ function Shell({ children }: { children: ReactNode }) {
       {dToken && <DoctorAI />}
     </div>
   );
+
+  // doctors get live patient messages and the unread badge
+  return dToken ? <DoctorMessagesProvider token={dToken}>{page}</DoctorMessagesProvider> : page;
 }
 
 export default function AppShell({ children }: { children: ReactNode }) {
