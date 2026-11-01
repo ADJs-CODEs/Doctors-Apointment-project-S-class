@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   Post,
+  Query,
   UploadedFile,
   UseFilters,
   UseGuards,
@@ -15,6 +16,7 @@ import { ImageUpload } from '../common/upload';
 import { DoctorService } from '../doctor/doctor.service';
 import { OkOnErrorFilter } from '../doctor/ok-on-error.filter';
 import { AdminService } from './admin.service';
+import { FinanceService } from './finance.service';
 
 @Controller('api/admin')
 export class AdminController {
@@ -22,6 +24,7 @@ export class AdminController {
     private readonly admin: AdminService,
     private readonly doctors: DoctorService,
     private readonly missed: MissedAppointments,
+    private readonly finance: FinanceService,
   ) {}
 
   @Post('login')
@@ -78,6 +81,13 @@ export class AdminController {
   @UseGuards(AdminAuthGuard)
   dashboard() {
     return this.admin.dashboard();
+  }
+
+  /** days = 30 | 90 | 365 | 0 (all time) */
+  @Get('finance')
+  @UseGuards(AdminAuthGuard)
+  financeOverview(@Query('days') days?: string) {
+    return this.finance.overview(days);
   }
 
   @Post('delete-doctor')

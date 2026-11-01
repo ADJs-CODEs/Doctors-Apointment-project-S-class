@@ -308,6 +308,13 @@ export class EmailNotifications {
       }),
     });
 
+    this.app.toDoctor(a.docId, {
+      title: isVideo(a) ? 'New video call booked' : 'New appointment booked',
+      message: `${a.userData?.name} · ${prettyDate(a.slotDate)} at ${a.slotTime}`,
+      type: 'appointment',
+      link: '/doctor-appointments',
+    });
+
     this.toCareCircle(
       a.userId,
       'booking',
@@ -462,6 +469,12 @@ export class EmailNotifications {
       tag: `appt-${a._id}`,
       urgent: true,
     });
+    this.app.toDoctor(a.docId, {
+      title: isVideo(a) ? 'Video call starting now' : 'Appointment starting now',
+      message: `${a.userData?.name} · ${a.slotTime}${a.payment ? '' : ' · not paid yet'}`,
+      type: 'appointment',
+      link: isVideo(a) ? `/doctor-call/${a._id}` : `/doctor-messages?patient=${a.userId}&appointment=${a._id}`,
+    });
     this.deliver('appointment now (doctor)', {
       to: a.docData?.email,
       subject: `Now: ${a.userData?.name} (${a.slotTime})`,
@@ -532,11 +545,23 @@ export class EmailNotifications {
           footer: DOCTOR_FOOTER,
         }),
       });
+      this.app.toDoctor(a.docId, {
+        title: 'Appointment cancelled',
+        message: `${a.userData?.name} · ${prettyDate(a.slotDate)} at ${a.slotTime}, cancelled by ${who}. The slot is free again.`,
+        type: 'appointment',
+        link: '/doctor-appointments',
+      });
     }
   }
 
   /** Half an hour after the slot: ask the doctor to close it before the 24h auto-rule. */
   doctorCloseReminder(a: IAppointment) {
+    this.app.toDoctor(a.docId, {
+      title: 'Please close this appointment',
+      message: `Did ${a.userData?.name} attend at ${a.slotTime}? Mark it completed or a no-show within 24h, or it counts as missed by you.`,
+      type: 'alert',
+      link: '/doctor-appointments',
+    });
     this.deliver('close reminder (doctor)', {
       to: a.docData?.email,
       subject: `Did ${a.userData?.name} attend? (${a.slotTime})`,
@@ -599,6 +624,17 @@ export class EmailNotifications {
       link: '/my-appointments',
     });
 
+    // the bell only when someone else recorded it (the doctor already knows if they did)
+    if (a.missed?.markedBy !== 'doctor') {
+      this.app.toDoctor(a.docId, {
+        title: patientMissed ? 'No-show recorded' : 'Visit marked as missed by you',
+        message: `${a.userData?.name} · ${prettyDate(a.slotDate)} ${a.slotTime}${
+          patientMissed ? '' : auto ? ' · left open 24h after the slot' : ' · recorded by the clinic'
+        }${refund ? ` · patient refunded ${refund.percent}%` : ''}`,
+        type: patientMissed ? 'appointment' : 'alert',
+        link: '/doctor-appointments',
+      });
+    }
     this.deliver('missed (doctor)', {
       to: a.docData?.email,
       subject: patientMissed
@@ -884,6 +920,12 @@ export class EmailNotifications {
 
   /** The patient logged a dose before it was due; their doctor should know. */
   earlyDose(a: IAppointment, medicineName: string) {
+    this.app.toDoctor(a.docId, {
+      title: 'A patient took a dose early',
+      message: `${a.userData?.name} logged ${medicineName} before it was due. Their visit is marked Critical.`,
+      type: 'alert',
+      link: `/doctor-messages?patient=${a.userId}&appointment=${a._id}`,
+    });
     this.deliver('early dose', {
       to: a.docData?.email,
       subject: `Early dose: ${a.userData?.name} took ${medicineName} early`,

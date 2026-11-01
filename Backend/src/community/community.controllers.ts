@@ -96,6 +96,36 @@ export class NotificationsController {
   }
 }
 
+/** The doctor panel's bell: same notifications, only the logged-in doctor's. */
+@Controller('api/doctor/notifications')
+@UseGuards(DoctorAuthGuard)
+export class DoctorNotificationsController {
+  constructor(private readonly notifications: NotificationsService) {}
+
+  @Get()
+  list(@DocId() docId: string) {
+    return this.notifications.list(docId, 'doctor');
+  }
+
+  @Post('mark-all-read')
+  @HttpCode(200)
+  markAllRead(@DocId() docId: string) {
+    return this.notifications.markAllRead(docId, 'doctor');
+  }
+
+  @Post('mark-one-read')
+  @HttpCode(200)
+  markOneRead(@DocId() docId: string, @Body('notificationId') notificationId?: string) {
+    return this.notifications.markOneRead(docId, notificationId, 'doctor');
+  }
+
+  @Post('clear')
+  @HttpCode(200)
+  clear(@DocId() docId: string) {
+    return this.notifications.clear(docId, 'doctor');
+  }
+}
+
 @Controller('api/emoji')
 @UseGuards(UserAuthGuard)
 export class EmojiController {

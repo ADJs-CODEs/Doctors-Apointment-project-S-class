@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import type { Model } from 'mongoose';
+import { isValidObjectId, type Model } from 'mongoose';
 import { fail } from '../common/http';
 import { MODEL } from '../database/models';
 import type { IAppointment } from '../database/schemas/appointment.schema';
@@ -11,6 +11,7 @@ import type {
   IWishWell,
 } from '../database/schemas/social.schemas';
 import type { IUser } from '../database/schemas/user.schema';
+import { PATIENT_AUDIENCE } from '../database/schemas/social.schemas';
 import { RealtimeGateway } from '../integrations/realtime.gateway';
 
 const EMOJI_KEYS: Record<string, keyof IWishWell['emojiCounts']> = {
@@ -162,27 +163,35 @@ export class NotificationsService {
     return { success: true, notification };
   }
 
-  async list(userId: string) {
-    const notifications = await this.notifications.find({ userId }).sort({ createdAt: -1 }).limit(20);
+  // The same methods serve both bells: patients (default) and doctors (audience 'doctor').
+  // Every query is scoped to the owner AND the audience, so one bell never touches the other.
+
+  async list(userId: string, audience: 'patient' | 'doctor' = 'patient') {
+    const notifications = await this.notifications
+      .find({ userId, ...scope(audience) })
+      .sort({ createdAt: -1 })
+      .limit(audience === 'doctor' ? 30 : 20);
     return { success: true, notifications };
   }
 
-  async markAllRead(userId: string) {
-    await this.notifications.updateMany({ userId, isRead: false }, { isRead: true });
+  async markAllRead(userId: string, audience: 'patient' | 'doctor' = 'patient') {
+    await this.notifications.updateMany({ userId, isRead: false, ...scope(audience) }, { isRead: true });
     return { success: true, message: 'All marked as read' };
   }
 
-  async markOneRead(userId: string, notificationId?: string) {
-    // scoped to the owner so one user can't touch another's notifications
-    await this.notifications.updateOne({ _id: notificationId, userId }, { isRead: true });
+  async markOneRead(userId: string, notificationId?: string, audience: 'patient' | 'doctor' = 'patient') {
+    if (!isValidObjectId(notificationId)) fail('Notification not found');
+    await this.notifications.updateOne({ _id: notificationId, userId, ...scope(audience) }, { isRead: true });
     return { success: true, message: 'Marked as read' };
   }
 
-  async clear(userId: string) {
-    await this.notifications.deleteMany({ userId });
+  async clear(userId: string, audience: 'patient' | 'doctor' = 'patient') {
+    await this.notifications.deleteMany({ userId, ...scope(audience) });
     return { success: true, message: 'Cleared' };
   }
 }
+
+const scope = (audience: 'patient' | 'doctor') => (audience === 'doctor' ? { audience: 'doctor' as const } : PATIENT_AUDIENCE);
 
 @Injectable()
 export class EmojiService {

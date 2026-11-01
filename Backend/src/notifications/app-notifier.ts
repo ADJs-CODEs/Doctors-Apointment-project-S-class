@@ -69,6 +69,18 @@ export class AppNotifier {
     }
   }
 
+  /**
+   * A doctor's bell (doctor panel): saved and pushed live to their open tabs. No device
+   * push yet: the doctor panel has no service worker, and they also get an email.
+   */
+  toDoctor(docId: string, n: Pick<AppNotification, 'title' | 'message' | 'type' | 'link'>) {
+    if (!docId) return;
+    this.notifications
+      .create({ userId: docId, audience: 'doctor', title: n.title, message: n.message, type: n.type, link: n.link })
+      .then((saved) => this.realtime.emitTo('doctor', docId, 'notification', saved.toObject()))
+      .catch((err) => this.logger.warn(`doctor notification for ${docId} failed: ${err.message}`));
+  }
+
   private setupPush() {
     if (this.pushReady !== undefined) return this.pushReady;
     const { VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT } = process.env;

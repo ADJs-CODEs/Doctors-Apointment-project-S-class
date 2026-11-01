@@ -1,6 +1,7 @@
 import { Controller, Get, Module } from '@nestjs/common';
 import { AdminController } from './admin/admin.controller';
 import { AdminService } from './admin/admin.service';
+import { FinanceService } from './admin/finance.service';
 import { AvailabilityController, DoctorScheduleController } from './appointments/availability.controller';
 import { BookingService } from './appointments/booking.service';
 import { MissedAppointments } from './appointments/missed-appointments';
@@ -9,6 +10,7 @@ import { VideoService } from './appointments/video.service';
 import { ChatController } from './chat/chat.controller';
 import { ChatService } from './chat/chat.service';
 import {
+  DoctorNotificationsController,
   EmojiController,
   NotificationsController,
   WishWellController,
@@ -60,6 +62,7 @@ class HealthController {
     ConnectionsController,
     WishWellController,
     NotificationsController,
+    DoctorNotificationsController,
     EmojiController,
     PatientMessagesController,
     DoctorMessagesController,
@@ -92,6 +95,7 @@ class HealthController {
     UserService,
     DoctorService,
     AdminService,
+    FinanceService,
     ChatService,
     ConnectionsService,
     WishWellService,
