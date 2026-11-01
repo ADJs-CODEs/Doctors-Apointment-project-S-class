@@ -11,7 +11,7 @@ import {
   RiErrorWarningFill,
   RiInformationLine,
   RiSendPlane2Fill,
-  RiVideoChatLine,
+  RiVideoOnLine,
 } from "@remixicon/react";
 import { type FormEvent, type KeyboardEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -354,7 +354,7 @@ export default function Messages() {
                       className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-violet-50 text-violet-700 border border-violet-100 text-[12px] font-bold hover:bg-violet-100"
                       title="Book a time for a video call with this doctor"
                     >
-                      <RiVideoChatLine size={16} />
+                      <RiVideoOnLine size={16} />
                       <span className="hidden sm:inline">Schedule video call</span>
                     </button>
                   </>
@@ -367,7 +367,7 @@ export default function Messages() {
               {nextVideoCall && (
                 <div className="flex items-center justify-between gap-3 px-4 sm:px-5 py-2.5 bg-violet-50 border-b border-violet-100">
                   <p className="flex items-center gap-2 text-[13px] text-violet-900 min-w-0">
-                    <RiVideoChatLine size={16} className="text-violet-600 shrink-0" />
+                    <RiVideoOnLine size={16} className="text-violet-600 shrink-0" />
                     <span className="truncate">
                       <span className="font-bold">Video call</span> · {visitLabel(nextVideoCall)}, {nextVideoCall.slotTime}
                     </span>
