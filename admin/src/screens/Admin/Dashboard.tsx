@@ -30,25 +30,19 @@ const Dashboard: React.FC = () => {
 
   const handleRefresh = async () => {
     if (aToken) {
-      setProgress(30);
       const toastId = toast.loading("Refreshing live feed...");
       await getDashData();
-      setProgress(100);
       toast.success("Feed updated", { id: toastId });
     }
   };
 
   const handleCancel = async (id: string) => {
-    setProgress(40);
     await cancelAppointment(id);
-    setProgress(100);
   };
 
   const handleNavigate = (path: string) => {
-    setProgress(50);
     navigate(path);
     window.scrollTo({ top: 0, behavior: "smooth" });
-    setTimeout(() => setProgress(100), 400);
   };
 
   useEffect(() => {

@@ -33,7 +33,6 @@ const Login: React.FC = () => {
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        setProgress(30);
         toast.info("Verifying credentials with ADJ's CODEs...");
 
         const { data } = await axiosInstance.post(API_PATHS.AUTH.GOOGLE_AUTH, {
@@ -50,7 +49,6 @@ const Login: React.FC = () => {
       } catch (error: any) {
         toast.error(error.response?.data?.message || "Authentication failed");
       } finally {
-        setProgress(100);
       }
     },
     onError: () => toast.error("Connection interrupted"),
@@ -63,7 +61,6 @@ const Login: React.FC = () => {
   const onSubmitHandler = async (event: React.BaseSyntheticEvent) => {
     event.preventDefault();
     try {
-      setProgress(30);
       const endpoint =
         state === "Sign Up" ? API_PATHS.AUTH.REGISTER : API_PATHS.AUTH.LOGIN;
       const normalizedEmail = email.toLowerCase().trim();
@@ -72,7 +69,6 @@ const Login: React.FC = () => {
 
       const { data } = await axiosInstance.post(endpoint, payload);
 
-      setProgress(70);
       if (data.success) {
         localStorage.setItem("token", data.token);
         setToken(data.token);
@@ -83,7 +79,6 @@ const Login: React.FC = () => {
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Connection failed");
     } finally {
-      setProgress(100);
     }
   };
 

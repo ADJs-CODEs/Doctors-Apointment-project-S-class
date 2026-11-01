@@ -22,7 +22,6 @@ const MyProfile: React.FC = () => {
   const updateUserProfileData = async () => {
     try {
       if (!userData) return;
-      setProgress(30)
       const formData = new FormData()
       formData.append('name', userData.name)
       formData.append('phone', userData.phone)
@@ -41,7 +40,6 @@ const MyProfile: React.FC = () => {
     } catch (error: any) {
       toast.error(error.message)
     } finally {
-      setProgress(100)
     }
   }
 

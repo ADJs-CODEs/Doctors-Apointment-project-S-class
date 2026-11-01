@@ -69,7 +69,6 @@ const WatchingOver: React.FC = () => {
 
   const fetchAll = async () => {
     try {
-      setProgress(30);
       const [watchingRes, requestsRes, watchersRes] = await Promise.all([
         axiosInstance.get(API_PATHS.CONNECTIONS.WATCHING_OVER),
         axiosInstance.get(API_PATHS.CONNECTIONS.MY_REQUESTS),
@@ -82,7 +81,6 @@ const WatchingOver: React.FC = () => {
       toast.error("Failed to load connections");
     } finally {
       setLoading(false);
-      setProgress(100);
     }
   };
 

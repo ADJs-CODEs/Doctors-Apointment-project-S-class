@@ -1,15 +1,57 @@
 'use client';
 
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { type ReactNode, useContext } from 'react';
-import LoadingBar from 'react-top-loading-bar';
+import { type ReactNode, useContext, useEffect, useRef } from 'react';
+import LoadingBar, { type LoadingBarRef } from 'react-top-loading-bar';
 import { Toaster } from 'sonner';
 import ChatBot from '@/components/ChatBot';
 import Footer from '@/components/Footer';
 import Navbar from '@/components/Navbar';
 import AppContextProvider, { AppContext } from '@/Context/AppContext';
 import { EmojiProvider } from '@/Context/EmojiContext';
+import { NavigationWatcher } from '@/lib/navigation';
 import type { AppContextType } from '@/types';
+import { requestTracker } from '@/utils/requestTracker';
+
+// Background requests that finish quicker than this never show the bar, so it doesn't
+// flash. Page changes the user clicked show it immediately.
+const SHOW_DELAY_MS = 200;
+
+/** The top bar follows real API activity (see utils/requestTracker). */
+function RequestLoadingBar() {
+  const bar = useRef<LoadingBarRef>(null);
+
+  useEffect(() => {
+    let showTimer: ReturnType<typeof setTimeout> | undefined;
+    let visible = false;
+
+    const show = () => {
+      clearTimeout(showTimer);
+      showTimer = undefined;
+      if (visible) return;
+      visible = true;
+      bar.current?.continuousStart(15);
+    };
+
+    const unsubscribe = requestTracker.subscribe((busy, immediate) => {
+      if (busy) {
+        if (immediate) show();
+        else if (!visible && !showTimer) showTimer = setTimeout(show, SHOW_DELAY_MS);
+        return;
+      }
+      clearTimeout(showTimer);
+      showTimer = undefined;
+      if (visible) bar.current?.complete();
+      visible = false;
+    });
+    return () => {
+      clearTimeout(showTimer);
+      unsubscribe();
+    };
+  }, []);
+
+  return <LoadingBar ref={bar} color="#14b8a6" height={3} shadow={false} />;
+}
 
 // Public OAuth client id (not a secret); NEXT_PUBLIC_GOOGLE_CLIENT_ID overrides it.
 const GOOGLE_CLIENT_ID =
@@ -17,12 +59,13 @@ const GOOGLE_CLIENT_ID =
   '703083582094-kl10rok1pn4cev8mcq6thlr67scdevmu.apps.googleusercontent.com';
 
 function Shell({ children }: { children: ReactNode }) {
-  const { progress, setProgress, userData } = useContext(AppContext) as AppContextType;
+  const { userData } = useContext(AppContext) as AppContextType;
 
   return (
     <EmojiProvider userId={userData?._id}>
       <div className="px-2 sm:px-0 sm:mx-[10%] min-h-screen flex flex-col">
-        <LoadingBar color="#14b8a6" progress={progress} onLoaderFinished={() => setProgress(0)} height={3} />
+        <RequestLoadingBar />
+        <NavigationWatcher />
         <Toaster position="top-right" richColors expand={false} />
         <Navbar />
         <main className="grow">{children}</main>

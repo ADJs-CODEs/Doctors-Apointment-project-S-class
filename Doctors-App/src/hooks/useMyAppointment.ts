@@ -23,9 +23,7 @@ export const useMyAppointments = () => {
 
   const getUserAppointments = async () => {
     try {
-      setProgress(20);
       const { data } = await axiosInstance.get(API_PATHS.USER.FETCH_APPOINTMENT);
-      setProgress(70);
       if (data.success) {
         setAppointments(data.appointments.reverse());
       }
@@ -33,13 +31,11 @@ export const useMyAppointments = () => {
       toast.error(error.message);
     } finally {
       setLoading(false);
-      setProgress(100);
     }
   };
 
   const cancelAppointment = async (appointmentId: string) => {
     try {
-      setProgress(40);
       const { data } = await axiosInstance.post(API_PATHS.USER.CANCEL_APPOINTMENT, { appointmentId });
       if (data.success) {
         toast.success(data.message);
@@ -48,7 +44,6 @@ export const useMyAppointments = () => {
     } catch (error: any) {
       toast.error(error.message);
     } finally {
-      setProgress(100);
     }
   };
 

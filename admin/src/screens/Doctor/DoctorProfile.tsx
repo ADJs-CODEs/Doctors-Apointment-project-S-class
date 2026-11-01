@@ -33,7 +33,6 @@ const DoctorProfile: React.FC = () => {
   const updateProfile = async () => {
     try {
       if (!tempData) return;
-      setProgress(30);
       const payload = {
         address: tempData.address,
         fees: tempData.fees,
@@ -44,17 +43,13 @@ const DoctorProfile: React.FC = () => {
         payload,
       );
       if (data.success) {
-        setProgress(70);
         toast.success(data.message);
         setIsEdit(false);
         await getProfileData();
-        setProgress(100);
       } else {
-        setProgress(100);
         toast.error(data.message);
       }
     } catch (error: any) {
-      setProgress(100);
       toast.error(error.response?.data?.message || error.message);
     }
   };

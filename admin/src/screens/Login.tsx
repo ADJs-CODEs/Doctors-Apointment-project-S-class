@@ -25,11 +25,9 @@ const Login: React.FC = () => {
   const onSubmitHandler = async (event: React.FormEvent) => {
     event.preventDefault()
     try {
-      setProgress(30) // Start Progress
       if (state === 'Admin') {
         const { data } = await axiosInstance.post(API_PATHS.AUTH.A_LOGIN, { email, password })
         if (data.success) {
-          setProgress(70)
           localStorage.setItem('aToken', data.token)
           setAToken(data.token);
           navigate('/admin-dashboard')
@@ -40,7 +38,6 @@ const Login: React.FC = () => {
       } else {
         const { data } = await axiosInstance.post(API_PATHS.AUTH.D_LOGIN, { email, password })
         if (data.success) {
-          setProgress(70)
           localStorage.setItem('dToken', data.token)
           setDToken(data.token);
           navigate('/doctor-dashboard')
@@ -52,7 +49,6 @@ const Login: React.FC = () => {
     } catch (error: any) {
       toast.error(error.response?.data?.message || error.message)
     } finally {
-      setProgress(100) // End Progress
     }
   }
 

@@ -55,22 +55,8 @@ const DoctorDashboard: React.FC = () => {
   ]);
 
   useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      if (!dToken) return;
-      setProgress(20);
-      setTimeout(() => mounted && setProgress(50), 150);
-      await getDashData();
-      if (mounted) {
-        setProgress(100);
-        setTimeout(() => mounted && setProgress(0), 600);
-      }
-    };
-    load();
-    return () => {
-      mounted = false;
-    };
-  }, [dToken, getDashData, setProgress]);
+    if (dToken) getDashData();
+  }, [dToken, getDashData]);
 
   const resetForm = () => {
     setVitals({ bloodPressure: "", heartRate: "", temperature: "", notes: "" });
@@ -267,9 +253,7 @@ const DoctorDashboard: React.FC = () => {
                           <button
                             onClick={async (e) => {
                               e.stopPropagation();
-                              setProgress(40);
                               await cancelAppointment(item._id);
-                              setProgress(100);
                             }}
                             className="p-2 bg-red-50 hover:bg-red-100 border border-red-100 rounded-xl active:scale-90 transition-all group"
                           >

@@ -1,5 +1,6 @@
 import axios from "axios";
 import { BASE_URL } from "./apiPath";
+import { requestTracker } from "./requestTracker";
 
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
@@ -19,6 +20,8 @@ axiosInstance.interceptors.request.use(
     } else if (dtoken) {
       config.headers.Authorization = `Bearer ${dtoken}`;
     }
+    (config as any)._tracked = true;
+    requestTracker.start();
     return config;
   },
   (error) => {
@@ -27,12 +30,16 @@ axiosInstance.interceptors.request.use(
 );
 
 axiosInstance.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    requestTracker.finish();
+    return response;
+  },
   (error) => {
     if (error.response && error.response.status === 401) {
       localStorage.removeItem("dToken");
       localStorage.removeItem("aToken");
     }
+    if (error.config?._tracked) requestTracker.finish();
     return Promise.reject(error);
   },
 );

@@ -58,7 +58,6 @@ const DoctorWishWell: React.FC = () => {
 
   const fetchEntries = async () => {
     try {
-      setProgress(30);
       const { data } = await axiosInstance.get(API_PATHS.WISH_WELL.ALL);
       if (data.success) {
         // Only show entries that belong to this doctor
@@ -68,7 +67,6 @@ const DoctorWishWell: React.FC = () => {
       toast.error("Failed to load Wish Well entries");
     } finally {
       setLoading(false);
-      setProgress(100);
     }
   };
 
@@ -78,7 +76,6 @@ const DoctorWishWell: React.FC = () => {
     }
     try {
       setNominating(true);
-      setProgress(40);
       const { data } = await axiosInstance.post(API_PATHS.WISH_WELL.NOMINATE, {
         patientId: selectedPatientId,
         condition,
@@ -99,7 +96,6 @@ const DoctorWishWell: React.FC = () => {
       );
     } finally {
       setNominating(false);
-      setProgress(100);
     }
   };
 
@@ -118,7 +114,6 @@ const DoctorWishWell: React.FC = () => {
 
     try {
       setUpdatingId(entryId);
-      setProgress(40);
       const { data } = await axiosInstance.post(
         API_PATHS.WISH_WELL.UPDATE_STATUS,
         {
@@ -140,7 +135,6 @@ const DoctorWishWell: React.FC = () => {
       toast.error(error.response?.data?.message || "Failed to update status");
     } finally {
       setUpdatingId(null);
-      setProgress(100);
     }
   };
 

@@ -17,7 +17,6 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate()
 
   const logout = (): void => {
-    setProgress(40)
     navigate('/')
     if (aToken) {
       setAToken('')
@@ -27,13 +26,10 @@ const Navbar: React.FC = () => {
       setDToken('')
       localStorage.removeItem('dToken')
     }
-    setTimeout(() => setProgress(100), 500)
   }
 
   const handleLogoClick = () => {
-    setProgress(40)
     navigate(aToken ? '/admin-dashboard' : '/doctor-dashboard')
-    setTimeout(() => setProgress(100), 500)
   }
 
   return (

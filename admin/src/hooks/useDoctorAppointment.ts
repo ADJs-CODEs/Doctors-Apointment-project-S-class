@@ -39,7 +39,6 @@ const useDoctorAppointment = () => {
 
     try {
       setIsSendingAlert(true);
-      setProgress(40);
 
       const { data } = await axiosInstance.post(API_PATHS.DOCTOR.SEND_ALERT,
         {
@@ -69,7 +68,6 @@ const useDoctorAppointment = () => {
       }
     } finally {
       setIsSendingAlert(false);
-      setProgress(100);
     }
   }
 
@@ -88,8 +86,7 @@ const useDoctorAppointment = () => {
   }
   useEffect(() => {
     if (dToken) {
-      setProgress(30);
-      getAppointments().finally(() => setProgress(100));
+      getAppointments();
     }
   }, [dToken])
 

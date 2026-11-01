@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "@/lib/navigation";
 import { AppContext } from "../Context/AppContext";
 import { toast } from "sonner";
@@ -37,13 +37,11 @@ const Verify: React.FC = () => {
         setTimeout(() => navigate("/my-appointments"), 2500);
         return;
       }
-      setProgress(40);
       const { data } = await axiosInstance.post(API_PATHS.AUTH.VERIFY_STRIPE, {
         success,
         appointmentId,
         session_id: sessionId,
       });
-      setProgress(80);
       if (data.success) {
         setStatus("success");
         toast.success(data.message || "Payment Confirmed!");
@@ -57,13 +55,15 @@ const Verify: React.FC = () => {
       setStatus("failed");
       toast.error(error.message);
       setTimeout(() => navigate("/"), 2500);
-    } finally {
-      setProgress(100);
     }
   };
 
+  // Verify exactly once per visit, even if React runs effects twice (it does in dev).
+  const verifyStarted = useRef(false);
   useEffect(() => {
-    if (token && appointmentId) verifyStripe();
+    if (!token || !appointmentId || verifyStarted.current) return;
+    verifyStarted.current = true;
+    verifyStripe();
   }, [token]);
 
   return (

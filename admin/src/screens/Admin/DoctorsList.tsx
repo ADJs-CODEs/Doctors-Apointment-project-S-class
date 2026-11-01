@@ -18,8 +18,7 @@ const DoctorList: React.FC = () => {
 
   useEffect(() => {
     if (aToken) {
-      setProgress(40)
-      getAllDoctors().finally(() => setProgress(100))
+      getAllDoctors()
     }
   }, [aToken, getAllDoctors])
 
@@ -39,16 +38,12 @@ const DoctorList: React.FC = () => {
   // --- 🛡️ HANDLER: DELETE DOCTOR ---
   const handleTerminate = async (id: string, name: string) => {
     if (window.confirm(`CRITICAL ACTION: Are you sure you want to terminate ${name}'s account? This will remove all their data and login access permanently.`)) {
-      setProgress(30)
       await deleteDoctor(id)
-      setProgress(100)
     }
   }
 
   const handleToggleAvailability = async (id: string) => {
-    setProgress(50)
     await changeAvailability(id)
-    setProgress(100)
   }
 
   if (!doctors) {

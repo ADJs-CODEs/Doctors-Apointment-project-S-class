@@ -51,7 +51,8 @@ const NotificationBell: React.FC = () => {
     if (!token) return;
     try {
       setLoading(true);
-      const { data } = await axiosInstance.get(API_PATHS.NOTIFICATIONS.GET);
+      // silent: this also runs every minute in the background; it shouldn't flash the loading bar
+      const { data } = await axiosInstance.get(API_PATHS.NOTIFICATIONS.GET, { silent: true } as any);
       if (data.success) setNotifications(data.notifications);
     } catch (err) {
       console.error(err);

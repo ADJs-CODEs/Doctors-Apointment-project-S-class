@@ -29,9 +29,7 @@ const AllAppointments: React.FC = () => {
 
   // Progress bar wrapper for cancellation
   const handleCancel = async (id: string) => {
-    setProgress(40)
     await cancelAppointment(id)
-    setProgress(100)
   }
 
   return (
