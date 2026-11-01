@@ -15,9 +15,11 @@ import {
   RiSearchLine,
   RiSendPlane2Fill,
   RiUser3Line,
+  RiVideoChatLine,
 } from "@remixicon/react";
 import { type FormEvent, type KeyboardEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import JoinCallButton, { callState } from "@/components/JoinCallButton";
 import { useDoctorMessages } from "@/context/DoctorMessagesContext";
 import { useNavigate, useSearchParams } from "@/lib/navigation";
 import type { ChatMessage, MedicineSummary, PatientThread, PatientVisit } from "@/types";
@@ -244,6 +246,12 @@ export default function DoctorMessages() {
   const lastOwnId = [...(thread?.messages ?? [])].reverse().find((m) => m.sender === "doctor")?._id;
   const currentAbout = thread ? aboutLabel(about, thread.visits) : null;
 
+  // soonest upcoming video call with this patient (visits come newest first)
+  const nextVideoCall =
+    [...(thread?.visits ?? [])]
+      .reverse()
+      .find((v) => v.kind === "video" && v.status === "upcoming" && callState(v.slotDate, v.slotTime).state !== "ended") ?? null;
+
   const openVisitInPanel = (visitId: string) => {
     setFocusVisit(visitId);
     setShowPanel(true);
@@ -405,6 +413,19 @@ export default function DoctorMessages() {
                   <div className="h-10 w-48 rounded-xl bg-slate-100 animate-pulse" />
                 )}
               </div>
+
+              {/* the next video call with this patient, if there is one */}
+              {nextVideoCall && (
+                <div className="flex items-center justify-between gap-3 px-4 sm:px-5 py-2.5 bg-violet-50 border-b border-violet-100">
+                  <p className="flex items-center gap-2 text-[13px] text-violet-900 min-w-0">
+                    <RiVideoChatLine size={16} className="text-violet-600 shrink-0" />
+                    <span className="truncate">
+                      <span className="font-bold">Video call</span> · {visitDate(nextVideoCall.slotDate)}, {nextVideoCall.slotTime}
+                    </span>
+                  </p>
+                  <JoinCallButton appointment={nextVideoCall} className="shrink-0" />
+                </div>
+              )}
 
               <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 bg-slate-50">
                 {loadingThread && !thread ? (

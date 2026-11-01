@@ -68,6 +68,8 @@ export interface Appointment {
   };
   /** how it was paid; older paid appointments have none (card) */
   paymentMethod?: 'stripe' | 'wallet';
+  /** at the clinic or a video call (older appointments have none: in person) */
+  kind?: 'in-person' | 'video';
   /** a no-show: who missed it, and who recorded it */
   missed?: { by: 'patient' | 'doctor'; markedBy: 'doctor' | 'admin' | 'system'; at: string };
   refund?: {
@@ -203,7 +205,8 @@ export type PatientVisit = {
   _id: string;
   slotDate: string;
   slotTime: string;
-  status: "cancelled" | "completed" | "upcoming";
+  status: "cancelled" | "completed" | "upcoming" | "missed";
+  kind?: "in-person" | "video";
   patientStatus: "Stable" | "Critical" | "Completed";
   payment: boolean;
   vitals: { heartRate: string; bloodPressure: string; temperature: string };

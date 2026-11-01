@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import {
   RiUserUnfollowLine,
+  RiVideoChatLine,
   RiCheckboxCircleFill,
   RiCloseCircleFill,
   RiHistoryLine,
@@ -17,6 +18,7 @@ import DoctorsAdherenceView from "../../layout/DoctorsAdherenceView";
 import DoctorsAppointmentModal from "../../Modal/DoctorsAppointmentModal";
 import DoctorsPrescribeModal from "../../Modal/DoctorsPrescribeModal";
 import MissedAppointmentModal, { canMarkMissed, MissedBadge } from "../../Modal/MissedAppointmentModal";
+import JoinCallButton from "../../components/JoinCallButton";
 import type { Appointment } from "../../types/index";
 
 const DoctorAppointment: React.FC = () => {
@@ -221,8 +223,13 @@ const DoctorAppointment: React.FC = () => {
                         <p className="font-black text-sm text-slate-800">
                           {slotDateFormat(item.slotDate)}
                         </p>
-                        <p className="text-xs text-slate-400 font-medium">
+                        <p className="text-xs text-slate-400 font-medium flex items-center gap-1.5">
                           {item.slotTime}
+                          {item.kind === "video" && (
+                            <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase text-violet-700 bg-violet-50 px-2 py-0.5 rounded-full">
+                              <RiVideoChatLine size={11} /> Video
+                            </span>
+                          )}
                         </p>
                       </div>
                     </div>
@@ -234,6 +241,9 @@ const DoctorAppointment: React.FC = () => {
 
                     {/* Actions */}
                     <div className="flex items-center lg:justify-center gap-2 w-full lg:w-auto mt-1 lg:mt-0">
+                      {item.kind === "video" && !item.cancelled && !item.isCompleted && !item.missed && (
+                        <JoinCallButton appointment={item} />
+                      )}
                       {!item.cancelled && (
                         <button
                           onClick={(e) => {

@@ -16,6 +16,8 @@ export const API_PATHS = {
     UPDATE_PROFILE: "/api/doctor/update-profile",
     COMPLETE_APPOINTMENT: "/api/doctor/complete-appointment",
     MARK_NO_SHOW: "/api/doctor/mark-no-show",
+    VIDEO_JOIN: (appointmentId: string) => `/api/doctor/video/${appointmentId}/join`,
+    SCHEDULE: "/api/doctor/schedule",
   },
   ADMIN: {
     GET_ALL_DOCTORS: "/api/admin/all-doctors",
