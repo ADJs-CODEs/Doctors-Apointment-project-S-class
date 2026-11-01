@@ -14,6 +14,7 @@ import {
   RiHeart3Fill,
   RiChat3Line,
   RiBankLine,
+  RiLineChartLine,
 } from "@remixicon/react";
 import { useDoctorMessages } from "../context/DoctorMessagesContext";
 import type {
@@ -108,6 +109,22 @@ const Sidebar: React.FC = () => {
                 />
                 <p className="hidden lg:block text-[11px] font-black uppercase tracking-widest">
                   Registry
+                </p>
+              </NavLink>
+
+              <NavLink
+                onClick={handleLinkClick}
+                className={({ isActive }) =>
+                  `${baseClass} ${isActive ? activeClass : inactiveClass}`
+                }
+                to={"/finance"}
+              >
+                <RiLineChartLine
+                  size={22}
+                  className="shrink-0 group-hover:text-teal-500 transition-colors"
+                />
+                <p className="hidden lg:block text-[11px] font-black uppercase tracking-widest">
+                  Finance
                 </p>
               </NavLink>
 

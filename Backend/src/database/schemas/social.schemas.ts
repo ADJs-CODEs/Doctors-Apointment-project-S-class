@@ -54,8 +54,13 @@ export interface INotification extends Document {
   /** where tapping it should go, e.g. "/messages?doctor=..." */
   link?: string;
   isRead: boolean;
+  /** whose bell it's in: a patient's (patient app) or a doctor's (doctor panel). Older ones: patient */
+  audience?: 'patient' | 'doctor';
   createdAt: Date;
 }
+
+/** Patient bell queries use this, so a doctor's notifications never show up there. */
+export const PATIENT_AUDIENCE = { audience: { $ne: 'doctor' as const } };
 
 export const NotificationSchema = new Schema<INotification>(
   {
@@ -69,9 +74,11 @@ export const NotificationSchema = new Schema<INotification>(
     },
     link: { type: String },
     isRead: { type: Boolean, default: false },
+    audience: { type: String, enum: ['patient', 'doctor'] },
   },
   { timestamps: true },
 );
+NotificationSchema.index({ userId: 1, createdAt: -1 });
 
 // --- web push: one row per browser/device that turned device notifications on ---
 

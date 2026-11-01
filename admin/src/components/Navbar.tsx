@@ -8,6 +8,7 @@ import { AppContext } from '../context/AppContext'
 import { RiLogoutCircleRLine, RiShieldUserLine, RiStethoscopeLine } from '@remixicon/react'
 import type { AdminContextType, DoctorContextType, AppContextType } from '../types/index'
 import { motion } from 'framer-motion'
+import DoctorBell from './DoctorBell'
 
 const Navbar: React.FC = () => {
   const { aToken, setAToken } = useContext(AdminContext) as AdminContextType
@@ -79,6 +80,8 @@ const Navbar: React.FC = () => {
           <p className='text-[10px] font-black text-slate-400 uppercase tracking-widest'>Secure Session</p>
           <p className='text-xs font-bold text-slate-900'>Active Now</p>
         </div>
+
+        {dToken && <DoctorBell />}
 
         <button
           onClick={logout}
