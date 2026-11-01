@@ -56,6 +56,20 @@ export class WalletController {
     return this.booking.payFromWallet(userId, appointmentId);
   }
 
+  /** Banks (Paystack) and the naira rate, for the withdrawal form */
+  @Get('payout-options')
+  @UseGuards(UserAuthGuard)
+  payoutOptions() {
+    return this.wallet.payoutOptions();
+  }
+
+  @Post('resolve-account')
+  @HttpCode(200)
+  @UseGuards(UserAuthGuard)
+  resolveAccount(@Body() body: any) {
+    return this.wallet.resolveAccount(body ?? {});
+  }
+
   @Post('payout')
   @HttpCode(200)
   @UseGuards(UserAuthGuard)
@@ -79,6 +93,19 @@ export class AdminPayoutsController {
   @HttpCode(200)
   paid(@Param('id') id: string, @Body() body: any) {
     return this.wallet.markPayoutPaid(id, body ?? {});
+  }
+
+  /** send through Paystack (verified bank account) */
+  @Post(':id/send')
+  @HttpCode(200)
+  send(@Param('id') id: string, @Body() body: any) {
+    return this.wallet.sendPayout(id, body ?? {});
+  }
+
+  @Post(':id/refresh')
+  @HttpCode(200)
+  refresh(@Param('id') id: string) {
+    return this.wallet.refreshPayout(id);
   }
 
   @Post(':id/reject')

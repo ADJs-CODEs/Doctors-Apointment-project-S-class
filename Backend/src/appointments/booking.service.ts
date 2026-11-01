@@ -155,6 +155,26 @@ export class BookingService {
     return { success: true, session_url: session.url };
   }
 
+  /**
+   * Marks an appointment paid from a paid Stripe Checkout session (once), sends the
+   * receipt and confirms the booking if it was a hold. Used when the patient returns to
+   * the site (verify-stripe) and by the Stripe webhook; whichever runs second does nothing.
+   */
+  async markStripePaid(session: Stripe.Checkout.Session) {
+    const appointmentId = session.metadata?.appointmentId;
+    if (!appointmentId || !isValidObjectId(appointmentId) || session.payment_status !== 'paid') return null;
+    const paymentIntentId = typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id;
+    const justPaid = await this.appointments.findOneAndUpdate(
+      { _id: appointmentId, payment: false },
+      { $set: { payment: true, paymentMethod: 'stripe', ...(paymentIntentId && { paymentIntentId }) } },
+      { returnDocument: 'after' },
+    );
+    if (!justPaid) return null;
+    this.emails.paymentReceived(justPaid, session.id);
+    await this.confirmIfHeld(justPaid);
+    return justPaid;
+  }
+
   // --- 3. confirm ---
 
   /** A hold that has just been paid becomes a booking (once). */
@@ -188,16 +208,7 @@ export class BookingService {
         try {
           const session = await this.stripe.checkout.sessions.retrieve(hold.stripeSessionId);
           if (session.payment_status === 'paid') {
-            const pi = typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id;
-            const paid = await this.appointments.findOneAndUpdate(
-              { _id: hold._id, payment: false },
-              { $set: { payment: true, paymentMethod: 'stripe', ...(pi && { paymentIntentId: pi }) } },
-              { returnDocument: 'after' },
-            );
-            if (paid) {
-              this.emails.paymentReceived(paid, hold.stripeSessionId);
-              await this.confirmIfHeld(paid);
-            }
+            await this.markStripePaid(session);
             continue;
           }
         } catch (err: any) {

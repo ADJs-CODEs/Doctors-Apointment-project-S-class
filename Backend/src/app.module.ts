@@ -28,6 +28,9 @@ import { DoseReminders } from './notifications/dose-reminders';
 import { EmailNotifications } from './notifications/email-notifications';
 import { PushController } from './notifications/push.controller';
 import { MapsController } from './maps/maps.controller';
+import { PaystackWebhookController } from './payments/paystack-webhook.controller';
+import { PaystackService } from './payments/paystack.service';
+import { StripeWebhookController } from './payments/stripe-webhook.controller';
 import { MapsService } from './maps/maps.service';
 import { GoogleCalendar } from './settings/google-calendar';
 import { Preferences } from './settings/preferences';
@@ -69,8 +72,11 @@ class HealthController {
     DoctorVideoController,
     AvailabilityController,
     DoctorScheduleController,
+    StripeWebhookController,
+    PaystackWebhookController,
   ],
   providers: [
+    PaystackService,
     BookingService,
     VideoService,
     MapsService,

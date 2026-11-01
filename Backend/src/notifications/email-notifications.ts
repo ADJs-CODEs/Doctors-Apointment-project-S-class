@@ -742,8 +742,34 @@ export class EmailNotifications {
     status: string;
     reference?: string;
     adminNote?: string;
+    failureReason?: string;
   }) {
     const paid = p.status === 'paid';
+    if (p.status === 'failed') {
+      // the bank transfer bounced (wrong details, bank problem): money is back in the fund
+      this.deliver('payout failed', {
+        userId: p.userId,
+        category: 'payments',
+        to: p.userEmail,
+        subject: "Your withdrawal couldn't be sent",
+        html: layout({
+          title: "The bank transfer didn't go through",
+          tone: 'orange',
+          body: `<p>Hi ${escapeHtml(firstName(p.userName))}, the transfer of ${escapeHtml(money(p.cents / 100))} failed${
+            p.failureReason ? ` (${escapeHtml(p.failureReason)})` : ''
+          }. The full amount is back in your care fund, so you can try again with your bank details checked.</p>`,
+          button: { label: 'Open your wallet', url: patientUrl('/wallet') },
+        }),
+      });
+      this.app.send(p.userId, {
+        category: 'payments',
+        title: "Withdrawal couldn't be sent",
+        message: `${money(p.cents / 100)} is back in your care fund. Check your bank details and try again.`,
+        type: 'payment',
+        link: '/wallet',
+      });
+      return;
+    }
     this.deliver('payout decided', {
       userId: p.userId,
       category: 'payments',

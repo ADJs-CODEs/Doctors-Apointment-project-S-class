@@ -10,6 +10,7 @@ import type { IUser } from '../database/schemas/user.schema';
 import type { IGiftEvent, IPayout, IWallet, IWalletTransaction } from '../database/schemas/wallet.schemas';
 import { RealtimeGateway } from '../integrations/realtime.gateway';
 import { EmailNotifications } from '../notifications/email-notifications';
+import { namesMatch, PaystackService, toPayoutKobo } from '../payments/paystack.service';
 import { COIN_PACKS, GIFTS, giftById, packById, walletSettings } from './catalog';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -42,6 +43,7 @@ export class WalletService {
     @InjectModel(MODEL.appointment) private readonly appointments: Model<IAppointment>,
     private readonly realtime: RealtimeGateway,
     private readonly emails: EmailNotifications,
+    private readonly paystack: PaystackService,
   ) {}
 
   private get stripe() {
@@ -64,7 +66,7 @@ export class WalletService {
     const [wallet, transactions, pendingPayout, onWishWell] = await Promise.all([
       this.wallets.findOne({ userId }).lean(),
       this.ledger.find({ userId }).sort({ createdAt: -1 }).limit(40).select('-stripeSessionId').lean(),
-      this.payouts.findOne({ userId, status: 'pending' }).select('-accountNumber').lean(),
+      this.payouts.findOne({ userId, status: { $in: ['pending', 'processing'] } }).select('-accountNumber').lean(),
       this.entries.exists({ patientId: userId, consentGiven: true }),
     ]);
     const settings = walletSettings();
@@ -141,6 +143,18 @@ export class WalletService {
     const meta = session.metadata ?? {};
     if (meta.kind !== 'coins' || meta.userId !== userId) fail('This payment is not a coin top-up for you', HttpStatus.FORBIDDEN);
     if (session.payment_status !== 'paid') fail('Payment not completed');
+    return this.creditTopup(session);
+  }
+
+  /**
+   * Adds the coins for a paid top-up checkout. Called when the buyer returns to the
+   * site and by the Stripe webhook; whichever comes second finds it already done.
+   */
+  async creditTopup(session: Stripe.Checkout.Session) {
+    const sessionId = session.id;
+    const meta = session.metadata ?? {};
+    const userId = meta.userId;
+    if (meta.kind !== 'coins' || !userId || session.payment_status !== 'paid') fail('Not a paid coin top-up');
 
     const pack = packById(meta.packId);
     const coins = pack?.coins ?? Number(meta.coins);
@@ -422,16 +436,46 @@ export class WalletService {
 
   // --- care fund payouts ---
 
+  /** Banks a withdrawal can go to (when Paystack is set up), for the patient's form. */
+  async payoutOptions() {
+    const banks = await this.paystack.banks();
+    const rate = Number(process.env.PAYOUT_USD_NGN_RATE);
+    return {
+      success: true,
+      paystack: this.paystack.configured && banks.length > 0,
+      banks,
+      fundCurrency: (process.env.CURRENCY || 'usd').toUpperCase(),
+      ngnRate: Number.isFinite(rate) && rate > 0 ? rate : null,
+    };
+  }
+
+  /** The account holder's name for a bank account, so the patient can confirm it. */
+  async resolveAccount(body: { bankCode?: string; accountNumber?: string }) {
+    const accountName = await this.paystack.resolveAccount(clean(body.accountNumber, 20), clean(body.bankCode, 20));
+    return { success: true, accountName };
+  }
+
   async requestPayout(
     userId: string,
-    body: { cents?: number; accountName?: string; bankName?: string; accountNumber?: string; note?: string },
+    body: { cents?: number; accountName?: string; bankName?: string; bankCode?: string; accountNumber?: string; note?: string },
   ) {
     const settings = walletSettings();
-    const accountName = clean(body.accountName, 120);
-    const bankName = clean(body.bankName, 120);
+    let accountName = clean(body.accountName, 120);
+    let bankName = clean(body.bankName, 120);
     const accountNumber = clean(body.accountNumber, 40);
+    const bankCode = clean(body.bankCode, 20);
+    if (await this.payouts.exists({ userId, status: { $in: ['pending', 'processing'] } })) {
+      fail('You already have a withdrawal in progress');
+    }
+
+    // With Paystack: the bank tells us whose account it is (never trust the form for that)
+    let resolvedAccountName: string | undefined;
+    if (this.paystack.configured && bankCode) {
+      resolvedAccountName = await this.paystack.resolveAccount(accountNumber, bankCode);
+      accountName = resolvedAccountName;
+      bankName = (await this.paystack.banks()).find((b) => b.code === bankCode)?.name ?? bankName ?? bankCode;
+    }
     if (!accountName || !bankName || !accountNumber) fail('Enter the account name, bank and account number');
-    if (await this.payouts.exists({ userId, status: 'pending' })) fail('You already have a withdrawal waiting for approval');
 
     const wallet = await this.wallets.findOne({ userId });
     const available = wallet?.fundCents ?? 0;
@@ -466,6 +510,13 @@ export class WalletService {
               bankName,
               accountNumber,
               note: clean(body.note, 500) || undefined,
+              ...(resolvedAccountName && {
+                provider: 'paystack',
+                bankCode,
+                resolvedAccountName,
+                payoutCurrency: 'NGN',
+                payoutMinor: toPayoutKobo(cents) ?? undefined,
+              }),
             },
           ],
           { session: db },
@@ -484,10 +535,113 @@ export class WalletService {
   }
 
   async listPayouts(status?: string) {
-    const filter: { status?: IPayout['status'] } =
-      status === 'pending' || status === 'paid' || status === 'rejected' ? { status } : {};
+    const known: IPayout['status'][] = ['pending', 'processing', 'paid', 'rejected', 'failed'];
+    const filter: { status?: IPayout['status'] } = known.includes(status as IPayout['status'])
+      ? { status: status as IPayout['status'] }
+      : {};
     const payouts = await this.payouts.find(filter).sort({ status: 1, createdAt: -1 }).limit(200).lean();
-    return { success: true, payouts };
+    const rate = Number(process.env.PAYOUT_USD_NGN_RATE);
+    return {
+      success: true,
+      paystack: this.paystack.configured,
+      ngnRate: Number.isFinite(rate) && rate > 0 ? rate : null,
+      // does the bank's account name share a name with the patient? (a quick check for the admin)
+      payouts: payouts.map((p) => ({ ...p, nameMatches: p.resolvedAccountName ? namesMatch(p.resolvedAccountName, p.userName) : null })),
+    };
+  }
+
+  /**
+   * Admin: send it through Paystack. The payout is claimed first (pending → processing)
+   * so it can't be sent twice; our payout id is the transfer reference, so Paystack
+   * refuses a duplicate too. Success/failure arrives by webhook (or "check again").
+   */
+  async sendPayout(payoutId: string, body: { identityVerified?: boolean; adminNote?: string }) {
+    if (!isValidObjectId(payoutId)) fail('Payout not found', HttpStatus.NOT_FOUND);
+    if (body.identityVerified !== true) fail("Confirm you've verified the patient's identity first");
+    const existing = await this.payouts.findById(payoutId).lean();
+    if (!existing) fail('Payout not found', HttpStatus.NOT_FOUND);
+    if (existing.provider !== 'paystack' || !existing.bankCode) fail('This withdrawal has no verified bank account; send it by hand');
+    const kobo = existing.payoutMinor ?? toPayoutKobo(existing.cents);
+    if (!kobo) fail('Set PAYOUT_USD_NGN_RATE so the amount can be converted to naira');
+
+    const claimed = await this.payouts.findOneAndUpdate(
+      { _id: payoutId, status: 'pending' },
+      { $set: { status: 'processing', payoutMinor: kobo, adminNote: clean(body.adminNote, 500) || undefined } },
+      { returnDocument: 'after' },
+    );
+    if (!claimed) fail('This withdrawal was already handled');
+
+    try {
+      const result = await this.paystack.transfer({
+        name: claimed.resolvedAccountName ?? claimed.accountName,
+        accountNumber: claimed.accountNumber,
+        bankCode: claimed.bankCode!,
+        amountKobo: kobo,
+        reference: `payout-${claimed._id}`,
+        reason: "ADJ's CODEs care fund",
+      });
+      await this.payouts.updateOne({ _id: claimed._id }, { $set: { transferCode: result.transferCode } });
+      if (result.status === 'success') await this.completeTransfer(`payout-${claimed._id}`, 'success');
+      if (result.status === 'otp') {
+        await this.payouts.updateOne({ _id: claimed._id }, { $set: { status: 'pending' } });
+        fail('Paystack wants an OTP for transfers. Turn off "Confirm transfers before sending" in the Paystack dashboard.');
+      }
+      return { success: true, message: result.status === 'success' ? 'Sent' : 'Sent to Paystack; waiting for the bank to confirm' };
+    } catch (err) {
+      // nothing went out: put it back so it can be retried or rejected
+      await this.payouts.updateOne({ _id: claimed._id, status: 'processing', transferCode: { $exists: false } }, { $set: { status: 'pending' } });
+      throw err;
+    }
+  }
+
+  /** Admin: ask Paystack again where a processing transfer stands. */
+  async refreshPayout(payoutId: string) {
+    if (!isValidObjectId(payoutId)) fail('Payout not found', HttpStatus.NOT_FOUND);
+    const payout = await this.payouts.findById(payoutId).lean();
+    if (!payout || payout.status !== 'processing') return { success: true, message: 'Nothing to check' };
+    const { status, reason } = await this.paystack.verify(`payout-${payout._id}`);
+    if (status === 'success' || status === 'failed' || status === 'reversed') {
+      await this.completeTransfer(`payout-${payout._id}`, status, reason);
+    }
+    return { success: true, message: `Paystack says: ${status}` };
+  }
+
+  /** A Paystack transfer finished (webhook or check). Failed/reversed money goes back to the fund. */
+  async completeTransfer(reference: string, outcome: string, reason?: string) {
+    const id = reference.startsWith('payout-') ? reference.slice(7) : '';
+    if (!isValidObjectId(id)) return;
+
+    if (outcome === 'success') {
+      const payout = await this.payouts.findOneAndUpdate(
+        { _id: id, status: 'processing' },
+        { $set: { status: 'paid', reference: reference, decidedAt: new Date() } },
+        { returnDocument: 'after' },
+      );
+      if (payout) this.emails.payoutDecided(payout);
+      return;
+    }
+    if (outcome !== 'failed' && outcome !== 'reversed') return;
+
+    let payout: IPayout | null = null;
+    const db = await this.connection.startSession();
+    try {
+      await db.withTransaction(async () => {
+        payout = await this.payouts.findOneAndUpdate(
+          { _id: id, status: 'processing' },
+          { $set: { status: 'failed', failureReason: clean(reason ?? outcome, 300), decidedAt: new Date() } },
+          { returnDocument: 'after', session: db },
+        );
+        if (!payout) return;
+        await this.wallets.updateOne({ userId: payout.userId }, { $inc: { fundCents: payout.cents } }, { session: db });
+        await this.ledger.create(
+          [{ userId: payout.userId, kind: 'payout_returned', cents: payout.cents, payoutId: String(payout._id), note: `transfer ${outcome}` }],
+          { session: db },
+        );
+      });
+    } finally {
+      await db.endSession();
+    }
+    if (payout) this.emails.payoutDecided(payout);
   }
 
   /** Admin: money has been sent by bank transfer; record the reference. */

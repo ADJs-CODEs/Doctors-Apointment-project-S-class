@@ -227,20 +227,9 @@ export class UserService {
     const session = await this.stripe.checkout.sessions.retrieve(sessionId);
     const paidForThis = session.payment_status === 'paid' && session.metadata?.appointmentId === String(appointmentId);
     if (!paidForThis) fail('Payment Failed');
-    // kept so a missed appointment can be refunded later
-    const paymentIntentId =
-      typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id;
 
-    // only the first verification flips it, so a refreshed verify page doesn't email twice
-    const justPaid = await this.appointments.findOneAndUpdate(
-      { _id: appointmentId, payment: false },
-      { payment: true, paymentMethod: 'stripe', ...(paymentIntentId && { paymentIntentId }) },
-      { returnDocument: 'after' },
-    );
-    if (justPaid) {
-      this.emails.paymentReceived(justPaid, sessionId);
-      await this.booking.confirmIfHeld(justPaid); // a held slot becomes the booking now
-    }
+    // only the first of this or the Stripe webhook flips it (and emails, and confirms a hold)
+    await this.booking.markStripePaid(session);
     return { success: true, message: 'Payment Successful' };
   }
 

@@ -43,6 +43,8 @@ export class VideoService {
     if (a.kind !== 'video') fail('This is an in-person appointment');
     if (a.cancelled) fail('This appointment was cancelled');
     if (a.missed) fail('This appointment was recorded as missed');
+    // bookings are paid up front; older unpaid ones must be paid before the call
+    if (!a.payment) fail('Pay for this video call before joining');
 
     const start = slotInstant(a.slotDate, a.slotTime);
     if (!start) fail("This appointment's time can't be read");
