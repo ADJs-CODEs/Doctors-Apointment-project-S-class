@@ -12,6 +12,7 @@ import type {
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPath";
 import Availabilty from "../../inputs/Availabilty";
+import DoctorSchedule from "./DoctorSchedule";
 
 const DoctorProfile: React.FC = () => {
   const { profileData, getProfileData } = useContext(
@@ -191,6 +192,9 @@ const DoctorProfile: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* when patients can book, and the video call fee */}
+        <DoctorSchedule />
       </div>
     </div>
   );

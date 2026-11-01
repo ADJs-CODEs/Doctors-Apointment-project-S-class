@@ -9,4 +9,10 @@ export const MODEL = {
   emojiPing: 'emojipping',
   notification: 'notification',
   wishWell: 'wishwell',
+  chatMessage: 'chatmessage',
+  pushSubscription: 'pushsubscription',
+  wallet: 'wallet',
+  walletTransaction: 'wallettransaction',
+  giftEvent: 'giftevent',
+  payout: 'payout',
 } as const;

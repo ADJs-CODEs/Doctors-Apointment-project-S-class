@@ -1,7 +1,8 @@
 export interface PrescribedMedicine {
   name: string;
   dosagePerDay: number;
-  frequencyType: "daily" | "interval";
+  /** missing on prescriptions saved before it was stored; treat as daily */
+  frequencyType?: "daily" | "interval";
   totalQuantity: number;
   remainingQuantity: number;
   lastTaken?: string;
@@ -85,7 +86,38 @@ export interface Appointment {
   healthData?: HealthData;
   patientStatus?: "Normal" | "Stable" | "Critical";
   messages?: { content: string; sentAt: Date; isCritical: boolean }[];
+  /** set when nobody turned up: by = who missed it */
+  missed?: { by: "patient" | "doctor"; markedBy: "doctor" | "admin" | "system"; at: string };
+  refund?: Refund;
+  /** how it was paid (older paid appointments have none: card) */
+  paymentMethod?: "stripe" | "wallet";
+  /** at the clinic or a video call (older appointments have none: in person) */
+  kind?: "in-person" | "video";
+  /** set while the time is only held for payment (unpaid); it's released when this passes */
+  holdExpiresAt?: string;
 }
+
+/** A doctor's free times from /api/availability (clinic's local dates and times). */
+export type DoctorAvailability = {
+  kind: "in-person" | "video";
+  available: boolean;
+  offersInPerson: boolean;
+  offersVideo: boolean;
+  fees: number;
+  videoFees: number | null;
+  days: { slotDate: string; iso: string; weekday: number; slots: string[] }[];
+};
+
+export type Refund = {
+  percent: number;
+  amount: number;
+  /** refunded: sent back. manual/failed: the clinic is sending it by hand */
+  status: "refunded" | "manual" | "failed";
+  /** where it went back to */
+  method?: "stripe" | "wallet";
+  reason?: "missed" | "cancelled";
+  at: string;
+};
 
 export interface MyAppointmentCardProps {
   item: Appointment;
@@ -104,13 +136,163 @@ export interface HealthDropdownProps {
     | { content: string; sentAt: Date; isCritical: boolean }
     | null
     | undefined;
-  logDose: (
-    appointmentId: string,
-    medicineName: string,
-    med: PrescribedMedicine,
-  ) => Promise<void>;
-  processingMed: string | null;
+  /** Opens the Medications tab on this visit, optionally on one medicine. */
+  openMedications: (appointmentId: string, medicine?: string) => void;
 }
+
+// --- settings ---
+
+export type NotificationCategory =
+  | "medication"
+  | "missedDose"
+  | "appointments"
+  | "messages"
+  | "payments"
+  | "careCircle"
+  | "gifts"
+  | "security";
+
+export type TravelMode = "driving" | "walking" | "transit" | "bicycling";
+
+export type UserSettings = {
+  notifications: Record<NotificationCategory, { email: boolean; push: boolean }>;
+  quietHours: { enabled: boolean; start: string; end: string };
+  reminders: { doseMinutesBefore: 15 | 30 | 60; appointmentDayBefore: boolean };
+  privacy: { giftAnonymously: boolean };
+  maps: {
+    enabled: boolean;
+    homeAddress: string;
+    travelMode: TravelMode;
+    /** measure distances from where they are now, or from their home address */
+    origin: "current" | "home";
+  };
+  calendar: { autoAdd: boolean };
+};
+
+/** How far a clinic is (from /api/maps/distance). */
+export type ClinicDistance = {
+  /** route: real road distance/time from Google. straight-line: as the crow flies (no Maps key yet) */
+  kind: "route" | "straight-line";
+  from: "current" | "home";
+  mode: TravelMode;
+  distanceMeters: number;
+  durationSeconds: number | null;
+  traffic?: boolean;
+  clinic: { lat: number; lng: number; address: string };
+};
+
+export type GoogleCalendarStatus = {
+  /** the server has the Google client secret */
+  configured: boolean;
+  connected: boolean;
+  email?: string;
+  connectedAt?: string;
+  lastError?: string;
+};
+
+// --- wish well gifting (1 coin = 1 cent) ---
+
+export type Gift = {
+  id: string;
+  name: string;
+  emoji: string;
+  coins: number;
+  /** banner: shown on the Wish Well banner; fullscreen: also a full-screen animation */
+  tier: "small" | "banner" | "fullscreen";
+};
+
+export type CoinPack = { id: string; coins: number; cents: number; bonus?: number };
+
+export type WalletTransaction = {
+  _id: string;
+  kind:
+    | "topup"
+    | "gift_sent"
+    | "gift_received"
+    | "payout_requested"
+    | "payout_returned"
+    | "appointment_payment"
+    | "appointment_refund";
+  coins: number;
+  cents: number;
+  giftId?: string;
+  counterpartyName?: string;
+  note?: string;
+  createdAt: string;
+};
+
+export type WalletOverview = {
+  coins: number;
+  fundCents: number;
+  fundLifetimeCents: number;
+  hasCareFund: boolean;
+  pendingPayout: { _id: string; cents: number; bankName: string; status: "pending" | "processing"; createdAt: string } | null;
+  transactions: WalletTransaction[];
+  packs: CoinPack[];
+  gifts: Gift[];
+  feePercent: number;
+  minPayoutCents: number;
+  dailyGiftLimit: number;
+};
+
+/** A gift someone sent, as shown on banners and in the live celebration. */
+export type GiftEvent = {
+  _id?: string;
+  gift?: Gift;
+  fromName: string;
+  toName: string;
+  entryId: string;
+  createdAt?: string;
+};
+
+// --- notifications (the bell) ---
+
+export type AppNotification = {
+  _id: string;
+  title: string;
+  message: string;
+  type: "dose" | "appointment" | "alert" | "message" | "payment" | "care" | "general";
+  /** page to open when it's tapped */
+  link?: string;
+  isRead: boolean;
+  createdAt: string;
+};
+
+// --- doctor chat ---
+
+export type ChatMessage = {
+  _id: string;
+  doctorId: string;
+  userId: string;
+  sender: "doctor" | "patient";
+  text: string;
+  urgent: boolean;
+  appointmentId?: string;
+  medicineName?: string;
+  readAt: string | null;
+  createdAt: string;
+};
+
+export type Conversation = {
+  doctor: { _id: string; name: string; image: string; speciality: string };
+  lastMessage: ChatMessage | null;
+  unread: number;
+  urgentUnread: number;
+};
+
+/** A visit with this doctor, offered as "what is this message about". */
+export type ChatVisit = {
+  _id: string;
+  slotDate: string;
+  slotTime: string;
+  isCompleted: boolean;
+  kind?: "in-person" | "video";
+  missed?: boolean;
+  medicines: string[];
+};
+
+/** Router state the Medications tab understands, sent from the Appointments page. */
+export type MedicationsFocus = { visitId: string; medicine?: string };
 
 export interface VitalsProps {
   latestAppointment: Appointment | null;

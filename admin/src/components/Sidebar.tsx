@@ -12,7 +12,10 @@ import {
   RiGroupLine,
   RiUser3Line,
   RiHeart3Fill,
-} from "@remixicon/react"; // Removed RiSettings4Line import
+  RiChat3Line,
+  RiBankLine,
+} from "@remixicon/react";
+import { useDoctorMessages } from "../context/DoctorMessagesContext";
 import type {
   AdminContextType,
   DoctorContextType,
@@ -23,6 +26,7 @@ const Sidebar: React.FC = () => {
   const { aToken } = useContext(AdminContext) as AdminContextType;
   const { dToken } = useContext(DoctorContext) as DoctorContextType;
   const { setProgress } = useContext(AppContext) as AppContextType;
+  const { unread: unreadMessages } = useDoctorMessages();
 
   const activeClass = "bg-slate-900 text-white shadow-xl lg:translate-x-2";
   const inactiveClass = "text-slate-500 hover:bg-slate-50 hover:text-slate-900";
@@ -106,6 +110,22 @@ const Sidebar: React.FC = () => {
                   Registry
                 </p>
               </NavLink>
+
+              <NavLink
+                onClick={handleLinkClick}
+                className={({ isActive }) =>
+                  `${baseClass} ${isActive ? activeClass : inactiveClass}`
+                }
+                to={"/payouts"}
+              >
+                <RiBankLine
+                  size={22}
+                  className="shrink-0 group-hover:text-teal-500 transition-colors"
+                />
+                <p className="hidden lg:block text-[11px] font-black uppercase tracking-widest">
+                  Payouts
+                </p>
+              </NavLink>
             </ul>
           </div>
         )}
@@ -148,6 +168,33 @@ const Sidebar: React.FC = () => {
                 <p className="hidden lg:block text-[11px] font-black uppercase tracking-widest">
                   Schedule
                 </p>
+              </NavLink>
+              <NavLink
+                onClick={handleLinkClick}
+                className={({ isActive }) =>
+                  `${baseClass} ${isActive ? activeClass : inactiveClass}`
+                }
+                to={"/doctor-messages"}
+              >
+                <span className="relative shrink-0">
+                  <RiChat3Line
+                    size={22}
+                    className="group-hover:text-indigo-500 transition-colors"
+                  />
+                  {unreadMessages > 0 && (
+                    <span className="lg:hidden absolute -top-1.5 -right-2 min-w-4 h-4 px-1 rounded-full bg-teal-500 text-white text-[9px] font-black flex items-center justify-center">
+                      {unreadMessages}
+                    </span>
+                  )}
+                </span>
+                <p className="hidden lg:block text-[11px] font-black uppercase tracking-widest">
+                  Messages
+                </p>
+                {unreadMessages > 0 && (
+                  <span className="hidden lg:flex ml-auto min-w-5 h-5 px-1.5 rounded-full bg-teal-500 text-white text-[11px] font-black items-center justify-center">
+                    {unreadMessages > 99 ? "99+" : unreadMessages}
+                  </span>
+                )}
               </NavLink>
               <NavLink
                 onClick={handleLinkClick}

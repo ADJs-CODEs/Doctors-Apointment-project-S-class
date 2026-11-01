@@ -15,6 +15,9 @@ export const API_PATHS = {
     PROFILE: "/api/doctor/profile",
     UPDATE_PROFILE: "/api/doctor/update-profile",
     COMPLETE_APPOINTMENT: "/api/doctor/complete-appointment",
+    MARK_NO_SHOW: "/api/doctor/mark-no-show",
+    VIDEO_JOIN: (appointmentId: string) => `/api/doctor/video/${appointmentId}/join`,
+    SCHEDULE: "/api/doctor/schedule",
   },
   ADMIN: {
     GET_ALL_DOCTORS: "/api/admin/all-doctors",
@@ -24,6 +27,12 @@ export const API_PATHS = {
     CANCEL_APPOINTMENT: "/api/admin/cancel-appointment",
     DELETE_DOCTOR: "/api/admin/delete-doctor",
     ADD_DOCTORS: "/api/admin/add-doctor",
+    MARK_MISSED: "/api/admin/mark-missed",
+    PAYOUTS: "/api/admin/payouts",
+    PAYOUT_PAID: (id: string) => `/api/admin/payouts/${id}/paid`,
+    PAYOUT_REJECT: (id: string) => `/api/admin/payouts/${id}/reject`,
+    PAYOUT_SEND: (id: string) => `/api/admin/payouts/${id}/send`,
+    PAYOUT_REFRESH: (id: string) => `/api/admin/payouts/${id}/refresh`,
   },
   WISH_WELL: {
     ALL: "/api/wish-well/all",
@@ -33,5 +42,11 @@ export const API_PATHS = {
   },
   CHAT: {
     DOCTOR_MESSAGE: "/api/chat/doctor-message",
+  },
+  MESSAGES: {
+    CONVERSATIONS: "/api/doctor/messages",
+    UNREAD: "/api/doctor/messages/unread",
+    THREAD: (patientId: string) => `/api/doctor/messages/${patientId}`,
+    READ: (patientId: string) => `/api/doctor/messages/${patientId}/read`,
   },
 };

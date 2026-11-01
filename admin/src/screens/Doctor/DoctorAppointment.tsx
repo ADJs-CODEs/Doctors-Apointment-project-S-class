@@ -1,19 +1,30 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
+  RiUserUnfollowLine,
+  RiVideoChatLine,
   RiCheckboxCircleFill,
   RiCloseCircleFill,
   RiHistoryLine,
   RiErrorWarningFill,
   RiCalendarCheckLine,
+  RiChat3Line,
 } from "@remixicon/react";
 import useDoctorAppointment from "../../hooks/useDoctorAppointment";
+import { useDoctorMessages } from "../../context/DoctorMessagesContext";
+import { useNavigate } from "@/lib/navigation";
 import DoctorsAdherenceView from "../../layout/DoctorsAdherenceView";
 import DoctorsAppointmentModal from "../../Modal/DoctorsAppointmentModal";
 import DoctorsPrescribeModal from "../../Modal/DoctorsPrescribeModal";
+import MissedAppointmentModal, { canMarkMissed, MissedBadge } from "../../Modal/MissedAppointmentModal";
+import JoinCallButton from "../../components/JoinCallButton";
+import type { Appointment } from "../../types/index";
 
 const DoctorAppointment: React.FC = () => {
+  const navigate = useNavigate();
+  const { forPatient } = useDoctorMessages();
+  const [noShowFor, setNoShowFor] = useState<Appointment | null>(null);
   const {
     appointments,
     setExpandedId,
@@ -56,8 +67,8 @@ const DoctorAppointment: React.FC = () => {
         if (!aCritical && bCritical) return 1;
 
         // 2. Active (not completed, not cancelled) next
-        const aActive = !a.isCompleted && !a.cancelled;
-        const bActive = !b.isCompleted && !b.cancelled;
+        const aActive = !a.isCompleted && !a.cancelled && !a.missed;
+        const bActive = !b.isCompleted && !b.cancelled && !b.missed;
         if (aActive && !bActive) return -1;
         if (!aActive && bActive) return 1;
 
@@ -174,7 +185,7 @@ const DoctorAppointment: React.FC = () => {
                         </p>
                         <p className="lg:hidden text-[10px] text-slate-400 font-bold">
                           {calculateAge(item.userData.dob)} yrs ·{" "}
-                          {item.payment ? "Paid" : "Cash"}
+                          {!item.payment ? "Cash" : item.paymentMethod === "wallet" ? "Paid (wallet)" : "Paid (card)"}
                         </p>
                         {item.isCompleted && (
                           <p className="text-[9px] text-teal-600 font-black flex items-center gap-1 uppercase tracking-tighter mt-0.5">
@@ -191,12 +202,14 @@ const DoctorAppointment: React.FC = () => {
                     <div className="hidden lg:block">
                       <span
                         className={`text-[9px] font-black px-3 py-1 rounded-full border ${
-                          item.payment
-                            ? "bg-teal-50 text-teal-600 border-teal-100"
-                            : "bg-amber-50 text-amber-600 border-amber-100"
+                          !item.payment
+                            ? "bg-amber-50 text-amber-600 border-amber-100"
+                            : item.paymentMethod === "wallet"
+                              ? "bg-violet-50 text-violet-600 border-violet-100"
+                              : "bg-teal-50 text-teal-600 border-teal-100"
                         }`}
                       >
-                        {item.payment ? "ONLINE" : "CASH"}
+                        {!item.payment ? "CASH" : item.paymentMethod === "wallet" ? "WALLET" : "CARD"}
                       </span>
                     </div>
 
@@ -210,8 +223,13 @@ const DoctorAppointment: React.FC = () => {
                         <p className="font-black text-sm text-slate-800">
                           {slotDateFormat(item.slotDate)}
                         </p>
-                        <p className="text-xs text-slate-400 font-medium">
+                        <p className="text-xs text-slate-400 font-medium flex items-center gap-1.5">
                           {item.slotTime}
+                          {item.kind === "video" && (
+                            <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase text-violet-700 bg-violet-50 px-2 py-0.5 rounded-full">
+                              <RiVideoChatLine size={11} /> Video
+                            </span>
+                          )}
                         </p>
                       </div>
                     </div>
@@ -223,7 +241,27 @@ const DoctorAppointment: React.FC = () => {
 
                     {/* Actions */}
                     <div className="flex items-center lg:justify-center gap-2 w-full lg:w-auto mt-1 lg:mt-0">
-                      {item.cancelled ? (
+                      {item.kind === "video" && !item.cancelled && !item.isCompleted && !item.missed && (
+                        <JoinCallButton appointment={item} />
+                      )}
+                      {!item.cancelled && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/doctor-messages?patient=${item.userId}&appointment=${item._id}`);
+                          }}
+                          title="Message patient"
+                          className="relative flex justify-center items-center gap-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-2.5 lg:p-2 rounded-xl lg:rounded-full active:scale-90 transition-all group"
+                        >
+                          <RiChat3Line className="text-slate-500 group-hover:text-teal-600 size-5" />
+                          {forPatient(item.userId) > 0 && (
+                            <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-teal-500 border-2 border-white" />
+                          )}
+                        </button>
+                      )}
+                      {item.missed ? (
+                        <MissedBadge item={item} currency={currency} />
+                      ) : item.cancelled ? (
                         <span className="text-[9px] font-black uppercase bg-red-50 text-red-400 border border-red-100 px-3 py-1.5 rounded-full">
                           Cancelled
                         </span>
@@ -233,6 +271,19 @@ const DoctorAppointment: React.FC = () => {
                         </span>
                       ) : (
                         <div className="flex items-center gap-2 w-full lg:w-auto">
+                          {canMarkMissed(item) && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setNoShowFor(item);
+                              }}
+                              title="Patient didn't show"
+                              className="flex-1 lg:flex-none flex justify-center items-center gap-1.5 bg-orange-50 hover:bg-orange-100 border border-orange-100 px-3 py-2.5 lg:p-2 rounded-xl lg:rounded-full active:scale-90 transition-all group"
+                            >
+                              <RiUserUnfollowLine className="text-orange-500 group-hover:text-orange-700 size-5" />
+                              <span className="lg:hidden text-xs font-black text-orange-600">No-show</span>
+                            </button>
+                          )}
                           <button
                             onClick={async (e) => {
                               e.stopPropagation();
@@ -310,6 +361,13 @@ const DoctorAppointment: React.FC = () => {
         getAppointments={getAppointments}
         setProgress={setProgress}
         selectedApptId={selectedApptId}
+      />
+      <MissedAppointmentModal
+        appointment={noShowFor}
+        role="doctor"
+        currency={currency}
+        onClose={() => setNoShowFor(null)}
+        onDone={getAppointments}
       />
     </div>
   );

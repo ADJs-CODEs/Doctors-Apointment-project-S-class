@@ -44,11 +44,15 @@ export const EmojiPingSchema = new Schema<IEmojiPing>(
 
 // --- notifications ---
 
+export type NotificationType = 'dose' | 'appointment' | 'alert' | 'message' | 'payment' | 'care' | 'general';
+
 export interface INotification extends Document {
   userId: string;
   title: string;
   message: string;
-  type: 'dose' | 'appointment' | 'alert' | 'general';
+  type: NotificationType;
+  /** where tapping it should go, e.g. "/messages?doctor=..." */
+  link?: string;
   isRead: boolean;
   createdAt: Date;
 }
@@ -60,13 +64,72 @@ export const NotificationSchema = new Schema<INotification>(
     message: { type: String, required: true },
     type: {
       type: String,
-      enum: ['dose', 'appointment', 'alert', 'general'],
+      enum: ['dose', 'appointment', 'alert', 'message', 'payment', 'care', 'general'],
       default: 'general',
     },
+    link: { type: String },
     isRead: { type: Boolean, default: false },
   },
   { timestamps: true },
 );
+
+// --- web push: one row per browser/device that turned device notifications on ---
+
+export interface IPushSubscription extends Document {
+  userId: string;
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+  userAgent?: string;
+  createdAt: Date;
+}
+
+export const PushSubscriptionSchema = new Schema<IPushSubscription>(
+  {
+    userId: { type: String, required: true, index: true },
+    endpoint: { type: String, required: true, unique: true },
+    keys: {
+      p256dh: { type: String, required: true },
+      auth: { type: String, required: true },
+    },
+    userAgent: { type: String },
+  },
+  { timestamps: true },
+);
+
+// --- doctor <-> patient chat ---
+// One conversation per doctor/patient pair; each message can say which visit or
+// medicine it's about, so the doctor has the context without asking.
+
+export interface IChatMessage extends Document {
+  doctorId: string;
+  userId: string;
+  sender: 'doctor' | 'patient';
+  text: string;
+  urgent: boolean;
+  appointmentId?: string;
+  medicineName?: string;
+  readAt: Date | null; // when the other side read it
+  // "<appointmentId>:<sentAt ms>" for copies of appointment.messages, so they're only copied once
+  legacyKey?: string;
+  createdAt: Date;
+}
+
+export const ChatMessageSchema = new Schema<IChatMessage>(
+  {
+    doctorId: { type: String, required: true },
+    userId: { type: String, required: true },
+    sender: { type: String, enum: ['doctor', 'patient'], required: true },
+    text: { type: String, required: true, maxlength: 4000 },
+    urgent: { type: Boolean, default: false },
+    appointmentId: { type: String },
+    medicineName: { type: String },
+    readAt: { type: Date, default: null },
+    legacyKey: { type: String },
+  },
+  { timestamps: true },
+);
+ChatMessageSchema.index({ doctorId: 1, userId: 1, createdAt: 1 });
+ChatMessageSchema.index({ legacyKey: 1 }, { unique: true, sparse: true });
 
 // --- wish well ---
 
@@ -83,6 +146,9 @@ export interface IWishWell extends Document {
   optedOut: boolean;
   emojiCounts: { heart: number; flower: number; clap: number; star: number; prayer: number };
   totalEmojis: number;
+  /** paid gifts received: how many and their total in coins */
+  giftCount: number;
+  giftCoins: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -107,6 +173,8 @@ export const WishWellSchema = new Schema<IWishWell>(
       prayer: { type: Number, default: 0 },
     },
     totalEmojis: { type: Number, default: 0 },
+    giftCount: { type: Number, default: 0 },
+    giftCoins: { type: Number, default: 0 },
   },
   { timestamps: true },
 );

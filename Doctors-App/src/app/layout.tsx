@@ -7,7 +7,8 @@ export const metadata: Metadata = {
   title: "ADJ's CODEs Pharmaceutical",
   description:
     'Book appointments with verified specialists, track your medication and stay connected with the people who care for you.',
-  icons: { icon: '/favicon.svg' },
+  icons: { icon: '/favicon.svg', apple: '/icons/apple-touch-icon.png' },
+  appleWebApp: { capable: true, title: "ADJ's CODEs", statusBarStyle: 'default' },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

@@ -103,7 +103,10 @@ export function Link({ to, onClick, ...props }: LinkProps) {
       href={to}
       onClick={(e) => {
         onClick?.(e);
-        if (isPlainLeftClick(e) && props.target !== '_blank') beginNavigation(to);
+        if (isPlainLeftClick(e) && props.target !== '_blank') {
+          navigationState = undefined; // links carry no state
+          beginNavigation(to);
+        }
       }}
       {...props}
     />
@@ -125,7 +128,10 @@ export function NavLink({ to, className, children, onClick, ...props }: NavLinkP
       className={typeof className === 'function' ? className({ isActive }) : className}
       onClick={(e) => {
         onClick?.(e);
-        if (isPlainLeftClick(e) && props.target !== '_blank') beginNavigation(to);
+        if (isPlainLeftClick(e) && props.target !== '_blank') {
+          navigationState = undefined;
+          beginNavigation(to);
+        }
       }}
       {...props}
     >

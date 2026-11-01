@@ -6,7 +6,7 @@ import '../index.css';
 export const metadata: Metadata = {
   title: "ADJ's CODEs Admin",
   description: 'Admin and doctor panel',
-  icons: { icon: '/vite.svg' },
+  icons: { icon: '/favicon.svg' },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

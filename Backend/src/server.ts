@@ -8,7 +8,8 @@ import { AppModule } from './app.module';
 import { ApiExceptionFilter } from './common/http';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // rawBody: the Stripe webhook must check its signature against the exact bytes sent
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
   app.enableCors();
   app.useGlobalFilters(new ApiExceptionFilter());
   app.enableShutdownHooks();

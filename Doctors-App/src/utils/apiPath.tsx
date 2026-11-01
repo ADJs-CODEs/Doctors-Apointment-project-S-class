@@ -27,6 +27,43 @@ export const API_PATHS = {
   CHAT: {
     MESSAGE: "/api/chat/message",
   },
+  AVAILABILITY: (docId: string, kind: string) => `/api/availability/${docId}?kind=${kind}`,
+  VIDEO: {
+    JOIN: (appointmentId: string) => `/api/user/video/${appointmentId}/join`,
+  },
+  MAPS: {
+    DISTANCE: "/api/maps/distance",
+  },
+  SETTINGS: {
+    GET: "/api/user/settings",
+    SAVE: "/api/user/settings",
+    GCAL_CONNECT: "/api/user/integrations/google-calendar/connect",
+    GCAL_SYNC: "/api/user/integrations/google-calendar/sync",
+    GCAL_DISCONNECT: "/api/user/integrations/google-calendar/disconnect",
+  },
+  WALLET: {
+    OVERVIEW: "/api/wallet",
+    CATALOG: "/api/wallet/catalog",
+    RECENT_GIFTS: "/api/wallet/recent-gifts",
+    TOPUP: "/api/wallet/topup",
+    VERIFY_TOPUP: "/api/wallet/topup/verify",
+    GIFT: "/api/wallet/gift",
+    PAY_APPOINTMENT: "/api/wallet/pay-appointment",
+    PAYOUT: "/api/wallet/payout",
+    PAYOUT_OPTIONS: "/api/wallet/payout-options",
+    RESOLVE_ACCOUNT: "/api/wallet/resolve-account",
+  },
+  PUSH: {
+    KEY: "/api/user/push/key",
+    SUBSCRIBE: "/api/user/push/subscribe",
+    UNSUBSCRIBE: "/api/user/push/unsubscribe",
+  },
+  MESSAGES: {
+    CONVERSATIONS: "/api/user/messages",
+    UNREAD: "/api/user/messages/unread",
+    THREAD: (doctorId: string) => `/api/user/messages/${doctorId}`,
+    READ: (doctorId: string) => `/api/user/messages/${doctorId}/read`,
+  },
   CONNECTIONS: {
     REQUEST: "/api/connections/request",
     RESPOND: "/api/connections/respond",

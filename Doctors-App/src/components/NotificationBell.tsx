@@ -10,36 +10,34 @@ import {
   RiCalendarCheckLine,
   RiErrorWarningLine,
   RiNotificationOffLine,
+  RiChat3Line,
+  RiBankCardLine,
+  RiTeamLine,
 } from "@remixicon/react";
 import { AppContext } from "../Context/AppContext";
-import type { AppContextType } from "../types/index";
+import type { AppContextType, AppNotification } from "../types/index";
 import axiosInstance from "../utils/axiosInstance";
 import { API_PATHS } from "../utils/apiPath";
+import { getSocket } from "../utils/socket";
+import { useNavigate } from "@/lib/navigation";
+import { DeviceNotificationsSwitch } from "./patient/DeviceNotifications";
 
-interface Notification {
-  _id: string;
-  title: string;
-  message: string;
-  type: "dose" | "appointment" | "alert" | "general";
-  isRead: boolean;
-  createdAt: string;
-}
+type Notification = AppNotification;
 
-const typeIcon = (type: string) => {
-  switch (type) {
-    case "dose":
-      return <RiMedicineBottleLine size={14} className="text-teal-500" />;
-    case "appointment":
-      return <RiCalendarCheckLine size={14} className="text-blue-500" />;
-    case "alert":
-      return <RiErrorWarningLine size={14} className="text-red-500" />;
-    default:
-      return <RiBellLine size={14} className="text-slate-400" />;
-  }
+const TYPE_STYLE: Record<string, { icon: React.ReactNode; bg: string }> = {
+  dose: { icon: <RiMedicineBottleLine size={14} className="text-teal-600" />, bg: "bg-teal-50" },
+  appointment: { icon: <RiCalendarCheckLine size={14} className="text-blue-500" />, bg: "bg-blue-50" },
+  alert: { icon: <RiErrorWarningLine size={14} className="text-red-500" />, bg: "bg-red-50" },
+  message: { icon: <RiChat3Line size={14} className="text-teal-600" />, bg: "bg-teal-50" },
+  payment: { icon: <RiBankCardLine size={14} className="text-emerald-600" />, bg: "bg-emerald-50" },
+  care: { icon: <RiTeamLine size={14} className="text-violet-500" />, bg: "bg-violet-50" },
 };
+const typeStyle = (type: string) =>
+  TYPE_STYLE[type] ?? { icon: <RiBellLine size={14} className="text-slate-400" />, bg: "bg-slate-50" };
 
 const NotificationBell: React.FC = () => {
   const { token } = useContext(AppContext) as AppContextType;
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
@@ -83,10 +81,31 @@ const NotificationBell: React.FC = () => {
   useEffect(() => {
     if (token) {
       fetchNotifications();
-      const interval = setInterval(fetchNotifications, 60000);
+      // new ones arrive live over the socket; this slow poll is just a safety net
+      const interval = setInterval(fetchNotifications, 5 * 60_000);
       return () => clearInterval(interval);
     }
   }, [token]);
+
+  // live: the server pushes each new notification as it's created
+  useEffect(() => {
+    if (!token) return;
+    const socket = getSocket();
+    const onNew = (n: Notification) =>
+      setNotifications((prev) => (prev.some((p) => p._id === n._id) ? prev : [n, ...prev].slice(0, 20)));
+    socket.on("notification", onNew);
+    return () => {
+      socket.off("notification", onNew);
+    };
+  }, [token]);
+
+  const openOne = (n: Notification) => {
+    if (!n.isRead) markOne(n._id);
+    if (n.link) {
+      setOpen(false);
+      navigate(n.link);
+    }
+  };
 
   useEffect(() => {
     if (open && unreadCount > 0) markAllRead();
@@ -158,6 +177,8 @@ const NotificationBell: React.FC = () => {
               </div>
             </div>
 
+            <DeviceNotificationsSwitch />
+
             <div className="max-h-[360px] overflow-y-auto">
               {loading ? (
                 <div className="flex flex-col gap-3 p-4">
@@ -188,13 +209,13 @@ const NotificationBell: React.FC = () => {
                       key={n._id}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      onClick={() => markOne(n._id)}
+                      onClick={() => openOne(n)}
                       className={`flex items-start gap-3 p-3 rounded-2xl cursor-pointer transition-all hover:bg-slate-50 mb-1 ${!n.isRead ? "bg-teal-50/50" : ""}`}
                     >
                       <div
-                        className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${n.type === "dose" ? "bg-teal-50" : n.type === "alert" ? "bg-red-50" : "bg-slate-50"}`}
+                        className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${typeStyle(n.type).bg}`}
                       >
-                        {typeIcon(n.type)}
+                        {typeStyle(n.type).icon}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-black text-slate-900 leading-tight">

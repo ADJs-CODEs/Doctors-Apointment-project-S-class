@@ -83,7 +83,7 @@ const Login: React.FC = () => {
   };
 
   useEffect(() => {
-    if (token) navigate("/");
+    if (token) navigate("/my-appointments");
   }, [token, navigate]);
 
   return (

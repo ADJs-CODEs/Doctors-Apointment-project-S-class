@@ -13,7 +13,6 @@ export const useMyAppointments = () => {
 
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [processingMed, setProcessingMed] = useState<string | null>(null);
   const [expandedTrackers, setExpandedTrackers] = useState<{ [key: string]: boolean }>({});
 
   // State to track which Health Trackers are expanded
@@ -54,8 +53,6 @@ export const useMyAppointments = () => {
   return {
     appointments,
     loading,
-    processingMed,
-    setProcessingMed,
     expandedTrackers,
     toggleTracker,
     cancelAppointment,

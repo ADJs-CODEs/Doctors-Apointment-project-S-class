@@ -11,6 +11,15 @@ export interface IUser extends Document {
   phone: string;
   resetToken: string;
   resetTokenExpire: number;
+  /** what they want to hear about and how; see settings/preferences.ts (missing = defaults) */
+  settings?: Record<string, any>;
+  googleCalendar?: {
+    email?: string;
+    /** encrypted (settings/secret-box.ts); never sent to the browser */
+    refreshToken?: string;
+    connectedAt?: Date;
+    lastError?: string;
+  };
 }
 
 const DEFAULT_AVATAR =
@@ -28,4 +37,18 @@ export const UserSchema = new Schema<IUser>({
   phone: { type: String, default: '0000000000' },
   resetToken: { type: String, default: '' },
   resetTokenExpire: { type: Number, default: 0 },
+  settings: { type: Object },
+  googleCalendar: {
+    type: new Schema(
+      {
+        email: { type: String },
+        // never returned by queries unless asked for with '+googleCalendar.refreshToken'
+        refreshToken: { type: String, select: false },
+        connectedAt: { type: Date },
+        lastError: { type: String },
+      },
+      { _id: false },
+    ),
+    default: undefined,
+  },
 });

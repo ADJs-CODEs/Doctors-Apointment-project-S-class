@@ -66,6 +66,20 @@ export interface Appointment {
     doctorNotes: string;
     prescribedMedicines: Medicine[];
   };
+  /** how it was paid; older paid appointments have none (card) */
+  paymentMethod?: 'stripe' | 'wallet';
+  /** at the clinic or a video call (older appointments have none: in person) */
+  kind?: 'in-person' | 'video';
+  /** a no-show: who missed it, and who recorded it */
+  missed?: { by: 'patient' | 'doctor'; markedBy: 'doctor' | 'admin' | 'system'; at: string };
+  refund?: {
+    percent: number;
+    amount: number;
+    /** refunded: sent via Stripe. manual/failed: has to be refunded by hand */
+    status: 'refunded' | 'manual' | 'failed';
+    error?: string;
+    at: string;
+  };
 }
 
 // --- Specific Types ---
@@ -151,3 +165,58 @@ export interface DoctorsPrescribeModalProps {
   getAppointments: () => Promise<void>;
   selectedApptId: string;
 }
+
+// --- chat with patients ---
+
+export type ChatMessage = {
+  _id: string;
+  doctorId: string;
+  userId: string;
+  sender: "doctor" | "patient";
+  text: string;
+  urgent: boolean;
+  appointmentId?: string;
+  medicineName?: string;
+  readAt: string | null;
+  createdAt: string;
+};
+
+export type PatientConversation = {
+  patient: { _id: string; name: string; image: string };
+  critical: boolean;
+  lastMessage: ChatMessage | null;
+  unread: number;
+};
+
+export type MedicineSummary = {
+  name: string;
+  schedule: string;
+  totalQuantity: number;
+  remainingQuantity: number;
+  adherence: number;
+  lastTaken: string | null;
+  overdoseAlert: boolean;
+  status: "finished" | "stopped" | "not-started" | "on-track" | "due" | "missed";
+  missedDoses: number;
+};
+
+/** One visit, as shown in the patient panel next to the chat. */
+export type PatientVisit = {
+  _id: string;
+  slotDate: string;
+  slotTime: string;
+  status: "cancelled" | "completed" | "upcoming" | "missed";
+  kind?: "in-person" | "video";
+  patientStatus: "Stable" | "Critical" | "Completed";
+  payment: boolean;
+  vitals: { heartRate: string; bloodPressure: string; temperature: string };
+  doctorNotes: string;
+  medicines: MedicineSummary[];
+};
+
+export type PatientThread = {
+  patient: { _id: string; name: string; image: string; email: string; phone: string; gender: string; dob: string } | null;
+  critical: boolean;
+  visits: PatientVisit[];
+  messages: ChatMessage[];
+};

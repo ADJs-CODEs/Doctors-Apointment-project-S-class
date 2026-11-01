@@ -1,232 +1,302 @@
 "use client";
 
-import React, { useEffect, useState, useContext } from "react";
-import { AppContext } from "../Context/AppContext";
-import type { AppContextType, Appointment } from "../types/index";
-import { motion } from "framer-motion";
 import {
-  RiMedicineBottleLine,
+  RiAlarmWarningLine,
+  RiArrowRightSLine,
+  RiErrorWarningLine,
+  RiCapsuleLine,
+  RiDashboard3Line,
   RiHeartPulseLine,
-  RiDashboardLine,
   RiTempHotLine,
-  RiArrowRightLine,
 } from "@remixicon/react";
-import axiosInstance from "../utils/axiosInstance";
-import { API_PATHS } from "../utils/apiPath";
-import { useNavigate } from "@/lib/navigation";
+import { motion } from "framer-motion";
+import { type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import MedicineRow from "@/components/patient/MedicineRow";
+import MessageDoctorButton from "@/components/patient/MessageDoctorButton";
+import { AppContext } from "@/Context/AppContext";
+import { doseKey, useDoseLogger } from "@/hooks/useDoseLogger";
+import { useLocation, useNavigate } from "@/lib/navigation";
+import type { AppContextType, Appointment, MedicationsFocus } from "@/types";
+import { API_PATHS } from "@/utils/apiPath";
+import axiosInstance from "@/utils/axiosInstance";
+import { doseUrgency } from "@/utils/medicationUtils";
+import { completedVisits, formatVisitDate, latestRecordedVisit, medicineState } from "@/utils/patientRecords";
 
-const MedHistory: React.FC = () => {
-  const { token, setProgress } = useContext(AppContext) as AppContextType;
-  const navigate = useNavigate();
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [latestVitals, setLatestVitals] = useState<any>(null);
-
-  const fetchData = async () => {
-    try {
-      const { data } = await axiosInstance.get(
-        API_PATHS.USER.FETCH_APPOINTMENT,
-      );
-      if (data.success) {
-        setAppointments(data.appointments.reverse());
-        const latest = data.appointments.find(
-          (app: Appointment) => app.isCompleted && app.healthData,
-        );
-        if (latest) setLatestVitals(latest.healthData);
-      }
-    } catch (error: any) {
-      console.error(error.message);
-    }
-  };
-
-  useEffect(() => {
-    if (token) fetchData();
-  }, [token]);
-
-  const handleViewAppointment = (appointmentId: string) => {
-    navigate("/my-appointments", { state: { highlightId: appointmentId } });
-    window.scrollTo(0, 0);
-  };
-
+function Vital({ icon, label, value, unit }: { icon: ReactNode; label: string; value?: string; unit: string }) {
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10 md:py-16">
-      {/* Header */}
-      <div className="mb-8 md:mb-10">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-2.5 bg-slate-900 rounded-xl text-teal-400">
-            <RiMedicineBottleLine size={20} />
-          </div>
-          <h1 className="text-2xl md:text-3xl font-black text-slate-900 uppercase tracking-tight">
-            Pharmacy{" "}
-            <span className="text-teal-500 font-serif normal-case italic">
-              Vault
-            </span>
-          </h1>
-        </div>
-        <p className="text-slate-400 text-xs font-medium ml-12">
-          Your complete prescription and medication history.
+    <div className="flex items-center gap-4 rounded-2xl bg-slate-50 p-4">
+      <div className="w-11 h-11 rounded-2xl bg-white flex items-center justify-center shrink-0">{icon}</div>
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
+        <p className="text-xl font-black text-slate-900">
+          {value || "--"} <span className="text-[11px] font-medium text-slate-400">{value ? unit : ""}</span>
         </p>
       </div>
+    </div>
+  );
+}
 
-      {/* Quick vitals */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 md:mb-10">
-        {[
-          {
-            icon: <RiHeartPulseLine size={20} />,
-            label: "Latest Pulse",
-            value: latestVitals?.heartRate,
-            unit: "BPM",
-            border: "border-b-4 border-rose-400",
-            iconColor: "text-rose-500",
-            bg: "bg-rose-50",
-          },
-          {
-            icon: <RiDashboardLine size={20} />,
-            label: "Latest BP",
-            value: latestVitals?.bloodPressure,
-            unit: "",
-            border: "border-b-4 border-blue-400",
-            iconColor: "text-blue-500",
-            bg: "bg-blue-50",
-          },
-          {
-            icon: <RiTempHotLine size={20} />,
-            label: "Latest Temp",
-            value: latestVitals?.temperature,
-            unit: "°C",
-            border: "border-b-4 border-orange-400",
-            iconColor: "text-orange-500",
-            bg: "bg-orange-50",
-          },
-        ].map((v, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.08 }}
-            className={`bg-white ${v.border} rounded-[24px] p-5 shadow-sm border border-slate-100 flex items-center gap-4`}
-          >
-            <div className={`p-3 ${v.bg} rounded-2xl ${v.iconColor} shrink-0`}>
-              {v.icon}
-            </div>
-            <div>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                {v.label}
-              </p>
-              <p className="text-xl md:text-2xl font-black text-slate-900">
-                {v.value || "--"}
-                {v.value && v.unit && (
-                  <span className="text-xs text-slate-400 font-normal ml-1">
-                    {v.unit}
-                  </span>
-                )}
-              </p>
-            </div>
-          </motion.div>
+/** Short summary for a visit's header, e.g. "2 to take · 1 finished". */
+function visitSummary(states: { kind: string }[]) {
+  const running = states.filter((s) => s.kind !== "finished" && s.kind !== "lapsed").length;
+  const finished = states.filter((s) => s.kind === "finished").length;
+  const parts = [];
+  if (running) parts.push(`${running} to take`);
+  if (finished) parts.push(`${finished} finished`);
+  if (states.length - running - finished) parts.push(`${states.length - running - finished} stopped`);
+  return { text: parts.join(" · "), running };
+}
+
+const MedHistory = () => {
+  const { token } = useContext(AppContext) as AppContextType;
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadAppointments = useCallback(async () => {
+    try {
+      const { data } = await axiosInstance.get(API_PATHS.USER.FETCH_APPOINTMENT);
+      if (data.success) setAppointments(data.appointments);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Couldn't load your medications");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (token) loadAppointments();
+  }, [token, loadAppointments]);
+
+  const { logDose, loggingKey, dialog: earlyDoseDialog } = useDoseLogger(loadAppointments);
+
+  // re-evaluated every minute so rows turn orange/red while the page is open
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // one card per visit that prescribed something, newest first
+  const { latest, visits, dueCount, missedCount } = useMemo(() => {
+    const visits = completedVisits(appointments)
+      .filter((a) => a.healthData?.prescribedMedicines?.length)
+      .map((visit) => ({
+        visit,
+        medicines: visit.healthData!.prescribedMedicines.map((med) => ({
+          med,
+          state: medicineState(visit, med, now),
+        })),
+      }));
+    const urgencies = visits.flatMap((v) => v.medicines.map((m) => doseUrgency(m.state)));
+    return {
+      latest: latestRecordedVisit(appointments),
+      visits,
+      dueCount: urgencies.filter((u) => u === "due").length,
+      missedCount: urgencies.filter((u) => u === "missed").length,
+    };
+  }, [appointments, now]);
+
+  // Arriving from an appointment's report: scroll to that medicine (or the whole visit)
+  // and highlight it.
+  const focus = (location.state as MedicationsFocus | null) ?? null;
+  const focusKey = focus?.medicine ? doseKey(focus.visitId, focus.medicine) : null;
+  const refs = useRef<Record<string, HTMLElement | null>>({});
+  useEffect(() => {
+    if (loading || !focus) return;
+    const target = (focusKey && refs.current[focusKey]) || refs.current[focus.visitId];
+    const timer = setTimeout(() => target?.scrollIntoView({ behavior: "smooth", block: "center" }), 200);
+    return () => clearTimeout(timer);
+  }, [loading, focus, focusKey]);
+
+  if (loading) {
+    return (
+      <div className="max-w-5xl mx-auto py-6 space-y-6">
+        {[24, 48, 48].map((h, i) => (
+          <div key={i} className="animate-pulse rounded-[28px] bg-slate-200/60" style={{ height: h * 4 }} />
         ))}
       </div>
+    );
+  }
 
-      {/* Prescription history */}
-      <div className="space-y-4 md:space-y-5">
-        {appointments.map((app, idx) =>
-          app.healthData?.prescribedMedicines?.length ? (
-            <motion.div
-              key={app._id}
+  return (
+    <div className="max-w-5xl mx-auto py-6 space-y-6">
+      {earlyDoseDialog}
+      <div>
+        <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">Medications</h1>
+        <p className="text-slate-500 mt-1">Everything your doctors prescribed, grouped by visit. Log each dose here.</p>
+      </div>
+
+      {/* what needs attention, at a glance */}
+      {(missedCount > 0 || dueCount > 0) && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {missedCount > 0 && (
+            <div className="flex items-center gap-3 rounded-2xl bg-red-50 border border-red-200 px-4 py-3.5">
+              <RiErrorWarningLine size={22} className="text-red-600 shrink-0" />
+              <p className="text-sm text-red-800">
+                <span className="font-black">
+                  {missedCount} medicine{missedCount > 1 ? "s" : ""} missed.
+                </span>{" "}
+                Take the next dose as soon as you can, or ask your doctor.
+              </p>
+            </div>
+          )}
+          {dueCount > 0 && (
+            <div className="flex items-center gap-3 rounded-2xl bg-orange-50 border border-orange-200 px-4 py-3.5">
+              <RiAlarmWarningLine size={22} className="text-orange-600 shrink-0" />
+              <p className="text-sm text-orange-800">
+                <span className="font-black">
+                  {dueCount} dose{dueCount > 1 ? "s" : ""} due now.
+                </span>{" "}
+                Take {dueCount > 1 ? "them" : "it"} and tap “I took it” so it isn&apos;t marked missed.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* latest vitals */}
+      <section className="bg-white rounded-[28px] border border-slate-100 shadow-clinical p-5 sm:p-6">
+        <h2 className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[2px] text-slate-400 mb-5">
+          <RiHeartPulseLine size={16} className="text-teal-600" />
+          Latest vitals
+        </h2>
+        <div className="grid sm:grid-cols-3 gap-3">
+          <Vital
+            icon={<RiHeartPulseLine size={20} className="text-rose-500" />}
+            label="Heart rate"
+            value={latest?.healthData?.heartRate}
+            unit="BPM"
+          />
+          <Vital
+            icon={<RiDashboard3Line size={20} className="text-blue-500" />}
+            label="Blood pressure"
+            value={latest?.healthData?.bloodPressure}
+            unit="mmHg"
+          />
+          <Vital
+            icon={<RiTempHotLine size={20} className="text-orange-500" />}
+            label="Temperature"
+            value={latest?.healthData?.temperature}
+            unit="°C"
+          />
+        </div>
+        <p className="text-[12px] text-slate-400 mt-3">
+          {latest
+            ? `Recorded by ${latest.docData?.name} on ${formatVisitDate(latest)}.`
+            : "Your doctor records these during a visit."}
+        </p>
+      </section>
+
+      {/* prescriptions, one card per visit */}
+      {visits.length ? (
+        visits.map(({ visit, medicines }, i) => {
+          const summary = visitSummary(medicines.map((m) => m.state));
+          const isFocused = visit._id === focus?.visitId;
+          const urgencies = medicines.map((m) => doseUrgency(m.state));
+          const visitUrgency = urgencies.includes("missed") ? "missed" : urgencies.includes("due") ? "due" : null;
+          return (
+            <motion.section
+              key={visit._id}
+              ref={(el) => {
+                refs.current[visit._id] = el;
+              }}
               initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: Math.min(idx * 0.06, 0.3) }}
-              className="bg-white border border-slate-100 border-l-4 border-l-teal-500 rounded-[24px] md:rounded-[32px] p-5 md:p-8 shadow-sm"
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: Math.min(i, 5) * 0.04 }}
+              className={`bg-white rounded-[28px] border shadow-clinical overflow-hidden ${
+                isFocused
+                  ? "border-teal-300 ring-4 ring-teal-100"
+                  : visitUrgency === "missed"
+                    ? "border-red-200"
+                    : visitUrgency === "due"
+                      ? "border-orange-200"
+                      : "border-slate-100"
+              }`}
             >
-              {/* Card header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-slate-50">
-                <div>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                    Prescribed
-                  </p>
-                  <p className="font-black text-slate-800 text-sm">
-                    {app.slotDate.replace(/_/g, " / ")}
-                  </p>
-                  <p className="text-xs text-slate-400 font-medium mt-0.5">
-                    {app.docData?.name} · {app.docData?.speciality}
-                  </p>
+              <div className="flex items-center gap-3 px-5 sm:px-6 py-4 border-b border-slate-100">
+              <button
+                onClick={() => navigate("/my-appointments", { state: { highlightId: visit._id } })}
+                className="flex-1 min-w-0 flex items-center justify-between gap-3 text-left group"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <img
+                    src={visit.docData?.image}
+                    alt=""
+                    className="w-11 h-11 rounded-2xl object-cover bg-slate-100 shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <p className="font-black text-slate-900 truncate">{visit.docData?.name}</p>
+                    <p className="text-[12px] text-slate-400 truncate">
+                      {visit.docData?.speciality} · {formatVisitDate(visit)}
+                    </p>
+                  </div>
                 </div>
-                <span
-                  className={`self-start text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${app.isCompleted ? "bg-teal-50 text-teal-600 border-teal-100" : "bg-amber-50 text-amber-600 border-amber-100"}`}
-                >
-                  {app.isCompleted ? "Completed" : "In Progress"}
-                </span>
+                <div className="flex items-center gap-3 shrink-0">
+                  {visitUrgency && (
+                    <span
+                      className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${
+                        visitUrgency === "missed" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"
+                      }`}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                          visitUrgency === "missed" ? "bg-red-600" : "bg-orange-500"
+                        }`}
+                      />
+                      {visitUrgency === "missed" ? "Missed" : "Due"}
+                    </span>
+                  )}
+                  <span
+                    className={`hidden sm:inline text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${
+                      summary.running ? "bg-teal-50 text-teal-700" : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
+                    {summary.text}
+                  </span>
+                  <span className="hidden sm:flex items-center text-[11px] font-bold text-teal-600 group-hover:text-teal-700">
+                    View visit <RiArrowRightSLine size={16} />
+                  </span>
+                </div>
+              </button>
+              <MessageDoctorButton doctorId={visit.docId} appointmentId={visit._id} label="Message" compact />
               </div>
 
-              {/* Medicines grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {app.healthData!.prescribedMedicines.map((med, i) => {
-                  const remaining = med.remainingQuantity ?? 0;
-                  const total = med.totalQuantity ?? 1;
-                  const pct = Math.round(((total - remaining) / total) * 100);
+              <div className="px-5 sm:px-6 py-5 divide-y divide-slate-100">
+                {medicines.map(({ med, state }) => {
+                  const key = doseKey(visit._id, med.name);
                   return (
-                    <div
-                      key={i}
-                      className="bg-slate-50 border border-slate-100 rounded-[16px] p-4"
-                    >
-                      <div className="flex items-center gap-2.5 mb-3">
-                        <div className="p-1.5 bg-white border border-slate-100 rounded-xl text-teal-500 shrink-0">
-                          <RiMedicineBottleLine size={15} />
-                        </div>
-                        <p className="font-black text-slate-900 text-sm truncate">
-                          {med.name}
-                        </p>
-                      </div>
-                      <div className="flex justify-between items-center mb-2">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase">
-                          {med.dosagePerDay} doses/day
-                        </p>
-                        <p className="text-xs font-black text-teal-600">
-                          {remaining} left
-                        </p>
-                      </div>
-                      <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-teal-500 rounded-full transition-all duration-500"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1.5">
-                        {pct}% taken
-                      </p>
-                    </div>
+                    <MedicineRow
+                      key={key}
+                      ref={(el) => {
+                        refs.current[key] = el;
+                      }}
+                      med={med}
+                      state={state}
+                      highlighted={key === focusKey}
+                      busy={loggingKey === key}
+                      disabled={!!loggingKey}
+                      onTake={() => logDose(visit._id, med)}
+                    />
                   );
                 })}
               </div>
-
-              <button
-                onClick={() => handleViewAppointment(app._id)}
-                className="flex items-center gap-2 mt-5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-teal-600 transition-colors group"
-              >
-                View full appointment
-                <RiArrowRightLine
-                  size={13}
-                  className="group-hover:translate-x-1 transition-transform"
-                />
-              </button>
-            </motion.div>
-          ) : null,
-        )}
-
-        {appointments.filter((a) => a.healthData?.prescribedMedicines?.length)
-          .length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 bg-white border border-dashed border-slate-200 rounded-[28px] text-center px-4">
-            <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-4">
-              <RiMedicineBottleLine size={28} />
-            </div>
-            <h3 className="font-black text-slate-900 text-lg mb-1">
-              No prescriptions yet
-            </h3>
-            <p className="text-slate-400 text-sm font-medium">
-              Complete an appointment to see your medication history here.
-            </p>
+            </motion.section>
+          );
+        })
+      ) : (
+        <section className="bg-white rounded-[28px] border border-slate-100 shadow-clinical px-6 py-14 text-center">
+          <div className="w-14 h-14 mx-auto mb-5 rounded-2xl bg-teal-50 flex items-center justify-center">
+            <RiCapsuleLine size={26} className="text-teal-600" />
           </div>
-        )}
-      </div>
+          <p className="font-black text-slate-900">No prescriptions yet</p>
+          <p className="text-sm text-slate-500 mt-2">
+            Medicines your doctor prescribes after a visit will show up here.
+          </p>
+        </section>
+      )}
     </div>
   );
 };
