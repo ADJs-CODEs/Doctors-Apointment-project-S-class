@@ -1,10 +1,14 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { AdminAuthGuard, UserAuthGuard, UserId } from '../common/auth';
+import { BookingService } from '../appointments/booking.service';
 import { WalletService } from './wallet.service';
 
 @Controller('api/wallet')
 export class WalletController {
-  constructor(private readonly wallet: WalletService) {}
+  constructor(
+    private readonly wallet: WalletService,
+    private readonly booking: BookingService,
+  ) {}
 
   // public: what gifts exist, and recent big gifts for the Wish Well banner
   @Get('catalog')
@@ -48,7 +52,8 @@ export class WalletController {
   @HttpCode(200)
   @UseGuards(UserAuthGuard)
   payAppointment(@UserId() userId: string, @Body('appointmentId') appointmentId?: string) {
-    return this.wallet.payAppointment(userId, appointmentId);
+    // paying a held slot also confirms the booking
+    return this.booking.payFromWallet(userId, appointmentId);
   }
 
   @Post('payout')

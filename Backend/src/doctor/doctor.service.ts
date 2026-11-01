@@ -7,8 +7,10 @@ import { fail } from '../common/http';
 import { MODEL } from '../database/models';
 import type { IAppointment } from '../database/schemas/appointment.schema';
 import type { IDoctor } from '../database/schemas/doctor.schema';
+import { NOT_A_HOLD } from '../appointments/booking.service';
 import { MessagesService } from '../messages/messages.service';
 import { EmailNotifications } from '../notifications/email-notifications';
+import { GoogleCalendar } from '../settings/google-calendar';
 import { WalletService } from '../wallet/wallet.service';
 import { releaseSlot } from '../user/user.service';
 
@@ -26,6 +28,7 @@ export class DoctorService {
     private readonly chat: MessagesService,
     private readonly emails: EmailNotifications,
     private readonly wallet: WalletService,
+    private readonly calendar: GoogleCalendar,
   ) {}
 
   async list() {
@@ -51,7 +54,7 @@ export class DoctorService {
   }
 
   async appointmentsFor(docId: string) {
-    const appointments = await this.appointments.find({ docId });
+    const appointments = await this.appointments.find({ docId, ...NOT_A_HOLD });
     return { success: true, appointments };
   }
 
@@ -91,11 +94,12 @@ export class DoctorService {
     await releaseSlot(this.doctors, appointment);
     const refund = await this.wallet.refundAppointmentToWallet(String(appointment._id), 100, 'cancelled');
     this.emails.appointmentCancelled(appointment, 'doctor', refund);
+    void this.calendar.remove(appointment);
     return { success: true, message: 'Appointment Cancelled' };
   }
 
   async dashboard(docId: string) {
-    const appointments = await this.appointments.find({ docId });
+    const appointments = await this.appointments.find({ docId, ...NOT_A_HOLD });
 
     let earnings = 0;
     const patients = new Set<string>();

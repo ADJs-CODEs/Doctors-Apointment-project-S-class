@@ -5,6 +5,7 @@ import * as webpush from 'web-push';
 import { MODEL } from '../database/models';
 import type { INotification, IPushSubscription, NotificationType } from '../database/schemas/social.schemas';
 import { RealtimeGateway } from '../integrations/realtime.gateway';
+import { type Category, Preferences } from '../settings/preferences';
 
 export type AppNotification = {
   title: string;
@@ -18,6 +19,8 @@ export type AppNotification = {
   tag?: string;
   /** save to the bell + live update, but don't buzz the device */
   inAppOnly?: boolean;
+  /** which notification setting governs the device push; none = always (e.g. urgent) */
+  category?: Category;
 };
 
 /**
@@ -38,6 +41,7 @@ export class AppNotifier {
     @InjectModel(MODEL.notification) private readonly notifications: Model<INotification>,
     @InjectModel(MODEL.pushSubscription) private readonly subscriptions: Model<IPushSubscription>,
     private readonly realtime: RealtimeGateway,
+    private readonly prefs: Preferences,
   ) {}
 
   /** The public key browsers need to subscribe, or null when push isn't set up. */
@@ -59,7 +63,10 @@ export class AppNotifier {
       link: n.link,
     });
     this.realtime.emitTo('patient', userId, 'notification', saved.toObject());
-    if (!n.inAppOnly) await this.push(userId, n, String(saved._id));
+    // the bell always keeps it; the device only buzzes if their settings allow it now
+    if (!n.inAppOnly && (await this.prefs.allows(userId, n.category, 'push', n.urgent))) {
+      await this.push(userId, n, String(saved._id));
+    }
   }
 
   private setupPush() {

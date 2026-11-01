@@ -6,6 +6,7 @@ import type { IAppointment, IMedicine, IRefund } from '../database/schemas/appoi
 import type { IConnection } from '../database/schemas/social.schemas';
 import type { IUser } from '../database/schemas/user.schema';
 import { type Mail, MailService } from '../integrations/integrations';
+import { type Category, Preferences } from '../settings/preferences';
 import { type AppNotification, AppNotifier } from './app-notifier';
 import { CLINIC_TZ, slotParts, type WallClock } from './clinic-time';
 import { details, escapeHtml, layout, quote } from './email-templates';
@@ -16,6 +17,8 @@ const patientUrl = (path = '') => `${process.env.USER_URL || process.env.CLIENT_
 const adminUrl = (path = '') => `${process.env.ADMIN_URL || ''}${path}`;
 
 type Person = { _id?: unknown; name: string; email: string };
+/** The patient an email is for and the setting that governs it (see settings/preferences). */
+type Who = { userId: unknown; category: Category };
 const idOf = (p: { _id?: unknown }) => (p._id ? String(p._id) : '');
 
 /** Wall-clock parts -> "20260327T103000" (no zone; the zone is given separately). */
@@ -107,9 +110,34 @@ function calendarFor(a: IAppointment) {
   };
 }
 
+/** Google Maps directions to the doctor's clinic (no API key needed), or null without an address. */
+const mapsLink = (a: IAppointment) => {
+  if (a.kind === 'video') return null; // nowhere to travel to
+  const where = [a.docData?.address?.line1, a.docData?.address?.line2].filter(Boolean).join(', ');
+  return where ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(where)}` : null;
+};
+
+const isVideo = (a: IAppointment) => a.kind === 'video';
+/** where each side joins a video call (opens 10 min before) */
+const patientCallUrl = (a: IAppointment) => patientUrl(`/call/${a._id}`);
+const doctorCallUrl = (a: IAppointment) => adminUrl(`/doctor-call/${a._id}`);
+
+/** "Get directions" for clinic visits, "how to join" for video calls. */
+const directionsLine = (a: IAppointment) => {
+  if (isVideo(a)) {
+    return `<p>📹 This is a <strong>video call</strong>. Join from the app; the call opens 10 minutes before:
+            <a href="${escapeHtml(patientCallUrl(a))}" style="color:#0d9488;font-weight:700;text-decoration:none;">Join video call →</a></p>`;
+  }
+  const url = mapsLink(a);
+  return url
+    ? `<p><a href="${escapeHtml(url)}" style="color:#0d9488;font-weight:700;text-decoration:none;">📍 Get directions to the clinic →</a></p>`
+    : '';
+};
+
 const visitRows = (a: IAppointment): [string, unknown][] => [
   ['Doctor', a.docData?.name],
   ['Speciality', a.docData?.speciality],
+  ['Type', isVideo(a) ? 'Video call' : 'At the clinic'],
   ['Date', prettyDate(a.slotDate)],
   ['Time', a.slotTime],
 ];
@@ -131,11 +159,21 @@ export class EmailNotifications {
     private readonly app: AppNotifier,
     @InjectModel(MODEL.connection) private readonly connections: Model<IConnection>,
     @InjectModel(MODEL.user) private readonly users: Model<IUser>,
+    private readonly prefs: Preferences,
   ) {}
 
-  private deliver(kind: string, mail: Mail) {
-    if (!mail.to) return;
-    this.mail.send(mail).catch((err) => this.logger.warn(`${kind} email to ${mail.to} failed: ${err.message}`));
+  /**
+   * Sends one email, unless the patient switched this kind off (who = their id and the
+   * setting that governs it; leave it out for emails that always go, e.g. to doctors).
+   */
+  private deliver(kind: string, mail: Mail & Partial<Who>, who?: Who) {
+    const { userId, category, ...email } = mail;
+    const owner = who ?? (userId && category ? { userId, category } : undefined);
+    if (!email.to) return;
+    const allowed = owner ? this.prefs.allows(String(owner.userId), owner.category, 'email') : Promise.resolve(true);
+    allowed
+      .then((ok) => (ok ? this.mail.send(email) : undefined))
+      .catch((err) => this.logger.warn(`${kind} email to ${email.to} failed: ${err.message}`));
   }
 
   /** People who accepted to watch over this patient (their care circle). */
@@ -159,8 +197,10 @@ export class EmailNotifications {
     this.watchersOf(patientId)
       .then((watchers) =>
         watchers.forEach((w) => {
-          this.deliver(`care circle: ${kind}`, { to: w.email, ...build(w) });
-          if (inApp) this.app.send(idOf(w), { ...inApp, type: 'care', link: `/watching/${patientId}` });
+          this.deliver(`care circle: ${kind}`, { to: w.email, ...build(w) }, { userId: w._id, category: 'careCircle' });
+          if (inApp) {
+            this.app.send(idOf(w), { ...inApp, type: 'care', link: `/watching/${patientId}`, category: 'careCircle' });
+          }
         }),
       )
       .catch((err) => this.logger.warn(`care circle lookup failed: ${err.message}`));
@@ -196,6 +236,8 @@ export class EmailNotifications {
 
   signInAlert(user: Person) {
     this.deliver('sign-in', {
+      userId: user._id,
+      category: 'security',
       to: user.email,
       subject: 'New sign-in to your account',
       html: layout({
@@ -227,12 +269,15 @@ export class EmailNotifications {
   bookingConfirmed(a: IAppointment) {
     const calendar = calendarFor(a);
     this.deliver('booking', {
+      userId: a.userId,
+      category: 'appointments',
       to: a.userData?.email,
       subject: `Booked: ${a.docData?.name} on ${prettyDate(a.slotDate)}`,
       html: layout({
-        title: 'Your appointment is booked',
+        title: isVideo(a) ? 'Your video call is booked' : 'Your appointment is booked',
         body: `<p>Hi ${escapeHtml(firstName(a.userData?.name))}, here are the details:</p>
                ${details([...visitRows(a), ['Fee', money(a.amount)], ['Payment', 'Not paid yet']])}
+               ${directionsLine(a)}
                <p style="font-size:13px;color:#64748b;">We'll remind you an hour before. The calendar file attached works with Apple Calendar and Outlook.</p>`,
         button: calendar ? { label: 'Add to Google Calendar', url: calendar.google } : undefined,
         secondary: { label: 'Pay or manage', url: patientUrl('/my-appointments') },
@@ -240,6 +285,7 @@ export class EmailNotifications {
       attachments: calendar ? [calendar.attachment] : undefined,
     });
     this.app.send(a.userId, {
+      category: 'appointments',
       title: 'Appointment booked',
       message: `${a.docData?.name} · ${prettyDate(a.slotDate)} at ${a.slotTime}. We'll remind you an hour before.`,
       type: 'appointment',
@@ -303,6 +349,8 @@ export class EmailNotifications {
     if (reference && !byWallet) rows.push(['Reference', reference.slice(-12).toUpperCase()]);
 
     this.deliver('payment', {
+      userId: a.userId,
+      category: 'payments',
       to: a.userData?.email,
       subject: `Payment received: ${money(a.amount)} for ${a.docData?.name}`,
       html: layout({
@@ -312,6 +360,7 @@ export class EmailNotifications {
       }),
     });
     this.app.send(a.userId, {
+      category: 'payments',
       title: 'Payment received',
       message: `${money(a.amount)} for your appointment with ${a.docData?.name}${byWallet ? ', paid from your wallet' : ''}. Your receipt is in your email.`,
       type: 'payment',
@@ -339,20 +388,49 @@ export class EmailNotifications {
   appointmentSoon(a: IAppointment, minutes: number) {
     const unpaid = !a.payment;
     this.deliver('appointment soon', {
+      userId: a.userId,
+      category: 'appointments',
       to: a.userData?.email,
       subject: `In ${minutes} minutes: your appointment with ${a.docData?.name}`,
       html: layout({
         title: `Your appointment is in ${minutes} minutes`,
         tone: 'orange',
         body: `<p>Hi ${escapeHtml(firstName(a.userData?.name))}, a quick reminder:</p>${details(visitRows(a))}
+               ${directionsLine(a)}
                ${unpaid ? '<p><strong>This visit isn&#39;t paid yet.</strong> You can pay online before you go.</p>' : ''}`,
-        button: { label: unpaid ? 'Pay now' : 'View appointment', url: patientUrl('/my-appointments') },
+        button: { label: unpaid ? 'Pay now' : isVideo(a) ? 'Open video call' : 'View appointment', url: unpaid || !isVideo(a) ? patientUrl('/my-appointments') : patientCallUrl(a) },
         secondary: { label: 'Message the doctor', url: patientUrl(`/messages?doctor=${a.docId}&appointment=${a._id}`) },
       }),
     });
     this.app.send(a.userId, {
-      title: `Appointment in ${minutes} minutes`,
+      category: 'appointments',
+      title: isVideo(a) ? `Video call in ${minutes} minutes` : `Appointment in ${minutes} minutes`,
       message: `${a.docData?.name} at ${a.slotTime}${unpaid ? ' · not paid yet' : ''}`,
+      type: 'appointment',
+      link: '/my-appointments',
+      tag: `appt-${a._id}`,
+    });
+  }
+
+  /** The day before (only for patients who turned it on in Settings → Reminders). */
+  appointmentTomorrow(a: IAppointment) {
+    this.deliver('appointment tomorrow', {
+      userId: a.userId,
+      category: 'appointments',
+      to: a.userData?.email,
+      subject: `Tomorrow: your appointment with ${a.docData?.name} at ${a.slotTime}`,
+      html: layout({
+        title: 'Your appointment is tomorrow',
+        body: `<p>Hi ${escapeHtml(firstName(a.userData?.name))}, just a heads-up for tomorrow:</p>${details(visitRows(a))}
+               ${a.payment ? '' : '<p><strong>This visit isn&#39;t paid yet.</strong> You can pay from your wallet or by card.</p>'}`,
+        button: { label: a.payment ? 'View appointment' : 'Pay now', url: patientUrl('/my-appointments') },
+        secondary: mapsLink(a) ? { label: 'Directions', url: mapsLink(a)! } : undefined,
+      }),
+    });
+    this.app.send(a.userId, {
+      category: 'appointments',
+      title: 'Appointment tomorrow',
+      message: `${a.docData?.name} at ${a.slotTime}${a.payment ? '' : ' · not paid yet'}`,
       type: 'appointment',
       link: '/my-appointments',
       tag: `appt-${a._id}`,
@@ -362,20 +440,25 @@ export class EmailNotifications {
   /** When the visit starts: both sides. */
   appointmentNow(a: IAppointment) {
     this.deliver('appointment now', {
+      userId: a.userId,
+      category: 'appointments',
       to: a.userData?.email,
       subject: `It's time: your appointment with ${a.docData?.name}`,
       html: layout({
-        title: "It's time for your appointment",
+        title: isVideo(a) ? 'Your video call is starting' : "It's time for your appointment",
         tone: 'orange',
-        body: `<p>Hi ${escapeHtml(firstName(a.userData?.name))}, your appointment with <strong>${escapeHtml(a.docData?.name)}</strong> starts now (${escapeHtml(a.slotTime)}).</p>`,
-        button: { label: 'Message the doctor', url: patientUrl(`/messages?doctor=${a.docId}&appointment=${a._id}`) },
+        body: `<p>Hi ${escapeHtml(firstName(a.userData?.name))}, your ${isVideo(a) ? 'video call' : 'appointment'} with <strong>${escapeHtml(a.docData?.name)}</strong> starts now (${escapeHtml(a.slotTime)}).</p>`,
+        button: isVideo(a)
+          ? { label: 'Join video call', url: patientCallUrl(a) }
+          : { label: 'Message the doctor', url: patientUrl(`/messages?doctor=${a.docId}&appointment=${a._id}`) },
       }),
     });
     this.app.send(a.userId, {
-      title: "It's time for your appointment",
+      category: 'appointments',
+      title: isVideo(a) ? 'Your video call is starting · tap to join' : "It's time for your appointment",
       message: `${a.docData?.name} · ${a.slotTime}`,
       type: 'appointment',
-      link: '/my-appointments',
+      link: isVideo(a) ? `/call/${a._id}` : '/my-appointments',
       tag: `appt-${a._id}`,
       urgent: true,
     });
@@ -383,13 +466,16 @@ export class EmailNotifications {
       to: a.docData?.email,
       subject: `Now: ${a.userData?.name} (${a.slotTime})`,
       html: layout({
-        title: 'Your next appointment starts now',
+        title: isVideo(a) ? 'Your next video call starts now' : 'Your next appointment starts now',
         body: details([
           ['Patient', a.userData?.name],
+          ['Type', isVideo(a) ? 'Video call' : 'At the clinic'],
           ['Time', a.slotTime],
           ['Paid', a.payment ? 'Yes' : 'Not yet'],
         ]),
-        button: { label: 'Open patient', url: adminUrl(`/doctor-messages?patient=${a.userId}&appointment=${a._id}`) },
+        button: isVideo(a)
+          ? { label: 'Join video call', url: doctorCallUrl(a) }
+          : { label: 'Open patient', url: adminUrl(`/doctor-messages?patient=${a.userId}&appointment=${a._id}`) },
         footer: DOCTOR_FOOTER,
       }),
     });
@@ -412,6 +498,8 @@ export class EmailNotifications {
 
     // the patient always hears about it, even when they cancelled (as a confirmation)
     this.deliver('cancel (patient)', {
+      userId: a.userId,
+      category: 'appointments',
       to: a.userData?.email,
       subject: `Cancelled: your appointment on ${prettyDate(a.slotDate)}`,
       html: layout({
@@ -425,6 +513,7 @@ export class EmailNotifications {
     });
     if (by !== 'patient') {
       this.app.send(a.userId, {
+        category: 'appointments',
         title: 'Appointment cancelled',
         message: `Your visit with ${a.docData?.name} on ${prettyDate(a.slotDate)} was cancelled by ${who}.${refundText}`,
         type: 'appointment',
@@ -476,6 +565,8 @@ export class EmailNotifications {
         : `<p><strong>You're due a ${refund.percent}% refund (${escapeHtml(paid)}).</strong> Our team is processing it and will be in touch.</p>`;
 
     this.deliver('missed (patient)', {
+      userId: a.userId,
+      category: 'appointments',
       to: a.userData?.email,
       subject: patientMissed
         ? `Missed appointment with ${a.docData?.name}`
@@ -495,6 +586,7 @@ export class EmailNotifications {
       }),
     });
     this.app.send(a.userId, {
+      category: 'appointments',
       title: patientMissed ? 'Missed appointment' : 'Your doctor missed your appointment',
       message: `${a.docData?.name} · ${prettyDate(a.slotDate)} ${a.slotTime}${
         refund
@@ -562,6 +654,8 @@ export class EmailNotifications {
 
   coinsPurchased(user: Person, coins: number, cents: number) {
     this.deliver('coins purchased', {
+      userId: user._id,
+      category: 'payments',
       to: user.email,
       subject: `${coins.toLocaleString('en-US')} coins added to your wallet`,
       html: layout({
@@ -599,6 +693,8 @@ export class EmailNotifications {
       .then((u) => {
         if (!u?.email) return;
         this.deliver('gift received', {
+          userId: patientId,
+          category: 'gifts',
           to: u.email,
           subject: `${fromName} sent you ${gift.emoji} ${gift.name}`,
           html: layout({
@@ -612,6 +708,7 @@ export class EmailNotifications {
       })
       .catch((err) => this.logger.warn(`gift email lookup failed: ${err.message}`));
     this.app.send(patientId, {
+      category: 'gifts',
       title: `${fromName} sent you ${gift.emoji} ${gift.name}`,
       message: `${message ? `“${message}” · ` : ''}${money(fundCents / 100)} added to your care fund.`,
       type: 'care',
@@ -648,6 +745,8 @@ export class EmailNotifications {
   }) {
     const paid = p.status === 'paid';
     this.deliver('payout decided', {
+      userId: p.userId,
+      category: 'payments',
       to: p.userEmail,
       subject: paid ? `Sent: ${money(p.cents / 100)} from your care fund` : 'Your withdrawal was not approved',
       html: layout({
@@ -665,6 +764,7 @@ export class EmailNotifications {
       }),
     });
     this.app.send(p.userId, {
+      category: 'payments',
       title: paid ? 'Care fund withdrawal sent' : 'Withdrawal not approved',
       message: paid
         ? `${money(p.cents / 100)} is on its way to your bank (ref ${p.reference}).`
@@ -679,6 +779,8 @@ export class EmailNotifications {
   doseReminder(a: IAppointment, med: IMedicine, dueAt: Date) {
     const time = clinicTime(dueAt);
     this.deliver('dose reminder', {
+      userId: a.userId,
+      category: 'medication',
       to: a.userData?.email,
       subject: `Reminder: ${med.name} at ${time}`,
       html: layout({
@@ -692,6 +794,7 @@ export class EmailNotifications {
     });
     const minutes = Math.round((dueAt.getTime() - Date.now()) / 60_000);
     this.app.send(a.userId, {
+      category: 'medication',
       title: `Time for ${med.name}`,
       message:
         minutes > 0
@@ -707,6 +810,8 @@ export class EmailNotifications {
   missedDose(a: IAppointment, med: IMedicine, dueAt: Date) {
     const time = clinicTime(dueAt);
     this.deliver('missed dose', {
+      userId: a.userId,
+      category: 'missedDose',
       to: a.userData?.email,
       subject: `Missed: your ${med.name} dose (due ${time})`,
       html: layout({
@@ -720,6 +825,7 @@ export class EmailNotifications {
     });
 
     this.app.send(a.userId, {
+      category: 'missedDose',
       title: `Missed dose: ${med.name}`,
       message: `It was due at ${time}. Log it if you took it, or ask your doctor what to do.`,
       type: 'alert',
@@ -774,6 +880,8 @@ export class EmailNotifications {
   /** A normal (non-urgent) chat message from a doctor. */
   doctorMessage(to: Person, doctor: { _id: string; name: string; email?: string }, text: string) {
     this.deliver('doctor message', {
+      userId: to._id,
+      category: 'messages',
       to: to.email,
       replyTo: doctor.email,
       subject: `New message from ${doctor.name}`,
@@ -830,6 +938,8 @@ export class EmailNotifications {
   /** Someone asked to watch over this patient. */
   careRequest(patient: Person, requester: Person) {
     this.deliver('care request', {
+      userId: patient._id,
+      category: 'careCircle',
       to: patient.email,
       subject: `${requester.name} wants to join your care circle`,
       html: layout({
@@ -841,6 +951,7 @@ export class EmailNotifications {
       }),
     });
     this.app.send(idOf(patient), {
+      category: 'careCircle',
       title: `${requester.name} wants to join your care circle`,
       message: 'Accept to let them see your appointments and medicines.',
       type: 'care',
@@ -851,6 +962,8 @@ export class EmailNotifications {
   /** The patient said yes or no. Tell the requester; on yes, confirm to the patient too. */
   careResponse(patient: Person, requester: Person, patientId: string, accepted: boolean) {
     this.deliver('care response', {
+      userId: requester._id,
+      category: 'careCircle',
       to: requester.email,
       subject: accepted
         ? `You're now in ${firstName(patient.name)}'s care circle`
@@ -865,6 +978,7 @@ export class EmailNotifications {
       }),
     });
     this.app.send(idOf(requester), {
+      category: 'careCircle',
       title: accepted ? `You're now watching over ${firstName(patient.name)}` : 'Care circle request declined',
       message: accepted
         ? "You'll be told if they miss a dose, book a visit or get an urgent message."
@@ -881,6 +995,8 @@ export class EmailNotifications {
         inAppOnly: true,
       });
       this.deliver('care accepted (patient)', {
+        userId: patientId,
+        category: 'careCircle',
         to: patient.email,
         subject: `${requester.name} is now in your care circle`,
         html: layout({
@@ -896,6 +1012,8 @@ export class EmailNotifications {
   /** A connection was ended; tell the other person. */
   careRemoved(to: Person, by: Person, role: 'watcher' | 'patient') {
     this.deliver('care removed', {
+      userId: to._id,
+      category: 'careCircle',
       to: to.email,
       subject:
         role === 'patient'

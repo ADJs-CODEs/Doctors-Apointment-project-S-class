@@ -58,6 +58,19 @@ export interface IAppointment extends Document {
   remindersSent: string[];
   // Stripe payment, kept so a refund can be issued (only payments made after 2026-11-01)
   paymentIntentId?: string;
+  /** the event in the patient's Google Calendar, when they've connected it */
+  calendarEventId?: string;
+  /**
+   * Set while the slot is only held for payment: the booking becomes real once it's paid,
+   * and an unpaid hold is removed (and the slot freed) when this passes.
+   */
+  holdExpiresAt?: Date;
+  /** the Stripe checkout for this appointment, so a paid-but-not-returned hold can be confirmed */
+  stripeSessionId?: string;
+  /** in person at the clinic, or a video consultation (older appointments: in person) */
+  kind?: 'in-person' | 'video';
+  /** the video room, created the first time someone joins (appointments/video.service.ts) */
+  video?: { provider: 'daily' | 'jitsi'; room: string; url: string };
   /** how it was paid; older paid appointments have none (they were Stripe) */
   paymentMethod?: 'stripe' | 'wallet';
   /** for wallet payments: what came out of the care fund and out of coins, for refunds */
@@ -116,6 +129,14 @@ export const AppointmentSchema = new Schema<IAppointment>(
     remindersSent: { type: [String], default: undefined },
     paymentIntentId: { type: String },
     paymentMethod: { type: String, enum: ['stripe', 'wallet'] },
+    calendarEventId: { type: String },
+    holdExpiresAt: { type: Date },
+    stripeSessionId: { type: String },
+    kind: { type: String, enum: ['in-person', 'video'], default: 'in-person' },
+    video: {
+      type: new Schema({ provider: String, room: String, url: String }, { _id: false }),
+      default: undefined,
+    },
     walletPayment: {
       type: new Schema({ fundCents: { type: Number }, coins: { type: Number } }, { _id: false }),
       default: undefined,

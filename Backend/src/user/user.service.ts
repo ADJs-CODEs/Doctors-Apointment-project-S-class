@@ -14,6 +14,8 @@ import type { IDoctor } from '../database/schemas/doctor.schema';
 import type { IUser } from '../database/schemas/user.schema';
 import { CloudinaryService } from '../integrations/integrations';
 import { EmailNotifications } from '../notifications/email-notifications';
+import { BookingService } from '../appointments/booking.service';
+import { GoogleCalendar } from '../settings/google-calendar';
 import { WalletService } from '../wallet/wallet.service';
 
 const normalizeEmail = (email: unknown) =>
@@ -34,6 +36,8 @@ export class UserService {
     private readonly cloudinary: CloudinaryService,
     private readonly emails: EmailNotifications,
     private readonly wallet: WalletService,
+    private readonly calendar: GoogleCalendar,
+    private readonly booking: BookingService,
   ) {}
 
   private get stripe() {
@@ -98,7 +102,7 @@ export class UserService {
   // --- profile ---
 
   async getProfile(userId: string) {
-    const userData = await this.users.findById(userId).select('-password');
+    const userData = await this.users.findById(userId).select('-password -resetToken -resetTokenExpire');
     if (!userData) fail('User not found', HttpStatus.NOT_FOUND);
     return { success: true, userData };
   }
@@ -127,34 +131,9 @@ export class UserService {
 
   // --- appointments ---
 
-  async bookAppointment(userId: string, body: { docId?: string; slotDate?: string; slotTime?: string }) {
-    const { docId, slotDate, slotTime } = body;
-    if (!docId || !slotDate || !slotTime) fail('Missing booking details');
-
-    const docData = await this.doctors.findById(docId).select('-password');
-    if (!docData) fail('Doctor not found', HttpStatus.NOT_FOUND);
-    if (!docData.available) fail('Doctor not available');
-
-    const slotsBooked = docData.slots_booked ?? {};
-    const dayBookings = slotsBooked[slotDate] ?? [];
-    if (dayBookings.includes(slotTime)) fail('Slot not available');
-    slotsBooked[slotDate] = [...dayBookings, slotTime];
-
-    const userData = await this.users.findById(userId).select('-password');
-    const appointment = await new this.appointments({
-      userId,
-      docId,
-      userData,
-      docData,
-      amount: docData.fees,
-      slotTime,
-      slotDate,
-      date: Date.now(),
-    }).save();
-    await this.doctors.findByIdAndUpdate(docId, { slots_booked: slotsBooked });
-
-    this.emails.bookingConfirmed(appointment);
-    return { success: true, message: 'Appointment Booked', appointmentId: appointment._id };
+  /** Holds the slot for 30 minutes; it becomes a booking once paid (appointments/booking.service.ts). */
+  bookAppointment(userId: string, body: { docId?: string; slotDate?: string; slotTime?: string; kind?: string }) {
+    return this.booking.hold(userId, body);
   }
 
   async listAppointments(userId: string) {
@@ -168,12 +147,20 @@ export class UserService {
     if (appointment.userId.toString() !== userId) fail('Unauthorized', HttpStatus.FORBIDDEN);
     if (appointment.missed || appointment.isCompleted) fail('This appointment is already closed');
 
+    // an unpaid hold was never a booking: just let the time go, no emails
+    if (appointment.holdExpiresAt && !appointment.payment) {
+      await this.appointments.deleteOne({ _id: appointment._id, payment: false });
+      await releaseSlot(this.doctors, appointment);
+      return { success: true, message: 'Time released' };
+    }
+
     await this.appointments.findByIdAndUpdate(appointmentId, { cancelled: true });
     await releaseSlot(this.doctors, appointment);
 
     // paid from the wallet: the money goes straight back into it
     const refund = await this.wallet.refundAppointmentToWallet(String(appointment._id), 100, 'cancelled');
     this.emails.appointmentCancelled(appointment, 'patient', refund);
+    void this.calendar.remove(appointment);
     return { success: true, message: 'Appointment Canceled' };
   }
 
@@ -219,30 +206,8 @@ export class UserService {
 
   // --- payments ---
 
-  async startStripePayment(userId: string, appointmentId?: string) {
-    const appointment = await this.appointments.findById(appointmentId);
-    if (!appointment || appointment.cancelled || appointment.missed) fail('Invalid appointment');
-    if (appointment.payment) fail('This appointment is already paid');
-    if (appointment.userId.toString() !== userId) fail('Unauthorized', HttpStatus.FORBIDDEN);
-
-    const returnUrl = `${process.env.USER_URL}/verify?appointmentId=${appointmentId}`;
-    const session = await this.stripe.checkout.sessions.create({
-      success_url: `${returnUrl}&success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${returnUrl}&success=false`,
-      metadata: { appointmentId: String(appointmentId) },
-      line_items: [
-        {
-          price_data: {
-            currency: process.env.CURRENCY || 'usd',
-            product_data: { name: `Appointment with ${appointment.docData.name}` },
-            unit_amount: Math.round(appointment.amount * 100),
-          },
-          quantity: 1,
-        },
-      ],
-      mode: 'payment',
-    });
-    return { success: true, session_url: session.url };
+  startStripePayment(userId: string, appointmentId?: string) {
+    return this.booking.createCheckout(userId, appointmentId);
   }
 
   async verifyStripePayment(
@@ -256,18 +221,15 @@ export class UserService {
     if (!appointment) fail('Appointment not found', HttpStatus.NOT_FOUND);
     if (appointment.userId.toString() !== userId) fail('Unauthorized', HttpStatus.FORBIDDEN);
 
-    // Ask Stripe whether this checkout was really paid, instead of trusting the URL.
-    // Older web builds don't pass session_id yet; for those, keep the old behaviour.
-    let paymentIntentId: string | undefined;
-    if (sessionId) {
-      const session = await this.stripe.checkout.sessions.retrieve(sessionId);
-      const paidForThis =
-        session.payment_status === 'paid' && session.metadata?.appointmentId === String(appointmentId);
-      if (!paidForThis) fail('Payment Failed');
-      // kept so a missed appointment can be refunded later
-      paymentIntentId =
-        typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id;
-    }
+    // Ask Stripe whether this checkout was really paid, instead of trusting the URL. The
+    // session is required: without it anyone could mark a booking paid (and hold = booking).
+    if (!sessionId) fail('Missing payment reference');
+    const session = await this.stripe.checkout.sessions.retrieve(sessionId);
+    const paidForThis = session.payment_status === 'paid' && session.metadata?.appointmentId === String(appointmentId);
+    if (!paidForThis) fail('Payment Failed');
+    // kept so a missed appointment can be refunded later
+    const paymentIntentId =
+      typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id;
 
     // only the first verification flips it, so a refreshed verify page doesn't email twice
     const justPaid = await this.appointments.findOneAndUpdate(
@@ -275,7 +237,10 @@ export class UserService {
       { payment: true, paymentMethod: 'stripe', ...(paymentIntentId && { paymentIntentId }) },
       { returnDocument: 'after' },
     );
-    if (justPaid) this.emails.paymentReceived(justPaid, sessionId);
+    if (justPaid) {
+      this.emails.paymentReceived(justPaid, sessionId);
+      await this.booking.confirmIfHeld(justPaid); // a held slot becomes the booking now
+    }
     return { success: true, message: 'Payment Successful' };
   }
 

@@ -7,6 +7,7 @@ import { MODEL } from '../database/models';
 import { type IAppointment, type IRefund, REFUND_PERCENT } from '../database/schemas/appointment.schema';
 import { slotInstant } from '../notifications/clinic-time';
 import { EmailNotifications } from '../notifications/email-notifications';
+import { GoogleCalendar } from '../settings/google-calendar';
 import { WalletService } from '../wallet/wallet.service';
 
 type Who = 'patient' | 'doctor';
@@ -29,6 +30,7 @@ export class MissedAppointments {
     @InjectModel(MODEL.appointment) private readonly appointments: Model<IAppointment>,
     private readonly emails: EmailNotifications,
     private readonly wallet: WalletService,
+    private readonly calendar: GoogleCalendar,
   ) {}
 
   private get stripe() {
@@ -45,6 +47,7 @@ export class MissedAppointments {
     if (appointment.cancelled || appointment.isCompleted || appointment.missed) {
       fail('This appointment is already closed');
     }
+    if (appointment.holdExpiresAt && !appointment.payment) fail('This time was only held and never paid for');
     if (markedBy !== 'system') {
       const startsAt = slotInstant(appointment.slotDate, appointment.slotTime);
       if (!startsAt || Date.now() < startsAt.getTime()) fail("You can only mark it missed after it's started");
@@ -60,6 +63,7 @@ export class MissedAppointments {
 
     const refund = missed.payment ? await this.refund(missed, REFUND_PERCENT[by]) : null;
     this.emails.appointmentMissed(missed, refund);
+    void this.calendar.remove(missed);
     this.logger.log(`appointment ${appointmentId} missed by ${by} (marked by ${markedBy})${refund ? `, refund ${refund.status}` : ''}`);
 
     const who = by === 'patient' ? 'Patient no-show' : 'Missed by the doctor';

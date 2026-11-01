@@ -12,6 +12,7 @@ import type { IDoctor } from '../database/schemas/doctor.schema';
 import type { IChatMessage } from '../database/schemas/social.schemas';
 import type { IUser } from '../database/schemas/user.schema';
 import { RealtimeGateway } from '../integrations/realtime.gateway';
+import { NOT_A_HOLD } from '../appointments/booking.service';
 import { AppNotifier } from '../notifications/app-notifier';
 import { EmailNotifications } from '../notifications/email-notifications';
 
@@ -88,7 +89,7 @@ export class MessagesService {
   /** A patient and a doctor can chat once they have a booking together that wasn't cancelled. */
   private async assertCanChat(docId: string, userId: string) {
     if (!isValidObjectId(docId) || !isValidObjectId(userId)) fail('Conversation not found', HttpStatus.NOT_FOUND);
-    const booked = await this.appointments.exists({ docId, userId, cancelled: false });
+    const booked = await this.appointments.exists({ docId, userId, cancelled: false, ...NOT_A_HOLD });
     if (!booked) fail('You can message a doctor once you have an appointment with them', HttpStatus.FORBIDDEN);
   }
 
@@ -231,6 +232,8 @@ export class MessagesService {
       link: `/messages?doctor=${docId}`,
       tag: `chat-${docId}`,
       urgent,
+      // urgent messages always get through; normal ones follow the "messages" setting
+      category: urgent ? undefined : 'messages',
     });
 
     if (!user?.email) return;
@@ -278,7 +281,7 @@ export class MessagesService {
   // --- patient side ---
 
   async patientConversations(userId: string) {
-    const docIds = await this.appointments.distinct('docId', { userId, cancelled: false });
+    const docIds = await this.appointments.distinct('docId', { userId, cancelled: false, ...NOT_A_HOLD });
     const [doctors, summaries] = await Promise.all([
       this.doctors.find({ _id: { $in: docIds } }).select(['name', 'image', 'speciality']).lean(),
       this.summaries('patient', userId),
@@ -302,8 +305,8 @@ export class MessagesService {
     const [doctor, visits, messages] = await Promise.all([
       this.doctors.findById(docId).select(['name', 'image', 'speciality']).lean(),
       this.appointments
-        .find({ docId, userId, cancelled: false })
-        .select(['slotDate', 'slotTime', 'isCompleted', 'healthData.prescribedMedicines.name'])
+        .find({ docId, userId, cancelled: false, ...NOT_A_HOLD })
+        .select(['slotDate', 'slotTime', 'isCompleted', 'kind', 'missed', 'healthData.prescribedMedicines.name'])
         .lean(),
       this.thread(docId, userId),
     ]);
@@ -316,6 +319,8 @@ export class MessagesService {
         slotDate: v.slotDate,
         slotTime: v.slotTime,
         isCompleted: v.isCompleted,
+        kind: v.kind ?? 'in-person',
+        missed: !!v.missed,
         medicines: (v.healthData?.prescribedMedicines ?? []).map((m) => m.name),
       })),
       messages,
@@ -346,7 +351,7 @@ export class MessagesService {
 
   async doctorConversations(docId: string) {
     const visits = await this.appointments
-      .find({ docId, cancelled: false })
+      .find({ docId, cancelled: false, ...NOT_A_HOLD })
       .select(['userId', 'patientStatus'])
       .lean();
     const userIds = [...new Set(visits.map((v) => v.userId))];
@@ -389,7 +394,8 @@ export class MessagesService {
           slotDate: v.slotDate,
           slotTime: v.slotTime,
           at,
-          status: v.cancelled ? 'cancelled' : v.isCompleted ? 'completed' : 'upcoming',
+          status: v.cancelled ? 'cancelled' : v.isCompleted ? 'completed' : v.missed ? 'missed' : 'upcoming',
+          kind: v.kind ?? 'in-person',
           patientStatus: v.patientStatus,
           payment: v.payment,
           vitals: {

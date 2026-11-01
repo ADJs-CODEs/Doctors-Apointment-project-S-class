@@ -10,7 +10,9 @@ import type { IAppointment } from '../database/schemas/appointment.schema';
 import type { IDoctor } from '../database/schemas/doctor.schema';
 import type { IUser } from '../database/schemas/user.schema';
 import { CloudinaryService } from '../integrations/integrations';
+import { NOT_A_HOLD } from '../appointments/booking.service';
 import { EmailNotifications } from '../notifications/email-notifications';
+import { GoogleCalendar } from '../settings/google-calendar';
 import { WalletService } from '../wallet/wallet.service';
 import { releaseSlot } from '../user/user.service';
 
@@ -35,6 +37,7 @@ export class AdminService {
     private readonly cloudinary: CloudinaryService,
     private readonly emails: EmailNotifications,
     private readonly wallet: WalletService,
+    private readonly calendar: GoogleCalendar,
   ) {}
 
   login(body: { email?: string; password?: string }) {
@@ -80,7 +83,7 @@ export class AdminService {
   }
 
   async allAppointments() {
-    const appointments = await this.appointments.find({});
+    const appointments = await this.appointments.find({ ...NOT_A_HOLD });
     return { success: true, appointments };
   }
 
@@ -93,6 +96,7 @@ export class AdminService {
     await releaseSlot(this.doctors, appointment);
     const refund = await this.wallet.refundAppointmentToWallet(String(appointment._id), 100, 'cancelled');
     this.emails.appointmentCancelled(appointment, 'admin', refund);
+    void this.calendar.remove(appointment);
     return { success: true, message: 'Appointment Canceled' };
   }
 
@@ -100,7 +104,7 @@ export class AdminService {
     const [doctors, patients, appointments] = await Promise.all([
       this.doctors.countDocuments(),
       this.users.countDocuments(),
-      this.appointments.find({}),
+      this.appointments.find({ ...NOT_A_HOLD }),
     ]);
     return {
       success: true,

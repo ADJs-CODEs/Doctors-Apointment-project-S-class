@@ -134,7 +134,7 @@ export class ConnectionsService {
     if (!connection) fail('No active connection with this patient', HttpStatus.FORBIDDEN);
 
     const [patient, appointments] = await Promise.all([
-      this.users.findById(patientId).select('-password -resetToken -resetTokenExpire'),
+      this.users.findById(patientId).select('-password -resetToken -resetTokenExpire -settings -googleCalendar'),
       this.appointments.find({ userId: patientId }).sort({ date: -1 }),
     ]);
     return { success: true, patient, appointments };

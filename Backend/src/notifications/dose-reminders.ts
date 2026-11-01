@@ -3,21 +3,24 @@ import { InjectModel } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
 import { MODEL } from '../database/models';
 import { hoursBetweenDoses, type IAppointment, type IMedicine } from '../database/schemas/appointment.schema';
+import { BookingService } from '../appointments/booking.service';
 import { MissedAppointments } from '../appointments/missed-appointments';
+import { Preferences } from '../settings/preferences';
 import { slotInstant } from './clinic-time';
 import { EmailNotifications } from './email-notifications';
 
 const MINUTE = 60_000;
 const CHECK_EVERY = 5 * MINUTE;
-// doses: remind this long before (the app shows the same window in orange)...
-const REMIND_BEFORE = 30 * MINUTE;
-// ...and call it missed once this grace window has passed (the app turns it red)
+// doses: reminded 15/30/60 min before (each patient's setting), and called missed once
+// this grace window has passed (the app turns it red)
 const MISSED_AFTER = 60 * MINUTE;
 // a dose left unlogged this long is abandoned ("stopped" in the app): stop sending
 const GIVE_UP_AFTER = 24 * 60 * MINUTE;
 // appointments: "in an hour" reminder, then "it's time" at the start
 const APPOINTMENT_SOON = 60 * MINUTE;
 const APPOINTMENT_NOW_LATE = 10 * MINUTE;
+// optional day-before reminder (sent in the hour 23–24h ahead)
+const DAY_BEFORE = 24 * 60 * MINUTE;
 // after the slot: nudge the doctor to close it, then treat it as missed by the doctor
 const ASK_DOCTOR_AFTER = 30 * MINUTE;
 const AUTO_MISSED_AFTER = 24 * 60 * MINUTE;
@@ -44,6 +47,8 @@ export class DoseReminders implements OnApplicationBootstrap, OnModuleDestroy {
     @InjectModel(MODEL.appointment) private readonly appointments: Model<IAppointment>,
     private readonly emails: EmailNotifications,
     private readonly missed: MissedAppointments,
+    private readonly prefs: Preferences,
+    private readonly booking: BookingService,
   ) {}
 
   onApplicationBootstrap() {
@@ -60,6 +65,7 @@ export class DoseReminders implements OnApplicationBootstrap, OnModuleDestroy {
     if (this.running) return;
     this.running = true;
     try {
+      await this.booking.expireHolds(); // free slots whose holds weren't paid in time
       const sent = (await this.checkDoses()) + (await this.checkAppointments());
       if (sent) this.logger.log(`sent ${sent} reminder${sent === 1 ? '' : 's'}`);
     } catch (err: any) {
@@ -83,11 +89,13 @@ export class DoseReminders implements OnApplicationBootstrap, OnModuleDestroy {
 
     let sent = 0;
     for (const visit of visits) {
+      // how early this patient wants dose reminders (15/30/60 min, Settings → Reminders)
+      const remindBefore = (await this.prefs.get(visit.userId)).reminders.doseMinutesBefore * MINUTE;
       for (const med of visit.healthData.prescribedMedicines) {
         if (med.status !== 'Active' || med.remainingQuantity <= 0 || !med.lastTaken) continue;
         const dueAt = new Date(new Date(med.lastTaken).getTime() + hoursBetweenDoses(med) * 60 * MINUTE);
         const untilDue = dueAt.getTime() - now;
-        if (untilDue > REMIND_BEFORE || -untilDue > GIVE_UP_AFTER) continue;
+        if (untilDue > remindBefore || -untilDue > GIVE_UP_AFTER) continue;
 
         // before the grace window ends: "coming up"; after it: "missed"
         if (-untilDue <= MISSED_AFTER) {
@@ -135,6 +143,7 @@ export class DoseReminders implements OnApplicationBootstrap, OnModuleDestroy {
       cancelled: false,
       isCompleted: false,
       missed: { $exists: false },
+      holdExpiresAt: { $exists: false }, // unpaid holds aren't bookings yet
       date: { $gt: now - 120 * 24 * 60 * MINUTE }, // booked in the last ~4 months
     });
 
@@ -165,6 +174,15 @@ export class DoseReminders implements OnApplicationBootstrap, OnModuleDestroy {
         continue;
       }
 
+      // optional "tomorrow" reminder, for patients who turned it on
+      if (until <= DAY_BEFORE && until > DAY_BEFORE - 60 * MINUTE) {
+        if ((await this.prefs.get(visit.userId)).reminders.appointmentDayBefore && (await this.claimAppointment(visit, 'day'))) {
+          this.emails.appointmentTomorrow(visit);
+          sent++;
+        }
+        continue;
+      }
+
       if (until <= CHECK_EVERY && until >= -APPOINTMENT_NOW_LATE) {
         if (await this.claimAppointment(visit, 'now')) {
           this.emails.appointmentNow(visit);
@@ -180,7 +198,7 @@ export class DoseReminders implements OnApplicationBootstrap, OnModuleDestroy {
     return sent;
   }
 
-  private async claimAppointment(visit: IAppointment, key: 'soon' | 'now' | 'ended') {
+  private async claimAppointment(visit: IAppointment, key: 'day' | 'soon' | 'now' | 'ended') {
     const claimed = await this.appointments.updateOne(
       { _id: visit._id, remindersSent: { $ne: key } },
       { $addToSet: { remindersSent: key } },
