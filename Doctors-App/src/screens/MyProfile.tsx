@@ -8,12 +8,13 @@ import { RiMedicineBottleLine, RiArrowRightSLine } from "@remixicon/react"
 import axiosInstance from '../utils/axiosInstance'
 import { API_PATHS } from '../utils/apiPath'
 import VitalsCard from '../cards/VitalsCard'
+import { describeSchedule } from '../utils/medicationUtils'
 import useMyProfile from '../hooks/useMyProfile'
 
 const MyProfile: React.FC = () => {
   const { userData, setProgress, image, setImage, loadUserProfileData,
     setIsEdit, getLatestHealthData, token, isEdit, setUserData,
-    latestAppointment, navigate } = useMyProfile()
+    latestAppointment, medicines, navigate } = useMyProfile()
 
 
 
@@ -137,9 +138,10 @@ const MyProfile: React.FC = () => {
           </div>
 
           <div className='space-y-3'>
-            {latestAppointment?.healthData?.prescribedMedicines?.map((med: any, idx: any) => (
+            {medicines.length === 0 && <p className='text-slate-400 italic text-sm'>No active prescriptions.</p>}
+            {medicines.map(({ appointmentId, med }) => (
               <div
-                key={idx}
+                key={`${appointmentId}-${med.name}`}
                 onClick={() => navigate('/medication-history')}
                 className='bg-white/60 border border-slate-100 p-4 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-white hover:shadow-md hover:border-teal/20 transition-all group'
               >
@@ -147,12 +149,12 @@ const MyProfile: React.FC = () => {
                   <RiMedicineBottleLine className='text-teal-500 group-hover:scale-110 transition-transform' size={18} />
                   <div>
                     <p className='text-sm font-black text-slate-800'>{med.name}</p>
-                    <p className='text-[10px] text-slate-500 font-bold uppercase'>{med.dosagePerDay} Doses / Day</p>
+                    <p className='text-[10px] text-slate-500 font-bold uppercase'>{describeSchedule(med)}</p>
                   </div>
                 </div>
                 <p className='text-[10px] font-black text-teal-600 bg-teal-50 px-2 py-1 rounded-md'>{med.remainingQuantity} LEFT</p>
               </div>
-            )) || <p className='text-slate-400 italic text-sm'>No active prescriptions.</p>}
+            ))}
           </div>
         </div>
       </div>

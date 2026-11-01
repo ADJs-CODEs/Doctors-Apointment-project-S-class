@@ -9,8 +9,10 @@ import Footer from '@/components/Footer';
 import Navbar from '@/components/Navbar';
 import AppContextProvider, { AppContext } from '@/Context/AppContext';
 import { EmojiProvider } from '@/Context/EmojiContext';
+import { MessagesProvider } from '@/Context/MessagesContext';
 import { NavigationWatcher } from '@/lib/navigation';
 import PatientShell from '@/components/patient/PatientShell';
+import GiftCelebration from '@/components/wishwell/GiftCelebration';
 import { usePathname, useRouter } from 'next/navigation';
 import type { AppContextType } from '@/types';
 import { requestTracker } from '@/utils/requestTracker';
@@ -65,6 +67,8 @@ const PATIENT_ONLY = [
   '/dashboard',
   '/my-appointments',
   '/medication-history',
+  '/messages',
+  '/wallet',
   '/my-profile',
   '/account-settings',
   '/watching-over',
@@ -83,10 +87,10 @@ function Shell({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   const loggedIn = !!token;
-  // logged-in patients use the app, not the landing page
+  // logged-in patients use the app, not the landing page; appointments is their home tab
   const redirectTo =
     loggedIn && pathname === '/'
-      ? '/dashboard'
+      ? '/my-appointments'
       : !loggedIn && matches(pathname, PATIENT_ONLY)
         ? '/login'
         : null;
@@ -108,9 +112,12 @@ function Shell({ children }: { children: ReactNode }) {
   if (loggedIn && !matches(pathname, PUBLIC_LOOK)) {
     return (
       <EmojiProvider userId={userData?._id}>
-        {overlays}
-        <PatientShell>{children}</PatientShell>
-        <ChatBot aboveTabBar />
+        <MessagesProvider token={token}>
+          {overlays}
+          <PatientShell>{children}</PatientShell>
+          <ChatBot aboveTabBar />
+          <GiftCelebration />
+        </MessagesProvider>
       </EmojiProvider>
     );
   }

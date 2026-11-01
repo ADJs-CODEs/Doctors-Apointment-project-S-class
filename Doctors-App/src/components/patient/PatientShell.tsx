@@ -4,6 +4,7 @@ import {
   RiApps2Line,
   RiCalendarCheckLine,
   RiCapsuleLine,
+  RiChat3Line,
   RiCloseLine,
   RiCustomerService2Line,
   RiHeart3Line,
@@ -14,12 +15,15 @@ import {
   RiStethoscopeLine,
   RiTeamLine,
   RiUser3Line,
+  RiWallet3Line,
 } from "@remixicon/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { type ReactNode, useContext, useEffect, useState } from "react";
 import NotificationBell from "@/components/NotificationBell";
 import { AppContext } from "@/Context/AppContext";
+import { useMessages } from "@/Context/MessagesContext";
 import { Link, NavLink, useNavigate } from "@/lib/navigation";
+import { disablePush, syncPush } from "@/utils/push";
 import type { AppContextType } from "@/types";
 
 type NavItem = { label: string; path: string; icon: typeof RiHome5Line };
@@ -28,12 +32,14 @@ const MAIN_NAV: NavItem[] = [
   { label: "Dashboard", path: "/dashboard", icon: RiHome5Line },
   { label: "Appointments", path: "/my-appointments", icon: RiCalendarCheckLine },
   { label: "Medications", path: "/medication-history", icon: RiCapsuleLine },
+  { label: "Messages", path: "/messages", icon: RiChat3Line },
   { label: "Find a doctor", path: "/doctors", icon: RiStethoscopeLine },
   { label: "Care circle", path: "/watching-over", icon: RiTeamLine },
   { label: "Wish Well", path: "/wish-well", icon: RiHeart3Line },
 ];
 
 const ACCOUNT_NAV: NavItem[] = [
+  { label: "Wallet", path: "/wallet", icon: RiWallet3Line },
   { label: "Medical profile", path: "/my-profile", icon: RiUser3Line },
   { label: "Settings", path: "/account-settings", icon: RiSettings3Line },
 ];
@@ -65,6 +71,21 @@ function Logo() {
   );
 }
 
+/** Unread doctor messages; red when one of them is urgent. */
+function MessagesBadge({ className = "" }: { className?: string }) {
+  const { unread, urgentUnread } = useMessages();
+  if (!unread) return null;
+  return (
+    <span
+      className={`min-w-5 h-5 px-1.5 rounded-full text-[11px] font-black text-white flex items-center justify-center ${
+        urgentUnread ? "bg-red-600 animate-pulse" : "bg-teal-500"
+      } ${className}`}
+    >
+      {unread > 99 ? "99+" : unread}
+    </span>
+  );
+}
+
 function SidebarLink({ item }: { item: NavItem }) {
   const Icon = item.icon;
   return (
@@ -80,6 +101,7 @@ function SidebarLink({ item }: { item: NavItem }) {
     >
       <Icon size={19} />
       {item.label}
+      {item.path === "/messages" && <MessagesBadge className="ml-auto" />}
     </NavLink>
   );
 }
@@ -117,8 +139,15 @@ export default function PatientShell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [moreOpen]);
 
-  const logout = () => {
+  // this device should follow whoever is logged in (no prompt if notifications are off)
+  useEffect(() => {
+    syncPush();
+  }, []);
+
+  const logout = async () => {
     setMoreOpen(false);
+    // stop this device getting the next person's notifications; needs the token, so first
+    await disablePush().catch(() => {});
     setToken("");
     localStorage.removeItem("token");
     navigate("/login");
@@ -206,7 +235,12 @@ export default function PatientShell({ children }: { children: ReactNode }) {
                   }`
                 }
               >
-                <Icon size={22} />
+                <span className="relative">
+                  <Icon size={22} />
+                  {item.path === "/messages" && (
+                    <MessagesBadge className="absolute -top-1.5 -right-3 !min-w-4 !h-4 !text-[9px] !px-1" />
+                  )}
+                </span>
                 {item.label === "Find a doctor" ? "Doctors" : item.label}
               </NavLink>
             );

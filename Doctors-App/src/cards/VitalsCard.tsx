@@ -3,10 +3,12 @@
 import React from 'react'
 import type { VitalsProps } from '../types/index'
 import { RiHeartPulseLine, RiDashboardLine, RiTempHotLine } from "@remixicon/react"
+import { formatVisitDate } from '../utils/patientRecords'
 
 const VitalsCard: React.FC<VitalsProps> = ({ latestAppointment }) => {
   return (
-    <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-10'>
+    <div className='mb-10'>
+    <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
       <div className='glass-card-premium p-6 rounded-[35px] border-b-4 border-rose-500'>
         <div className='flex items-center gap-3 mb-3'>
           <RiHeartPulseLine className='text-rose-500' size={20} />
@@ -37,7 +39,12 @@ const VitalsCard: React.FC<VitalsProps> = ({ latestAppointment }) => {
         </p>
       </div>
     </div>
-
+      <p className='text-[12px] text-slate-400 mt-3 px-2'>
+        {latestAppointment
+          ? `Recorded by ${latestAppointment.docData?.name} on ${formatVisitDate(latestAppointment)}.`
+          : 'Your doctor records these during a visit.'}
+      </p>
+    </div>
   )
 }
 

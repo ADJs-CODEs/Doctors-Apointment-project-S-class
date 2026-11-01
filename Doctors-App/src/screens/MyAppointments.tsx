@@ -1,23 +1,21 @@
 "use client";
 
-import React, { useContext, useEffect, useRef } from "react";
-import { AppContext } from "../Context/AppContext";
-import type { AppContextType } from "../types/index";
+import React, { useEffect, useRef, useState } from "react";
+import type { Appointment, MedicationsFocus } from "../types/index";
+import PayAppointmentModal from "../components/patient/PayAppointmentModal";
 import { motion, AnimatePresence } from "framer-motion";
-import { RiMedicineBottleLine, RiArrowRightLine } from "@remixicon/react";
-import { toast } from "sonner";
+import {
+  RiArrowRightLine,
+  RiCalendarCheckLine,
+  RiStethoscopeLine,
+} from "@remixicon/react";
 import { useNavigate, useLocation } from "@/lib/navigation";
-import { API_PATHS } from "../utils/apiPath";
-import axiosInstance from "../utils/axiosInstance";
 import { useMyAppointments } from "../hooks/useMyAppointment";
-import { getDoseStatus } from "../utils/medicationUtils";
 import MyAppointmentCard from "../cards/MyAppointmentCard";
 import HealthDropdown from "../inputs/HealthDropdown";
 import SkeletonCard from "../components/SkeletonCard";
 
 const MyAppointments: React.FC = () => {
-  const context = useContext(AppContext) as AppContextType;
-  const { token, setProgress } = context;
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -33,74 +31,33 @@ const MyAppointments: React.FC = () => {
     getUserAppointments,
     expandedTrackers,
     toggleTracker,
-    processingMed,
-    setProcessingMed,
     loading,
     appointments,
   } = useMyAppointments();
 
-  // Scroll to and highlight the target appointment
+  // Scroll to the appointment we were sent here for and open its report
   useEffect(() => {
     if (!highlightId || loading) return;
     const el = cardRefs.current[highlightId];
     if (el) {
+      if (!expandedTrackers[highlightId]) toggleTracker(highlightId);
       setTimeout(() => {
         el.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 300);
     }
+    // only when arriving with a highlight, not on every expand/collapse
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlightId, loading]);
 
-  const payStripe = async (appointmentId: string) => {
-    try {
-      const { data } = await axiosInstance.post(API_PATHS.AUTH.STRIPE_AUTH, {
-        appointmentId,
-      });
-      if (data.success) {
-        window.location.replace(data.session_url);
-      } else {
-        toast.error(data.message);
-      }
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-    }
-  };
+  // "Pay" opens the choice: wallet or card
+  const [payFor, setPayFor] = useState<Appointment | null>(null);
+  const payStripe = (appointmentId: string) =>
+    setPayFor(appointments.find((a) => a._id === appointmentId) ?? null);
 
-  const logDose = async (
-    appointmentId: string,
-    medicineName: string,
-    med: any,
-  ) => {
-    if (processingMed) return;
-    const { isEarly } = getDoseStatus(med);
-    let overdoseAlert = false;
-
-    if (isEarly) {
-      const confirm = window.confirm(
-        `⚠️ WARNING: Early dose for ${medicineName}. This will notify your doctor. Log anyway?`,
-      );
-      if (!confirm) return;
-      overdoseAlert = true;
-    }
-
-    try {
-      setProcessingMed(`${appointmentId}-${medicineName}`);
-      const { data } = await axiosInstance.post(API_PATHS.USER.LOG_DOSE, {
-        appointmentId,
-        medicineName,
-        overdoseAlert,
-      });
-      if (data.success) {
-        toast.success(data.message || `${medicineName} logged!`);
-        await getUserAppointments();
-      } else {
-        toast.error(data.message);
-      }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to log dose");
-    } finally {
-      setProcessingMed(null);
-    }
+  // doses are logged on the Medications tab; send the patient to this visit there
+  const openMedications = (visitId: string, medicine?: string) => {
+    const focus: MedicationsFocus = { visitId, medicine };
+    navigate("/medication-history", { state: focus });
   };
 
   return (
@@ -109,24 +66,6 @@ const MyAppointments: React.FC = () => {
       animate={{ opacity: 1 }}
       className="max-w-5xl mx-auto px-4 py-10 md:py-16 min-h-screen relative"
     >
-      {/* Pharmacy Vault FAB */}
-      <button
-        onClick={() => navigate("/medication-history")}
-        className="fixed bottom-6 right-4 md:bottom-10 md:right-10 z-50 bg-slate-900 text-white p-4 rounded-full shadow-2xl hover:scale-110 active:scale-90 transition-all flex items-center gap-3 group border border-white/10"
-      >
-        <RiMedicineBottleLine
-          size={20}
-          className="group-hover:rotate-12 transition-transform"
-        />
-        <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 font-bold whitespace-nowrap text-xs uppercase tracking-widest">
-          Pharmacy Vault
-        </span>
-        <RiArrowRightLine
-          size={16}
-          className="opacity-0 group-hover:opacity-100 transition-opacity"
-        />
-      </button>
-
       {/* Header */}
       <div className="flex justify-between items-end mb-8 md:mb-12 border-b pb-6 border-slate-100">
         <h1 className="text-2xl md:text-4xl font-black text-slate-900 uppercase">
@@ -145,6 +84,27 @@ const MyAppointments: React.FC = () => {
       <div className="space-y-6 md:space-y-8 mb-24">
         {loading ? (
           <SkeletonCard type="row" />
+        ) : appointments.length === 0 ? (
+          <div className="bg-white rounded-[32px] border border-slate-100 shadow-clinical px-6 py-14 md:py-20 text-center">
+            <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-teal-50 flex items-center justify-center">
+              <RiCalendarCheckLine size={30} className="text-teal-600" />
+            </div>
+            <h2 className="text-xl md:text-2xl font-black text-slate-900">
+              You haven&apos;t booked an appointment yet
+            </h2>
+            <p className="text-slate-500 mt-3 max-w-md mx-auto leading-relaxed">
+              Find a doctor that fits what you need, pick a time that works for you, and
+              your visits, prescriptions and reports will all show up here.
+            </p>
+            <button
+              onClick={() => navigate("/doctors")}
+              className="mt-8 inline-flex items-center gap-2 bg-slate-900 hover:bg-teal-600 text-white px-7 py-3.5 rounded-2xl text-sm font-bold transition-colors"
+            >
+              <RiStethoscopeLine size={18} />
+              Find a doctor
+              <RiArrowRightLine size={16} />
+            </button>
+          </div>
         ) : (
           appointments.map((item) => {
             const isCritical = item.patientStatus === "Critical";
@@ -173,7 +133,7 @@ const MyAppointments: React.FC = () => {
                   {isHighlighted && (
                     <div className="bg-teal-500 text-white text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-t-[28px] flex items-center gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                      From Pharmacy Vault
+                      From Medications
                     </div>
                   )}
                   <MyAppointmentCard
@@ -193,8 +153,7 @@ const MyAppointments: React.FC = () => {
                       item={item}
                       isCritical={isCritical}
                       latestMessage={latestMessage}
-                      logDose={logDose}
-                      processingMed={processingMed}
+                      openMedications={openMedications}
                     />
                   )}
                 </AnimatePresence>
@@ -203,6 +162,8 @@ const MyAppointments: React.FC = () => {
           })
         )}
       </div>
+
+      <PayAppointmentModal appointment={payFor} onClose={() => setPayFor(null)} onPaid={getUserAppointments} />
     </motion.div>
   );
 };

@@ -6,6 +6,7 @@ import { AppContext } from "../Context/AppContext";
 import type { AppContextType } from "../types/index";
 import { motion, AnimatePresence } from "framer-motion";
 import NotificationBell from "./NotificationBell";
+import { disablePush } from "../utils/push";
 import {
   List,
   X,
@@ -32,7 +33,9 @@ const Navbar: React.FC = () => {
     };
   }, [showMenu]);
 
-  const logout = () => {
+  const logout = async () => {
+    // stop this device getting the next person's notifications (needs the token, so first)
+    await disablePush().catch(() => {});
     setToken("");
     localStorage.removeItem("token");
     setShowMenu(false);

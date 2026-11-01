@@ -14,7 +14,14 @@ const visitTime = (a: Appointment) => slotToDate(a.slotDate, a.slotTime)?.getTim
 export const completedVisits = (appointments: Appointment[]) =>
   appointments.filter((a) => a.isCompleted).sort((x, y) => visitTime(y) - visitTime(x));
 
-/** Medicines still being taken, across all visits, with where each one stands now. */
+/** Where one medicine from this visit stands now. */
+export const medicineState = (visit: Appointment, med: PrescribedMedicine, now = Date.now()) =>
+  getDoseState(med, now, slotToDate(visit.slotDate, visit.slotTime));
+
+/**
+ * Medicines the patient is currently on, across all visits. Finished courses and
+ * lapsed ones (abandoned long ago) are left out.
+ */
 export const activeMedicines = (appointments: Appointment[], now = Date.now()): ActiveMedicine[] =>
   completedVisits(appointments)
     .flatMap((a) =>
@@ -22,10 +29,10 @@ export const activeMedicines = (appointments: Appointment[], now = Date.now()): 
         appointmentId: a._id,
         doctorName: a.docData?.name ?? "Your doctor",
         med,
-        state: getDoseState(med, now),
+        state: medicineState(a, med, now),
       })),
     )
-    .filter((m) => m.state.kind !== "finished");
+    .filter((m) => m.state.kind !== "finished" && m.state.kind !== "lapsed");
 
 /**
  * The newest visit where the doctor actually recorded something. Every appointment

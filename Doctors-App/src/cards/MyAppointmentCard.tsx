@@ -1,12 +1,39 @@
 "use client";
 
-import React from 'react'
-import type { Appointment, MyAppointmentCardProps } from '../types/index';
-import { RiErrorWarningLine, RiShieldCheckLine, RiArrowDownSLine } from "@remixicon/react"
+import React, { useContext } from 'react'
+import type { AppContextType, Appointment, MyAppointmentCardProps } from '../types/index';
+import { AppContext } from '../Context/AppContext';
+import { RiErrorWarningLine, RiShieldCheckLine, RiArrowDownSLine, RiCalendarCloseLine } from "@remixicon/react"
 import { slotDateFormat } from '../utils/medicationUtils';
+import MessageDoctorButton from '../components/patient/MessageDoctorButton';
 
+
+/** Missed appointment: whose miss it was and what happened to the money. */
+function MissedBadge({ item }: { item: Appointment }) {
+  const byPatient = item.missed?.by === 'patient'
+  const refund = item.refund
+  const { currencySymbol } = useContext(AppContext) as AppContextType
+  return (
+    <div className={`px-4 py-3 rounded-xl md:rounded-2xl border text-center ${byPatient ? 'bg-orange-50 border-orange-100' : 'bg-red-50 border-red-100'}`}>
+      <p className={`flex items-center justify-center gap-1.5 font-black text-[9px] md:text-[10px] uppercase tracking-wider ${byPatient ? 'text-orange-600' : 'text-red-600'}`}>
+        <RiCalendarCloseLine size={14} /> {byPatient ? 'Missed' : 'Doctor missed'}
+      </p>
+      {refund && (
+        <p className='text-[11px] text-slate-600 mt-1 leading-snug'>
+          {refund.percent}% refund ({currencySymbol}{refund.amount})
+          <br />
+          <span className={refund.status === 'refunded' ? 'text-teal-600 font-bold' : 'text-slate-400'}>
+            {refund.status !== 'refunded' ? 'Being processed' : refund.method === 'wallet' ? 'Back in your wallet' : 'Sent to your card'}
+          </span>
+        </p>
+      )}
+    </div>
+  )
+}
 
 const MyAppointmentCard: React.FC<MyAppointmentCardProps> = ({ item, isCritical, cancelAppointment, payStripe, onViewReport, isExpanded, toggleTracker }) => {
+  // still to happen: not done, cancelled or missed
+  const open = !item.cancelled && !item.isCompleted && !item.missed
 
   return (
     <div className={`bg-white p-5 md:p-6 rounded-[32px] md:rounded-[40px] flex flex-col md:flex-row gap-6 md:gap-8 items-center shadow-sm border transition-all duration-500 ${isCritical ? 'border-red-500 shadow-[0_0_25px_rgba(239,68,68,0.15)] bg-red-50/30' : 'border-slate-100'}`}>
@@ -46,22 +73,27 @@ const MyAppointmentCard: React.FC<MyAppointmentCardProps> = ({ item, isCritical,
 
       {/* Interactive Buttons */}
       <div className='flex flex-col gap-2 w-full md:w-auto min-w-[140px]'>
-        {!item.cancelled && !item.isCompleted && !item.payment && (
+        {item.missed && <MissedBadge item={item} />}
+        {!open ? null : !item.payment && (
           <button onClick={() => payStripe(item._id)} className='w-full px-6 py-3 bg-slate-900 text-white rounded-xl md:rounded-2xl font-bold text-[10px] md:text-xs uppercase hover:bg-slate-800 active:scale-95 transition-all'>
             Pay Online
           </button>
         )}
-        {item.payment && !item.isCompleted && (
+        {item.payment && open && (
           <div className='flex items-center justify-center gap-2 px-4 py-3 bg-teal-50 text-teal-600 rounded-xl md:rounded-2xl font-black text-[9px] md:text-[10px] uppercase tracking-wider border border-teal-100'>
-            <RiShieldCheckLine size={14} /> Paid Securely
+            <RiShieldCheckLine size={14} /> {item.paymentMethod === 'wallet' ? 'Paid from wallet' : 'Paid securely'}
           </div>
         )}
-        {!item.cancelled && !item.isCompleted && (
+        {open && (
           <button onClick={() => cancelAppointment(item._id)} className='w-full px-6 py-3 border border-slate-200 text-slate-400 rounded-xl md:rounded-2xl font-bold text-[10px] md:text-xs uppercase hover:bg-red-50 hover:text-red-500 active:scale-95 transition-all'>
             Cancel
           </button>
         )}
         {item.cancelled && <button className='w-full px-6 py-3 border border-red-100 text-red-400 rounded-xl md:rounded-2xl font-bold text-[10px] md:text-xs uppercase cursor-not-allowed'>Cancelled</button>}
+
+        {!item.cancelled && (
+          <MessageDoctorButton doctorId={item.docId} appointmentId={item._id} label='Message' className='w-full' />
+        )}
 
         {/* Visited Toggle Button */}
         {item.isCompleted && (

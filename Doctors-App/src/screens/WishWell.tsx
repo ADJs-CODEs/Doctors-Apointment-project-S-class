@@ -5,7 +5,9 @@ import { AppContext } from "../Context/AppContext";
 import type { AppContextType } from "../types/index";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { RiHeart3Fill, RiLoader4Line, RiCloseLine } from "@remixicon/react";
+import { RiHeart3Fill, RiLoader4Line, RiCloseLine, RiGiftLine } from "@remixicon/react";
+import GiftSheet from "../components/wishwell/GiftSheet";
+import RecentGiftsBanner from "../components/wishwell/RecentGiftsBanner";
 import axiosInstance from "../utils/axiosInstance";
 import { API_PATHS } from "../utils/apiPath";
 import { useEmoji } from "../Context/EmojiContext";
@@ -26,6 +28,8 @@ interface WishWellEntry {
     prayer: number;
   };
   totalEmojis: number;
+  /** paid gifts received */
+  giftCount?: number;
   createdAt: string;
 }
 
@@ -42,6 +46,24 @@ const WishWell: React.FC = () => {
   const { addEmoji } = useEmoji();
   const [entries, setEntries] = useState<WishWellEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [giftFor, setGiftFor] = useState<WishWellEntry | null>(null);
+
+  const openGift = (entry: WishWellEntry) => {
+    if (!token) return toast.info("Sign in to send gifts to patients");
+    setGiftFor(entry);
+  };
+
+  const giftButton = (entry: WishWellEntry) => (
+    <button
+      onClick={() => openGift(entry)}
+      className="w-full mt-3 flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 via-rose-500 to-violet-500 text-white text-sm font-black shadow-lg shadow-rose-200 hover:brightness-105 active:scale-[0.98] transition-all"
+    >
+      <RiGiftLine size={18} /> Send a gift
+      {!!entry.giftCount && (
+        <span className="ml-1 text-[11px] font-bold bg-white/25 rounded-full px-2 py-0.5">{entry.giftCount} received</span>
+      )}
+    </button>
+  );
 
   const fetchEntries = async () => {
     try {
@@ -133,6 +155,10 @@ const WishWell: React.FC = () => {
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="mb-8">
+        <RecentGiftsBanner />
       </div>
 
       {loading ? (
@@ -236,6 +262,7 @@ const WishWell: React.FC = () => {
                         </button>
                       ))}
                     </div>
+                    {giftButton(entry)}
                   </div>
                 </motion.div>
               ))}
@@ -319,6 +346,7 @@ const WishWell: React.FC = () => {
                       Send Congratulations
                     </span>
                   </button>
+                  {giftButton(entry)}
                 </motion.div>
               ))}
             </div>
@@ -360,6 +388,8 @@ const WishWell: React.FC = () => {
           )}
         </div>
       )}
+
+      <GiftSheet entry={giftFor} onClose={() => setGiftFor(null)} onSent={fetchEntries} />
     </div>
   );
 };

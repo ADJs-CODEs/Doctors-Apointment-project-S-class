@@ -27,6 +27,27 @@ export const API_PATHS = {
   CHAT: {
     MESSAGE: "/api/chat/message",
   },
+  WALLET: {
+    OVERVIEW: "/api/wallet",
+    CATALOG: "/api/wallet/catalog",
+    RECENT_GIFTS: "/api/wallet/recent-gifts",
+    TOPUP: "/api/wallet/topup",
+    VERIFY_TOPUP: "/api/wallet/topup/verify",
+    GIFT: "/api/wallet/gift",
+    PAY_APPOINTMENT: "/api/wallet/pay-appointment",
+    PAYOUT: "/api/wallet/payout",
+  },
+  PUSH: {
+    KEY: "/api/user/push/key",
+    SUBSCRIBE: "/api/user/push/subscribe",
+    UNSUBSCRIBE: "/api/user/push/unsubscribe",
+  },
+  MESSAGES: {
+    CONVERSATIONS: "/api/user/messages",
+    UNREAD: "/api/user/messages/unread",
+    THREAD: (doctorId: string) => `/api/user/messages/${doctorId}`,
+    READ: (doctorId: string) => `/api/user/messages/${doctorId}/read`,
+  },
   CONNECTIONS: {
     REQUEST: "/api/connections/request",
     RESPOND: "/api/connections/respond",

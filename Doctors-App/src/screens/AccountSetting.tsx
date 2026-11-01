@@ -15,6 +15,7 @@ import {
 } from "@remixicon/react";
 import axiosInstance from "../utils/axiosInstance";
 import { API_PATHS } from "../utils/apiPath";
+import { disablePush } from "../utils/push";
 import type { AppContextType } from "../types/index";
 
 const AccountSettings: React.FC = () => {
@@ -58,6 +59,7 @@ const AccountSettings: React.FC = () => {
         {},
       );
       if (data.success) {
+        await disablePush().catch(() => {});
         setToken("");
         localStorage.removeItem("token");
         toast.success("Account deleted");

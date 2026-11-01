@@ -78,7 +78,7 @@ export function useDashboard() {
 
   const view = useMemo(() => {
     const upcoming = appointments
-      .filter((a) => !a.cancelled && !a.isCompleted)
+      .filter((a) => !a.cancelled && !a.isCompleted && !a.missed)
       .map((a) => ({ appointment: a, at: slotToDate(a.slotDate, a.slotTime) }))
       // keep visits from the last hour (in progress); drop older unattended ones
       .filter(({ at }) => at && at.getTime() > now - 60 * 60 * 1000)
@@ -112,24 +112,11 @@ export function useDashboard() {
     };
   }, [appointments, notifications, wishWell, now]);
 
-  const { logDose, loggingKey } = useDoseLogger(loadAppointments);
-
-  const [paying, setPaying] = useState(false);
-  const payForAppointment = useCallback(async (appointmentId: string) => {
-    setPaying(true);
-    try {
-      const { data } = await axiosInstance.post(API_PATHS.AUTH.STRIPE_AUTH, { appointmentId });
-      if (data.success) window.location.assign(data.session_url);
-      else toast.error(data.message);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || error.message);
-    } finally {
-      setPaying(false);
-    }
-  }, []);
+  const { logDose, loggingKey, dialog: doseDialog } = useDoseLogger(loadAppointments);
 
   return {
     loading,
+    reload: load,
     ...view,
     watching,
     watchers,
@@ -137,7 +124,6 @@ export function useDashboard() {
     notifications,
     loggingKey,
     logDose,
-    paying,
-    payForAppointment,
+    doseDialog,
   };
 }

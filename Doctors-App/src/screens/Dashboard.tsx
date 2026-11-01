@@ -20,13 +20,17 @@ import {
   RiTimeLine,
 } from "@remixicon/react";
 import { motion } from "framer-motion";
-import { type ReactNode, useContext } from "react";
+import { type ReactNode, useContext, useState } from "react";
+import PayAppointmentModal from "@/components/patient/PayAppointmentModal";
 import { AppContext } from "@/Context/AppContext";
+import { useMessages } from "@/Context/MessagesContext";
 import MedicineRow from "@/components/patient/MedicineRow";
+import { DeviceNotificationsCard } from "@/components/patient/DeviceNotifications";
+import RecentGiftsBanner from "@/components/wishwell/RecentGiftsBanner";
 import { useDashboard, type WishWellEntry } from "@/hooks/useDashboard";
 import { doseKey } from "@/hooks/useDoseLogger";
 import { Link } from "@/lib/navigation";
-import type { AppContextType } from "@/types";
+import type { AppContextType, Appointment } from "@/types";
 
 // --- small helpers ---
 
@@ -152,7 +156,13 @@ function Vital({ icon, label, value, unit }: { icon: ReactNode; label: string; v
 export default function Dashboard() {
   const { userData, currencySymbol } = useContext(AppContext) as AppContextType;
   const d = useDashboard();
+  const [payFor, setPayFor] = useState<Appointment | null>(null);
   const firstName = typeof userData?.name === "string" ? userData.name.split(" ")[0] : "";
+  // the most pressing unread conversation: urgent first, then newest
+  const unreadConversations = useMessages().conversations.filter((c) => c.unread > 0);
+  const unreadChat =
+    unreadConversations.find((c) => c.urgentUnread > 0) ?? unreadConversations[0] ?? null;
+  const otherUnreadDoctors = Math.max(0, unreadConversations.length - 1);
 
   if (d.loading) {
     return (
@@ -172,6 +182,8 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-6xl mx-auto py-6 space-y-6">
+      {d.doseDialog}
+      <PayAppointmentModal appointment={payFor} onClose={() => setPayFor(null)} onPaid={d.reload} />
       {/* greeting */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
@@ -195,31 +207,50 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {/* doctor alert */}
-      {d.doctorMessage && (
+      {/* unread doctor messages (from the chat); gone once they're read */}
+      {unreadChat && unreadChat.lastMessage && (
         <div
-          className={`flex gap-4 items-start p-5 rounded-[24px] border ${
-            d.isCritical ? "bg-red-50 border-red-200" : "bg-teal-50/60 border-teal-100"
+          className={`flex flex-col sm:flex-row sm:items-center gap-4 p-5 rounded-[24px] border ${
+            unreadChat.urgentUnread ? "bg-red-50 border-red-200" : "bg-teal-50/60 border-teal-100"
           }`}
         >
-          <div className={d.isCritical ? "text-red-500" : "text-teal-600"}>
-            {d.isCritical ? <RiAlarmWarningLine size={24} /> : <RiMessage3Line size={24} />}
+          <div className="flex gap-4 items-start flex-1 min-w-0">
+            <div className={unreadChat.urgentUnread ? "text-red-500" : "text-teal-600"}>
+              {unreadChat.urgentUnread ? <RiAlarmWarningLine size={24} /> : <RiMessage3Line size={24} />}
+            </div>
+            <div className="min-w-0">
+              <p
+                className={`text-[10px] font-black uppercase tracking-[2px] ${
+                  unreadChat.urgentUnread ? "text-red-500" : "text-teal-700"
+                }`}
+              >
+                {unreadChat.urgentUnread ? "Urgent message" : "New message"} from {unreadChat.doctor.name} ·{" "}
+                {relativeTime(unreadChat.lastMessage.createdAt)}
+                {unreadChat.unread > 1 && ` · ${unreadChat.unread} unread`}
+              </p>
+              <p className="text-slate-800 font-medium mt-1 line-clamp-2">“{unreadChat.lastMessage.text}”</p>
+              {otherUnreadDoctors > 0 && (
+                <Link to="/messages" className="inline-block mt-1 text-[12px] font-bold text-slate-500 hover:text-teal-600">
+                  + messages from {otherUnreadDoctors} other doctor{otherUnreadDoctors > 1 ? "s" : ""}
+                </Link>
+              )}
+            </div>
           </div>
-          <div className="min-w-0">
-            <p
-              className={`text-[10px] font-black uppercase tracking-[2px] ${
-                d.isCritical ? "text-red-500" : "text-teal-700"
-              }`}
-            >
-              {d.isCritical ? "Urgent message" : "Message"} from {d.doctorMessage.doctorName ?? "your doctor"} ·{" "}
-              {relativeTime(d.doctorMessage.sentAt)}
-            </p>
-            <p className="text-slate-800 font-medium mt-1">“{d.doctorMessage.content}”</p>
-          </div>
+          <Link
+            to={`/messages?doctor=${unreadChat.doctor._id}`}
+            className={`shrink-0 inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl text-[12px] font-bold text-white transition-colors ${
+              unreadChat.urgentUnread ? "bg-red-600 hover:bg-red-700" : "bg-slate-900 hover:bg-teal-600"
+            }`}
+          >
+            Open chat <RiArrowRightSLine size={16} />
+          </Link>
         </div>
       )}
 
+      <DeviceNotificationsCard />
+
       <WishWellTicker entries={d.criticalWishWell} />
+      <RecentGiftsBanner />
 
       <div className="grid lg:grid-cols-3 gap-6">
         {/* next appointment */}
@@ -264,8 +295,7 @@ export default function Dashboard() {
                   </span>
                 ) : (
                   <button
-                    onClick={() => d.payForAppointment(next.appointment._id)}
-                    disabled={d.paying}
+                    onClick={() => setPayFor(next.appointment)}
                     className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-500 text-slate-900 text-[11px] font-black uppercase tracking-wider hover:bg-teal-400 disabled:opacity-60"
                   >
                     <RiBankCardLine size={15} /> Pay {currencySymbol}
