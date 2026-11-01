@@ -15,6 +15,9 @@ export interface IMedicine {
   totalQuantity: number;
   remainingQuantity: number;
   lastTaken?: Date;
+  // the due time we last sent a reminder / missed-dose alert for, so each is sent once
+  reminderSentFor?: Date;
+  missedAlertFor?: Date;
   overdoseAlert: boolean;
   adherenceLogs: Date[];
   status: 'Active' | 'Completed';
@@ -51,7 +54,37 @@ export interface IAppointment extends Document {
   patientStatus: 'Stable' | 'Critical' | 'Completed';
   messages: IMessage[];
   lastWarningSent?: Date;
+  // appointment reminders already sent ('soon', 'now', 'ended'), so each goes out once
+  remindersSent: string[];
+  // Stripe payment, kept so a refund can be issued (only payments made after 2026-11-01)
+  paymentIntentId?: string;
+  /** how it was paid; older paid appointments have none (they were Stripe) */
+  paymentMethod?: 'stripe' | 'wallet';
+  /** for wallet payments: what came out of the care fund and out of coins, for refunds */
+  walletPayment?: { fundCents: number; coins: number };
+  // a no-show: who didn't turn up, and who/what recorded it
+  missed?: { by: 'patient' | 'doctor'; markedBy: 'doctor' | 'admin' | 'system'; at: Date };
+  refund?: IRefund;
 }
+
+export interface IRefund {
+  percent: number;
+  /** in the appointment's currency, e.g. 25 for half of 50 */
+  amount: number;
+  // refunded: sent (through Stripe, or straight back into the wallet). manual: no Stripe
+  // reference (older payment), admin must refund by hand. failed: Stripe refused; error says why.
+  status: 'refunded' | 'manual' | 'failed';
+  /** where the money went back to */
+  method?: 'stripe' | 'wallet';
+  /** why: a missed appointment or a cancellation */
+  reason?: 'missed' | 'cancelled';
+  stripeRefundId?: string;
+  error?: string;
+  at: Date;
+}
+
+/** Share of the fee refunded when an appointment is missed. */
+export const REFUND_PERCENT = { patient: 50, doctor: 100 } as const;
 
 export const AppointmentSchema = new Schema<IAppointment>(
   {
@@ -80,6 +113,40 @@ export const AppointmentSchema = new Schema<IAppointment>(
       },
     ],
     lastWarningSent: { type: Date },
+    remindersSent: { type: [String], default: undefined },
+    paymentIntentId: { type: String },
+    paymentMethod: { type: String, enum: ['stripe', 'wallet'] },
+    walletPayment: {
+      type: new Schema({ fundCents: { type: Number }, coins: { type: Number } }, { _id: false }),
+      default: undefined,
+    },
+    missed: {
+      type: new Schema(
+        {
+          by: { type: String, enum: ['patient', 'doctor'], required: true },
+          markedBy: { type: String, enum: ['doctor', 'admin', 'system'], required: true },
+          at: { type: Date, required: true },
+        },
+        { _id: false },
+      ),
+      default: undefined,
+    },
+    refund: {
+      type: new Schema(
+        {
+          percent: { type: Number, required: true },
+          amount: { type: Number, required: true },
+          status: { type: String, enum: ['refunded', 'manual', 'failed'], required: true },
+          method: { type: String, enum: ['stripe', 'wallet'] },
+          reason: { type: String, enum: ['missed', 'cancelled'] },
+          stripeRefundId: { type: String },
+          error: { type: String },
+          at: { type: Date, required: true },
+        },
+        { _id: false },
+      ),
+      default: undefined,
+    },
     healthData: {
       bloodPressure: { type: String, default: '' },
       heartRate: { type: String, default: '' },
@@ -94,6 +161,8 @@ export const AppointmentSchema = new Schema<IAppointment>(
           totalQuantity: { type: Number, required: true },
           remainingQuantity: { type: Number, required: true },
           lastTaken: { type: Date },
+          reminderSentFor: { type: Date },
+          missedAlertFor: { type: Date },
           overdoseAlert: { type: Boolean, default: false },
           adherenceLogs: [{ type: Date }],
           status: { type: String, enum: ['Active', 'Completed'], default: 'Active' },

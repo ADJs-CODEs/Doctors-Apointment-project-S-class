@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
 import { fail } from '../common/http';
@@ -6,33 +6,19 @@ import { MODEL } from '../database/models';
 import type { IAppointment } from '../database/schemas/appointment.schema';
 import type { IConnection } from '../database/schemas/social.schemas';
 import type { IUser } from '../database/schemas/user.schema';
-import { MailService } from '../integrations/integrations';
+import { EmailNotifications } from '../notifications/email-notifications';
 
 const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-const emailShell = (body: string) => `
-  <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
-    <div style="background:#0f172a;padding:20px;border-radius:16px;text-align:center;margin-bottom:24px">
-      <span style="color:#2dd4bf;font-size:28px;font-weight:900">+</span>
-      <span style="color:white;font-weight:900;font-size:16px;margin-left:8px;text-transform:uppercase;letter-spacing:2px">ADJ's CODEs</span>
-    </div>
-    ${body}
-  </div>`;
-
-const button = (href: string, label: string, color = '#0f172a') =>
-  `<a href="${href}" style="display:inline-block;background:${color};color:white;padding:14px 28px;border-radius:12px;font-weight:900;text-decoration:none;font-size:12px;text-transform:uppercase;letter-spacing:2px;margin-top:8px">${label}</a>`;
 
 // "Watching over": a person (requester) asks to follow a patient's health data;
 // the patient accepts or rejects. Accepted watchers get read-only access.
 @Injectable()
 export class ConnectionsService {
-  private readonly logger = new Logger('ConnectionsService');
-
   constructor(
     @InjectModel(MODEL.connection) private readonly connections: Model<IConnection>,
     @InjectModel(MODEL.user) private readonly users: Model<IUser>,
     @InjectModel(MODEL.appointment) private readonly appointments: Model<IAppointment>,
-    private readonly mail: MailService,
+    private readonly emails: EmailNotifications,
   ) {}
 
   async request(requesterId: string, patientEmail?: string) {
@@ -48,30 +34,22 @@ export class ConnectionsService {
     const existing = await this.connections.findOne({ requesterId, patientId });
     if (existing?.status === 'pending') fail('Request already sent');
     if (existing?.status === 'accepted') fail('Already connected');
-    if (existing?.status === 'rejected') {
+    const resent = existing?.status === 'rejected';
+    if (existing && resent) {
       existing.status = 'pending';
       await existing.save();
-      return { success: true, message: 'Connection request re-sent' };
-    }
-
-    try {
-      await new this.connections({ requesterId, patientId }).save();
-    } catch (err: any) {
-      if (err.code === 11000) fail('Request already exists');
-      throw err;
+    } else {
+      try {
+        await new this.connections({ requesterId, patientId }).save();
+      } catch (err: any) {
+        if (err.code === 11000) fail('Request already exists');
+        throw err;
+      }
     }
 
     const requester = await this.users.findById(requesterId).select('name email');
-    await this.notify(
-      patient.email,
-      `${requester?.name} wants to watch over you on ADJ's CODEs`,
-      emailShell(`
-        <h2 style="color:#0f172a;font-size:22px;font-weight:900">Care Connection Request</h2>
-        <p style="color:#64748b"><strong>${requester?.name}</strong> (${requester?.email}) has sent you a request to monitor your health activity on ADJ's CODEs.</p>
-        <p style="color:#64748b">Log in to your account to accept or reject this request.</p>
-        ${button(`${process.env.CLIENT_URL}/my-profile`, 'Review Request')}`),
-    );
-    return { success: true, message: 'Connection request sent' };
+    if (requester) this.emails.careRequest(patient, requester);
+    return { success: true, message: resent ? 'Connection request re-sent' : 'Connection request sent' };
   }
 
   async respond(userId: string, body: { connectionId?: string; action?: string }) {
@@ -87,18 +65,9 @@ export class ConnectionsService {
 
     const [requester, patient] = await Promise.all([
       this.users.findById(connection.requesterId).select('email name'),
-      this.users.findById(userId).select('name'),
+      this.users.findById(userId).select('email name'),
     ]);
-    if (requester?.email) {
-      await this.notify(
-        requester.email,
-        `${patient?.name} ${action} your care connection request`,
-        emailShell(`
-          <h2 style="color:#0f172a;font-size:22px;font-weight:900">Connection ${action === 'accepted' ? 'Accepted ✓' : 'Declined'}</h2>
-          <p style="color:#64748b"><strong>${patient?.name}</strong> has ${action} your care connection request.</p>
-          ${action === 'accepted' ? button(`${process.env.CLIENT_URL}/watching-over`, 'View Their Dashboard', '#0d9488') : ''}`),
-      );
-    }
+    if (requester && patient) this.emails.careResponse(patient, requester, userId, action === 'accepted');
     return { success: true, message: `Request ${action}` };
   }
 
@@ -143,6 +112,16 @@ export class ConnectionsService {
       fail('Unauthorized', HttpStatus.FORBIDDEN);
     }
     await this.connections.findByIdAndDelete(connectionId);
+
+    // tell the other person, unless it was only a pending request
+    if (connection.status === 'accepted') {
+      const byPatient = connection.patientId === userId;
+      const [me, other] = await Promise.all([
+        this.users.findById(userId).select('name email'),
+        this.users.findById(byPatient ? connection.requesterId : connection.patientId).select('name email'),
+      ]);
+      if (me && other) this.emails.careRemoved(other, me, byPatient ? 'patient' : 'watcher');
+    }
     return { success: true, message: 'Connection removed' };
   }
 
@@ -159,14 +138,5 @@ export class ConnectionsService {
       this.appointments.find({ userId: patientId }).sort({ date: -1 }),
     ]);
     return { success: true, patient, appointments };
-  }
-
-  // The connection change is already saved; a failed email shouldn't undo it.
-  private async notify(to: string, subject: string, html: string) {
-    try {
-      await this.mail.send({ to, subject, html });
-    } catch (err: any) {
-      this.logger.warn(`connection email to ${to} failed: ${err.message}`);
-    }
   }
 }

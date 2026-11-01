@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
@@ -7,7 +7,9 @@ import { fail } from '../common/http';
 import { MODEL } from '../database/models';
 import type { IAppointment } from '../database/schemas/appointment.schema';
 import type { IDoctor } from '../database/schemas/doctor.schema';
-import { MailService } from '../integrations/integrations';
+import { MessagesService } from '../messages/messages.service';
+import { EmailNotifications } from '../notifications/email-notifications';
+import { WalletService } from '../wallet/wallet.service';
 import { releaseSlot } from '../user/user.service';
 
 // The doctor panel expects failures here as HTTP 200 with { success: false }, so most
@@ -18,12 +20,12 @@ function failOk(message: string): never {
 
 @Injectable()
 export class DoctorService {
-  private readonly logger = new Logger('DoctorService');
-
   constructor(
     @InjectModel(MODEL.doctor) private readonly doctors: Model<IDoctor>,
     @InjectModel(MODEL.appointment) private readonly appointments: Model<IAppointment>,
-    private readonly mail: MailService,
+    private readonly chat: MessagesService,
+    private readonly emails: EmailNotifications,
+    private readonly wallet: WalletService,
   ) {}
 
   async list() {
@@ -59,6 +61,7 @@ export class DoctorService {
 
     const appointment = await this.appointments.findById(appointmentId);
     if (!appointment || appointment.docId.toString() !== docId) failOk('Auth Failed');
+    if (appointment.missed) failOk('This appointment was recorded as missed');
 
     await this.appointments.findByIdAndUpdate(appointmentId, {
       isCompleted: true,
@@ -81,10 +84,13 @@ export class DoctorService {
   async cancel(docId: string, appointmentId?: string) {
     const appointment = await this.appointments.findById(appointmentId);
     if (!appointment || appointment.docId.toString() !== docId) failOk(' Cancellation Failed');
+    if (appointment.missed || appointment.isCompleted) failOk('This appointment is already closed');
 
     await this.appointments.findByIdAndUpdate(appointmentId, { cancelled: true });
     // free the slot, like patient and admin cancellations already did
     await releaseSlot(this.doctors, appointment);
+    const refund = await this.wallet.refundAppointmentToWallet(String(appointment._id), 100, 'cancelled');
+    this.emails.appointmentCancelled(appointment, 'doctor', refund);
     return { success: true, message: 'Appointment Cancelled' };
   }
 
@@ -94,7 +100,8 @@ export class DoctorService {
     let earnings = 0;
     const patients = new Set<string>();
     for (const a of appointments) {
-      if (a.isCompleted || a.payment) earnings += a.amount;
+      // refunds for missed visits come out of what the doctor earned
+      if (a.isCompleted || a.payment) earnings += a.amount - (a.refund?.amount ?? 0);
       patients.add(a.userId.toString());
     }
     return {
@@ -130,38 +137,18 @@ export class DoctorService {
     if (!appointment) fail('Appointment not found', HttpStatus.NOT_FOUND);
     if (appointment.docId.toString() !== docId) fail('Unauthorized', HttpStatus.FORBIDDEN);
 
+    const sentAt = new Date();
     appointment.messages.push({
       sender: 'Doctor',
       content: messageContent,
-      sentAt: new Date(),
+      sentAt,
       isRead: false,
     });
     if (isCritical) appointment.patientStatus = 'Critical';
-    appointment.lastWarningSent = new Date();
+    appointment.lastWarningSent = sentAt;
     await appointment.save();
-
-    const patient = appointment.userData;
-    try {
-      await this.mail.send({
-        to: patient.email,
-        replyTo: appointment.docData?.email,
-        subject: isCritical ? 'URGENT: Medical Alert from your Doctor' : 'New Message from your Doctor',
-        text: `Hello ${patient.name},\n\nYour doctor has sent you a message regarding your appointment:\n\n"${messageContent}"\n\nPlease log into the app to view details.`,
-        html: `
-          <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee;">
-            <h2 style="color: ${isCritical ? '#ef4444' : '#0d9488'};">Medical Notification</h2>
-            <p>Hello <strong>${patient.name}</strong>,</p>
-            <p>Your doctor has sent a new update regarding your medication schedule:</p>
-            <blockquote style="background: #f9fafb; padding: 15px; border-left: 4px solid #0d9488;">
-              ${messageContent}
-            </blockquote>
-            <p>Please check your mobile app for live tracking updates.</p>
-          </div>`,
-      });
-    } catch (err: any) {
-      this.logger.error(`alert email failed: ${err.message}`);
-      fail('Failed to send alert: ' + err.message, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+    // chat copy + in-app notification + email (and care circle, when critical)
+    await this.chat.recordAlert(appointment, messageContent, sentAt, !!isCritical);
     return { success: true, message: 'Alert sent to patient successfully' };
   }
 }

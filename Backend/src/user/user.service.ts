@@ -9,10 +9,12 @@ import Stripe from 'stripe';
 import validator from 'validator';
 import { fail } from '../common/http';
 import { MODEL } from '../database/models';
-import { hoursBetweenDoses, type IAppointment } from '../database/schemas/appointment.schema';
+import type { IAppointment } from '../database/schemas/appointment.schema';
 import type { IDoctor } from '../database/schemas/doctor.schema';
 import type { IUser } from '../database/schemas/user.schema';
-import { CloudinaryService, MailService, WebhookService } from '../integrations/integrations';
+import { CloudinaryService } from '../integrations/integrations';
+import { EmailNotifications } from '../notifications/email-notifications';
+import { WalletService } from '../wallet/wallet.service';
 
 const normalizeEmail = (email: unknown) =>
   typeof email === 'string' ? email.toLowerCase().trim() : '';
@@ -30,8 +32,8 @@ export class UserService {
     @InjectModel(MODEL.doctor) private readonly doctors: Model<IDoctor>,
     @InjectModel(MODEL.appointment) private readonly appointments: Model<IAppointment>,
     private readonly cloudinary: CloudinaryService,
-    private readonly mail: MailService,
-    private readonly webhooks: WebhookService,
+    private readonly emails: EmailNotifications,
+    private readonly wallet: WalletService,
   ) {}
 
   private get stripe() {
@@ -49,7 +51,7 @@ export class UserService {
     if (password.length < 8) fail('enter a strong password');
 
     const user = await new this.users({ name, email, password: await hash(password) }).save();
-    this.webhooks.trigger('N8N_SIGNUP_WEBHOOK', { name: user.name, email: user.email });
+    this.emails.welcome(user);
     return { success: true, token: signToken(user._id) };
   }
 
@@ -60,11 +62,7 @@ export class UserService {
     const isMatch = await bcrypt.compare(body.password ?? '', user.password);
     if (!isMatch) fail('invalid credentials', HttpStatus.UNAUTHORIZED);
 
-    this.webhooks.trigger('N8N_LOGIN_WEBHOOK', {
-      name: user.name,
-      email: user.email,
-      time: new Date().toLocaleString('en-GB', { timeZone: 'Africa/Lagos' }),
-    });
+    this.emails.signInAlert(user);
     return { success: true, token: signToken(user._id) };
   }
 
@@ -92,6 +90,7 @@ export class UserService {
         password: await hash(crypto.randomBytes(16).toString('hex')),
         image: profile.picture,
       }).save();
+      this.emails.welcome(user);
     }
     return { success: true, token: signToken(user._id), name: user.name };
   }
@@ -154,12 +153,7 @@ export class UserService {
     }).save();
     await this.doctors.findByIdAndUpdate(docId, { slots_booked: slotsBooked });
 
-    this.webhooks.trigger('N8N_BOOKING_WEBHOOK', {
-      name: userData?.name,
-      email: userData?.email,
-      doctor: docData.name,
-      slot: `${slotDate.replace(/_/g, '/')} at ${slotTime}`,
-    });
+    this.emails.bookingConfirmed(appointment);
     return { success: true, message: 'Appointment Booked', appointmentId: appointment._id };
   }
 
@@ -172,18 +166,14 @@ export class UserService {
     const appointment = await this.appointments.findById(appointmentId);
     if (!appointment) fail('Appointment not found', HttpStatus.NOT_FOUND);
     if (appointment.userId.toString() !== userId) fail('Unauthorized', HttpStatus.FORBIDDEN);
+    if (appointment.missed || appointment.isCompleted) fail('This appointment is already closed');
 
     await this.appointments.findByIdAndUpdate(appointmentId, { cancelled: true });
     await releaseSlot(this.doctors, appointment);
 
-    this.webhooks.trigger('N8N_CANCEL_WEBHOOK', {
-      patientName: appointment.userData?.name,
-      patientEmail: appointment.userData?.email,
-      doctorName: appointment.docData?.name,
-      doctorEmail: appointment.docData?.email,
-      slotDate: appointment.slotDate.replace(/_/g, '/'),
-      slotTime: appointment.slotTime,
-    });
+    // paid from the wallet: the money goes straight back into it
+    const refund = await this.wallet.refundAppointmentToWallet(String(appointment._id), 100, 'cancelled');
+    this.emails.appointmentCancelled(appointment, 'patient', refund);
     return { success: true, message: 'Appointment Canceled' };
   }
 
@@ -211,14 +201,7 @@ export class UserService {
     if (overdoseAlert) {
       medicine.overdoseAlert = true;
       appointment.patientStatus = 'Critical';
-      this.webhooks.trigger('N8N_OVERDOSE_WEBHOOK', {
-        patientName: appointment.userData?.name,
-        patientEmail: appointment.userData?.email,
-        doctorEmail: appointment.docData?.email,
-        doctorName: appointment.docData?.name,
-        medicineName,
-        appointmentId: appointment._id,
-      });
+      this.emails.earlyDose(appointment, medicine.name);
     }
     if (medicine.remainingQuantity === 0) medicine.status = 'Completed';
 
@@ -226,22 +209,7 @@ export class UserService {
     // only validate what changed, so older records missing newer fields still save
     await appointment.save({ validateModifiedOnly: true });
 
-    if (medicine.remainingQuantity > 0) {
-      const intervalMs = hoursBetweenDoses(medicine) * 60 * 60 * 1000;
-      const nextDoseTime = new Date(Date.now() + intervalMs);
-      this.webhooks.trigger('N8N_DOSE_REMINDER_WEBHOOK', {
-        patientName: appointment.userData?.name,
-        patientEmail: appointment.userData?.email,
-        medicineName: medicine.name,
-        dosagePerDay: medicine.dosagePerDay,
-        nextDoseTime: nextDoseTime.toISOString(),
-        reminderAt30: new Date(nextDoseTime.getTime() - 30 * 60 * 1000).toISOString(),
-        reminderAt5: new Date(nextDoseTime.getTime() - 5 * 60 * 1000).toISOString(),
-        remainingQuantity: medicine.remainingQuantity,
-        appointmentId: String(appointment._id),
-        userId: appointment.userId.toString(),
-      });
-    }
+    // the next dose's reminder is sent by DoseReminders, which checks every few minutes
     return {
       success: true,
       message: 'Dose logged successfully',
@@ -253,7 +221,8 @@ export class UserService {
 
   async startStripePayment(userId: string, appointmentId?: string) {
     const appointment = await this.appointments.findById(appointmentId);
-    if (!appointment || appointment.cancelled) fail('Invalid appointment');
+    if (!appointment || appointment.cancelled || appointment.missed) fail('Invalid appointment');
+    if (appointment.payment) fail('This appointment is already paid');
     if (appointment.userId.toString() !== userId) fail('Unauthorized', HttpStatus.FORBIDDEN);
 
     const returnUrl = `${process.env.USER_URL}/verify?appointmentId=${appointmentId}`;
@@ -289,14 +258,24 @@ export class UserService {
 
     // Ask Stripe whether this checkout was really paid, instead of trusting the URL.
     // Older web builds don't pass session_id yet; for those, keep the old behaviour.
+    let paymentIntentId: string | undefined;
     if (sessionId) {
       const session = await this.stripe.checkout.sessions.retrieve(sessionId);
       const paidForThis =
         session.payment_status === 'paid' && session.metadata?.appointmentId === String(appointmentId);
       if (!paidForThis) fail('Payment Failed');
+      // kept so a missed appointment can be refunded later
+      paymentIntentId =
+        typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id;
     }
 
-    await this.appointments.findByIdAndUpdate(appointmentId, { payment: true });
+    // only the first verification flips it, so a refreshed verify page doesn't email twice
+    const justPaid = await this.appointments.findOneAndUpdate(
+      { _id: appointmentId, payment: false },
+      { payment: true, paymentMethod: 'stripe', ...(paymentIntentId && { paymentIntentId }) },
+      { returnDocument: 'after' },
+    );
+    if (justPaid) this.emails.paymentReceived(justPaid, sessionId);
     return { success: true, message: 'Payment Successful' };
   }
 
@@ -325,11 +304,7 @@ export class UserService {
     user.resetTokenExpire = Date.now() + 15 * 60 * 1000;
     await user.save();
 
-    await this.mail.send({
-      to: email,
-      subject: 'Reset Password',
-      html: `<a href="${process.env.CLIENT_URL}/reset-password/${token}">Reset Link</a>`,
-    });
+    await this.emails.passwordReset(email, `${process.env.CLIENT_URL}/reset-password/${token}`);
     return { success: true, message: 'Reset link sent' };
   }
 

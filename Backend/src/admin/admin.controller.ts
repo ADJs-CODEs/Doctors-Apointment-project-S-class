@@ -9,6 +9,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { MissedAppointments } from '../appointments/missed-appointments';
 import { AdminAuthGuard } from '../common/auth';
 import { ImageUpload } from '../common/upload';
 import { DoctorService } from '../doctor/doctor.service';
@@ -20,6 +21,7 @@ export class AdminController {
   constructor(
     private readonly admin: AdminService,
     private readonly doctors: DoctorService,
+    private readonly missed: MissedAppointments,
   ) {}
 
   @Post('login')
@@ -62,6 +64,14 @@ export class AdminController {
   @UseGuards(AdminAuthGuard)
   cancelAppointment(@Body('appointmentId') appointmentId?: string) {
     return this.admin.cancelAppointment(appointmentId);
+  }
+
+  /** by = 'patient' (50% refund) or 'doctor' (100% refund). */
+  @Post('mark-missed')
+  @HttpCode(200)
+  @UseGuards(AdminAuthGuard)
+  markMissed(@Body('appointmentId') appointmentId?: string, @Body('by') by?: 'patient' | 'doctor') {
+    return this.missed.markMissed(appointmentId, by as 'patient' | 'doctor', 'admin');
   }
 
   @Get('dashboard')

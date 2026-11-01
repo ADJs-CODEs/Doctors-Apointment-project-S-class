@@ -1,11 +1,15 @@
 import { Body, Controller, Get, HttpCode, Post, UseFilters, UseGuards } from '@nestjs/common';
+import { MissedAppointments } from '../appointments/missed-appointments';
 import { DocId, DoctorAuthGuard } from '../common/auth';
 import { DoctorService } from './doctor.service';
 import { OkOnErrorFilter } from './ok-on-error.filter';
 
 @Controller('api/doctor')
 export class DoctorController {
-  constructor(private readonly doctors: DoctorService) {}
+  constructor(
+    private readonly doctors: DoctorService,
+    private readonly missed: MissedAppointments,
+  ) {}
 
   @Get('list')
   @UseFilters(OkOnErrorFilter)
@@ -41,6 +45,15 @@ export class DoctorController {
   @UseFilters(OkOnErrorFilter)
   cancel(@DocId() docId: string, @Body('appointmentId') appointmentId?: string) {
     return this.doctors.cancel(docId, appointmentId);
+  }
+
+  /** "Patient didn't show": 50% of a paid fee goes back to the patient. */
+  @Post('mark-no-show')
+  @HttpCode(200)
+  @UseGuards(DoctorAuthGuard)
+  @UseFilters(OkOnErrorFilter)
+  markNoShow(@DocId() docId: string, @Body('appointmentId') appointmentId?: string) {
+    return this.missed.markMissed(appointmentId, 'patient', 'doctor', docId);
   }
 
   @Get('dashboard')

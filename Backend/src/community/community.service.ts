@@ -148,7 +148,8 @@ export class WishWellService {
 export class NotificationsService {
   constructor(@InjectModel(MODEL.notification) private readonly notifications: Model<INotification>) {}
 
-  // Unauthenticated on purpose: external automations (n8n dose reminders) post here.
+  // Unauthenticated: n8n dose reminders used to post here. Those now run in-process
+  // (notifications/dose-reminders.ts), so nothing internal needs this anymore.
   async create(body: { userId?: string; title?: string; message?: string; type?: string }) {
     const { userId, title, message, type } = body;
     if (!userId || !title || !message) fail('Missing fields');
