@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import {
   RiUserUnfollowLine,
-  RiVideoChatLine,
+  RiVideoOnLine,
+  RiHospitalLine,
   RiCheckboxCircleFill,
   RiCloseCircleFill,
   RiHistoryLine,
@@ -223,14 +224,17 @@ const DoctorAppointment: React.FC = () => {
                         <p className="font-black text-sm text-slate-800">
                           {slotDateFormat(item.slotDate)}
                         </p>
-                        <p className="text-xs text-slate-400 font-medium flex items-center gap-1.5">
-                          {item.slotTime}
-                          {item.kind === "video" && (
-                            <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase text-violet-700 bg-violet-50 px-2 py-0.5 rounded-full">
-                              <RiVideoChatLine size={11} /> Video
-                            </span>
-                          )}
-                        </p>
+                        <p className="text-xs text-slate-400 font-medium">{item.slotTime}</p>
+                        {/* what kind of visit, spelled out */}
+                        {item.kind === "video" ? (
+                          <span className="mt-1 inline-flex items-center gap-1 text-[11px] font-black text-white bg-violet-600 px-2.5 py-1 rounded-full">
+                            <RiVideoOnLine size={13} /> Video call
+                          </span>
+                        ) : (
+                          <span className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-teal-800 bg-teal-50 border border-teal-100 px-2.5 py-1 rounded-full">
+                            <RiHospitalLine size={13} /> At the clinic
+                          </span>
+                        )}
                       </div>
                     </div>
 
