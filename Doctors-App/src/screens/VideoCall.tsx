@@ -1,6 +1,6 @@
 "use client";
 
-import { RiArrowLeftLine, RiExternalLinkLine, RiLoader4Line, RiVideoChatLine } from "@remixicon/react";
+import { RiArrowLeftLine, RiExternalLinkLine, RiLoader4Line, RiVideoOnLine } from "@remixicon/react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "@/lib/navigation";
 import { API_PATHS } from "@/utils/apiPath";
@@ -51,7 +51,7 @@ export default function VideoCall() {
   return (
     <div className="max-w-lg mx-auto py-16 text-center">
       <div className="w-16 h-16 mx-auto rounded-2xl bg-violet-50 text-violet-600 flex items-center justify-center mb-5">
-        <RiVideoChatLine size={30} />
+        <RiVideoOnLine size={30} />
       </div>
       {error ? (
         <>
@@ -68,7 +68,7 @@ export default function VideoCall() {
             rel="noreferrer"
             className="mt-6 inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-violet-600 text-white font-bold hover:bg-violet-700"
           >
-            <RiVideoChatLine size={18} /> Join video call
+            <RiVideoOnLine size={18} /> Join video call
           </a>
         </>
       ) : (

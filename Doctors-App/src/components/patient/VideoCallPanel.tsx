@@ -1,6 +1,6 @@
 "use client";
 
-import { RiCheckboxCircleLine, RiTimeLine, RiVideoChatLine, RiWallet3Line } from "@remixicon/react";
+import { RiCheckboxCircleLine, RiCloseCircleLine, RiTimeLine, RiVideoOnLine, RiWallet3Line } from "@remixicon/react";
 import { useNavigate } from "@/lib/navigation";
 import type { Appointment } from "@/types";
 import { slotToDate } from "@/utils/medicationUtils";
@@ -32,7 +32,7 @@ export default function VideoCallPanel({ item, onPay }: { item: Appointment; onP
   if (item.cancelled || item.missed) return null;
 
   let tone = "bg-violet-50 border-violet-100 text-violet-900";
-  let icon = <RiVideoChatLine size={20} className="text-violet-600" />;
+  let icon = <RiVideoOnLine size={20} className="text-violet-600" />;
   let title: string;
   let detail: string;
   let action: React.ReactNode = null;
@@ -42,18 +42,30 @@ export default function VideoCallPanel({ item, onPay }: { item: Appointment; onP
     icon = <RiCheckboxCircleLine size={20} className="text-teal-600" />;
     title = "Video call completed";
     detail = "Your doctor's notes and prescriptions are in the visit report.";
+  } else if (!item.payment && state === "ended") {
+    // the time passed without payment: nothing left to pay for
+    tone = "bg-slate-50 border-slate-200 text-slate-700";
+    icon = <RiCloseCircleLine size={20} className="text-slate-400" />;
+    title = "Not paid in time, so this call didn't go ahead";
+    detail = "Nothing was charged. A new time is only booked once it's paid.";
+    action = (
+      <button
+        onClick={() => navigate(`/appointments/${item.docId}?type=video`)}
+        className="px-4 py-2.5 rounded-xl bg-violet-600 text-white text-[12px] font-bold hover:bg-violet-700 shrink-0"
+      >
+        Book &amp; pay for a new time
+      </button>
+    );
   } else if (!item.payment) {
     tone = "bg-amber-50 border-amber-200 text-amber-900";
     icon = <RiWallet3Line size={20} className="text-amber-600" />;
     title = "Pay to confirm your video call";
-    detail = state === "ended" ? "This time has passed." : "You can join once it's paid; the call opens 10 minutes before.";
-    if (state !== "ended") {
-      action = (
-        <button onClick={onPay} className="px-4 py-2.5 rounded-xl bg-amber-500 text-white text-[12px] font-bold hover:bg-amber-600 shrink-0">
-          Pay now
-        </button>
-      );
-    }
+    detail = "You can join once it's paid; the call opens 10 minutes before.";
+    action = (
+      <button onClick={onPay} className="px-4 py-2.5 rounded-xl bg-amber-500 text-white text-[12px] font-bold hover:bg-amber-600 shrink-0">
+        Pay now
+      </button>
+    );
   } else if (state === "open") {
     tone = "bg-violet-600 border-violet-600 text-white";
     icon = <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />;
@@ -64,7 +76,7 @@ export default function VideoCallPanel({ item, onPay }: { item: Appointment; onP
         onClick={() => navigate(`/call/${item._id}`)}
         className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-white text-violet-700 text-[12px] font-black hover:bg-violet-50 shrink-0"
       >
-        <RiVideoChatLine size={16} /> Join call
+        <RiVideoOnLine size={16} /> Join call
       </button>
     );
   } else if (state === "early" && opensAt) {
@@ -73,7 +85,7 @@ export default function VideoCallPanel({ item, onPay }: { item: Appointment; onP
     icon = <RiTimeLine size={20} className="text-violet-600" />;
   } else {
     tone = "bg-slate-50 border-slate-100 text-slate-600";
-    icon = <RiVideoChatLine size={20} className="text-slate-400" />;
+    icon = <RiVideoOnLine size={20} className="text-slate-400" />;
     title = "Video call ended";
     detail = endsAt ? `The call window closed at ${time(endsAt)}. Your doctor will complete the visit.` : "The call window has closed.";
   }

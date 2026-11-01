@@ -113,9 +113,16 @@ export const getAdherenceStats = (med: any) => {
   return { rate };
 };
 
+/** "1_11_2026" -> "Sun, 1 Nov 2026" */
 export const slotDateFormat = (slotDate: string) => {
-  const dateArray = slotDate.split("_");
-  return `${dateArray[0]} ${dateArray[1]} ${dateArray[2]}`;
+  const [day, month, year] = slotDate.split("_").map(Number);
+  if (!day || !month || !year) return slotDate.replaceAll("_", "/");
+  return new Date(year, month - 1, day).toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 };
 
 /** "21_3_2026" + "10:30 am" -> Date (local time), or null if unparseable. */
