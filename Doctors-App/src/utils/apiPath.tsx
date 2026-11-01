@@ -27,6 +27,20 @@ export const API_PATHS = {
   CHAT: {
     MESSAGE: "/api/chat/message",
   },
+  AVAILABILITY: (docId: string, kind: string) => `/api/availability/${docId}?kind=${kind}`,
+  VIDEO: {
+    JOIN: (appointmentId: string) => `/api/user/video/${appointmentId}/join`,
+  },
+  MAPS: {
+    DISTANCE: "/api/maps/distance",
+  },
+  SETTINGS: {
+    GET: "/api/user/settings",
+    SAVE: "/api/user/settings",
+    GCAL_CONNECT: "/api/user/integrations/google-calendar/connect",
+    GCAL_SYNC: "/api/user/integrations/google-calendar/sync",
+    GCAL_DISCONNECT: "/api/user/integrations/google-calendar/disconnect",
+  },
   WALLET: {
     OVERVIEW: "/api/wallet",
     CATALOG: "/api/wallet/catalog",

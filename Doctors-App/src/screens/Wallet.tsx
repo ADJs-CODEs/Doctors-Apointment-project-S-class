@@ -144,7 +144,7 @@ export default function Wallet() {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
           <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">Wallet</h1>
-          <p className="text-slate-500 mt-1">Coins for Wish Well gifts{data.hasCareFund ? ", and your care fund" : ""}.</p>
+          <p className="text-slate-500 mt-1">Coins for Wish Well gifts, and your care fund.</p>
         </div>
         <Link
           to="/wish-well"
@@ -154,7 +154,7 @@ export default function Wallet() {
         </Link>
       </div>
 
-      <div className={`grid gap-6 ${data.hasCareFund ? "lg:grid-cols-2" : ""}`}>
+      <div className="grid gap-6 lg:grid-cols-2">
         {/* coins */}
         <section className="rounded-[28px] p-6 bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 text-white shadow-lg shadow-orange-200">
           <p className="text-[11px] font-black uppercase tracking-[2px] text-white/80">Your coins</p>
@@ -166,15 +166,19 @@ export default function Wallet() {
           </p>
         </section>
 
-        {/* care fund */}
-        {data.hasCareFund && (
-          <section className="rounded-[28px] p-6 bg-white border border-teal-100 shadow-clinical">
-            <p className="text-[11px] font-black uppercase tracking-[2px] text-teal-700">Your care fund</p>
-            <p className="text-5xl font-black text-slate-900 mt-2">{money(data.fundCents)}</p>
-            <p className="text-sm text-slate-500 mt-1">
-              {money(data.fundLifetimeCents)} raised by the community so far
+        {/* care fund: every patient has one; it fills up if the community sends them gifts */}
+        <section className="rounded-[28px] p-6 bg-white border border-teal-100 shadow-clinical">
+          <p className="text-[11px] font-black uppercase tracking-[2px] text-teal-700">Your care fund</p>
+          <p className="text-5xl font-black text-slate-900 mt-2">{money(data.fundCents)}</p>
+          {data.fundLifetimeCents > 0 ? (
+            <p className="text-sm text-slate-500 mt-1">{money(data.fundLifetimeCents)} raised by the community so far</p>
+          ) : (
+            <p className="text-sm text-slate-500 mt-1 leading-relaxed">
+              If your doctor ever features you on the Wish Well, gifts from the community land here. You can use it for
+              appointments or withdraw it to your bank.
             </p>
-            {data.pendingPayout ? (
+          )}
+          {data.fundLifetimeCents === 0 ? null : data.pendingPayout ? (
               <p className="mt-4 flex items-center gap-2 text-sm font-bold text-orange-700 bg-orange-50 rounded-2xl px-4 py-3">
                 <RiTimeLine size={18} /> {money(data.pendingPayout.cents)} withdrawal waiting for approval
               </p>
@@ -188,8 +192,7 @@ export default function Wallet() {
                 <RiBankLine size={18} /> Withdraw to my bank
               </button>
             )}
-          </section>
-        )}
+        </section>
       </div>
 
       {/* coin packs */}

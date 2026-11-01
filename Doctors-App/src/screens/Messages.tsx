@@ -11,9 +11,11 @@ import {
   RiErrorWarningFill,
   RiInformationLine,
   RiSendPlane2Fill,
+  RiVideoChatLine,
 } from "@remixicon/react";
 import { type FormEvent, type KeyboardEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import JoinCallButton, { callWindow } from "@/components/patient/JoinCallButton";
 import { useMessages } from "@/Context/MessagesContext";
 import { useNavigate, useSearchParams } from "@/lib/navigation";
 import type { ChatMessage, ChatVisit } from "@/types";
@@ -193,6 +195,13 @@ export default function Messages() {
 
   const currentAbout = thread ? aboutLabel(about, thread.visits) : null;
 
+  // soonest video call with this doctor that hasn't finished yet
+  const nextVideoCall =
+    (thread?.visits ?? [])
+      .filter((v) => v.kind === "video" && !v.isCompleted && !v.missed && callWindow(v.slotDate, v.slotTime).state !== "ended")
+      .sort((a, b) => (slotToDate(a.slotDate, a.slotTime)?.getTime() ?? 0) - (slotToDate(b.slotDate, b.slotTime)?.getTime() ?? 0))[0] ??
+    null;
+
   // messages with a date divider whenever the day changes
   const rows = useMemo(() => {
     const out: ({ kind: "day"; label: string } | { kind: "msg"; m: ChatMessage })[] = [];
@@ -336,15 +345,36 @@ export default function Messages() {
                 {thread?.doctor ? (
                   <>
                     <img src={thread.doctor.image} alt="" className="w-10 h-10 rounded-xl object-cover bg-slate-100" />
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="font-black text-slate-900 truncate">{thread.doctor.name}</p>
                       <p className="text-[12px] text-slate-400 truncate">{thread.doctor.speciality}</p>
                     </div>
+                    <button
+                      onClick={() => navigate(`/appointments/${doctorId}?type=video`)}
+                      className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-violet-50 text-violet-700 border border-violet-100 text-[12px] font-bold hover:bg-violet-100"
+                      title="Book a time for a video call with this doctor"
+                    >
+                      <RiVideoChatLine size={16} />
+                      <span className="hidden sm:inline">Schedule video call</span>
+                    </button>
                   </>
                 ) : (
                   <div className="h-10 w-48 rounded-xl bg-slate-100 animate-pulse" />
                 )}
               </div>
+
+              {/* the next video call with this doctor, if there is one */}
+              {nextVideoCall && (
+                <div className="flex items-center justify-between gap-3 px-4 sm:px-5 py-2.5 bg-violet-50 border-b border-violet-100">
+                  <p className="flex items-center gap-2 text-[13px] text-violet-900 min-w-0">
+                    <RiVideoChatLine size={16} className="text-violet-600 shrink-0" />
+                    <span className="truncate">
+                      <span className="font-bold">Video call</span> · {visitLabel(nextVideoCall)}, {nextVideoCall.slotTime}
+                    </span>
+                  </p>
+                  <JoinCallButton appointment={nextVideoCall} compact className="shrink-0" />
+                </div>
+              )}
 
               {/* messages */}
               <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 bg-slate-50">

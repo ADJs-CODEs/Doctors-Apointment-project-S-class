@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useContext, useEffect, useState } from "react";
-import { useParams, useNavigate } from "@/lib/navigation";
+import React, { useCallback, useContext, useEffect, useState } from "react";
+import PayAppointmentModal from "../components/patient/PayAppointmentModal";
+import { useParams, useNavigate, useSearchParams } from "@/lib/navigation";
 import { AppContext } from "../Context/AppContext";
 import RelatedDoctors from "../components/RelatedDoctors";
+import ClinicMap from "../components/patient/ClinicMap";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -12,15 +14,12 @@ import {
   RiMoneyDollarCircleLine,
   RiCalendarEventLine,
   RiTimeLine,
+  RiHospitalLine,
+  RiVideoChatLine,
 } from "@remixicon/react";
-import type { AppContextType, Doctor } from "../types/index";
+import type { AppContextType, Appointment, Doctor, DoctorAvailability } from "../types/index";
 import axiosInstance from "../utils/axiosInstance";
 import { API_PATHS } from "../utils/apiPath";
-
-interface Slot {
-  datetime: Date;
-  time: string;
-}
 
 const Appointments: React.FC = () => {
   const { docId } = useParams<{ docId: string }>();
@@ -30,81 +29,64 @@ const Appointments: React.FC = () => {
   const navigate = useNavigate();
 
   const [docInfo, setDocInfo] = useState<Doctor | null>(null);
-  const [docSlots, setDocSlots] = useState<Slot[][]>([]);
   const [slotIndex, setSlotIndex] = useState(0);
   const [slotTime, setSlotTime] = useState("");
+  // in person or by video; "Schedule video call" in Messages opens this with ?type=video
+  const [params] = useSearchParams();
+  const [kind, setKind] = useState<"in-person" | "video">(params.get("type") === "video" ? "video" : "in-person");
 
   const fetchDocInfo = () => {
     const info = doctors.find((doc) => doc._id === docId);
     if (info) setDocInfo(info);
   };
 
-  const getAvailableSlots = () => {
-    if (!docInfo) return;
-    setDocSlots([]);
-    const today = new Date();
-    for (let i = 0; i < 7; i++) {
-      const currentDate = new Date(today);
-      currentDate.setDate(today.getDate() + i);
-      const endTime = new Date(currentDate);
-      endTime.setHours(21, 0, 0, 0);
-      if (today.getDate() === currentDate.getDate()) {
-        currentDate.setHours(
-          currentDate.getHours() > 10 ? currentDate.getHours() + 1 : 10,
-        );
-        currentDate.setMinutes(currentDate.getMinutes() > 30 ? 30 : 0);
-      } else {
-        currentDate.setHours(10);
-        currentDate.setMinutes(0);
+  // the doctor's real free times for this kind of visit, worked out by the server from
+  // their hours, days off and existing bookings
+  const [availability, setAvailability] = useState<DoctorAvailability | null>(null);
+  const loadSlots = useCallback(async () => {
+    if (!docId) return;
+    try {
+      const { data } = await axiosInstance.get(API_PATHS.AVAILABILITY(docId, kind), { silent: true } as any);
+      if (data.success) {
+        setAvailability(data);
+        setSlotIndex(0);
+        setSlotTime("");
       }
-      const timeSlots: Slot[] = [];
-      while (currentDate < endTime) {
-        const formattedTime = currentDate.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-        });
-        const day = currentDate.getDate(),
-          month = currentDate.getMonth() + 1,
-          year = currentDate.getFullYear();
-        const slotDate = `${day}_${month}_${year}`;
-        if (!docInfo.slots_booked?.[slotDate]?.includes(formattedTime)) {
-          timeSlots.push({
-            datetime: new Date(currentDate),
-            time: formattedTime,
-          });
-        }
-        currentDate.setMinutes(currentDate.getMinutes() + 30);
-      }
-      if (timeSlots.length > 0) setDocSlots((prev) => [...prev, timeSlots]);
+    } catch {
+      toast.error("Couldn't load this doctor's times");
     }
-  };
+  }, [docId, kind]);
+
+  // after picking a time it's held, then paid for in the payment window
+  const [holding, setHolding] = useState(false);
+  const [held, setHeld] = useState<Appointment | null>(null);
 
   const bookAppointment = async () => {
     if (!token) {
       toast.warning("Please login to continue");
       return navigate("/login");
     }
-    if (!slotTime) return toast.info("Please select a time slot");
-    const date = docSlots[slotIndex]?.[0]?.datetime;
-    if (!date) return toast.error("No slots available");
+    const day = availability?.days[slotIndex];
+    if (!slotTime || !day) return toast.info("Please select a time");
+    setHolding(true);
     try {
-      const slotDate = `${date.getDate()}_${date.getMonth() + 1}_${date.getFullYear()}`;
-      const { data } = await axiosInstance.post(
-        API_PATHS.USER.BOOK_APPOINTMENT,
-        { docId, slotDate, slotTime },
-      );
+      const { data } = await axiosInstance.post(API_PATHS.USER.BOOK_APPOINTMENT, {
+        docId,
+        slotDate: day.slotDate,
+        slotTime,
+        kind,
+      });
       if (data.success) {
-        toast.success(data.message);
-        getDoctorsData();
-        navigate("/my-appointments");
+        setHeld(data.appointment);
       } else {
         toast.error(data.message);
+        loadSlots();
       }
     } catch (error: any) {
-      toast.error(
-        error.response?.data?.message || "Booking failed. Try again.",
-      );
+      toast.error(error.response?.data?.message || "Booking failed. Try again.");
+      loadSlots(); // someone may have just taken it
+    } finally {
+      setHolding(false);
     }
   };
 
@@ -112,8 +94,10 @@ const Appointments: React.FC = () => {
     fetchDocInfo();
   }, [doctors, docId]);
   useEffect(() => {
-    getAvailableSlots();
-  }, [docInfo]);
+    loadSlots();
+  }, [loadSlots]);
+
+  const fee = kind === "video" ? availability?.videoFees : availability?.fees ?? docInfo?.fees;
 
   if (!docInfo) return null;
 
@@ -174,11 +158,24 @@ const Appointments: React.FC = () => {
               </p>
               <p className="text-lg font-black text-slate-900">
                 {currencySymbol}
-                {docInfo.fees}
+                {availability?.fees ?? docInfo.fees}
+                <span className="text-[11px] font-bold text-slate-400 ml-1">at the clinic</span>
               </p>
+              {availability?.offersVideo && availability.videoFees != null && (
+                <p className="text-sm font-black text-violet-700">
+                  {currencySymbol}
+                  {availability.videoFees}
+                  <span className="text-[11px] font-bold text-violet-400 ml-1">video call</span>
+                </p>
+              )}
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Where the clinic is (Google Maps; can be switched off in Settings) */}
+      <div className="mb-8 md:mb-12">
+        <ClinicMap docId={docInfo._id} address={docInfo.address} name={docInfo.name} />
       </div>
 
       {/* Booking section */}
@@ -193,62 +190,138 @@ const Appointments: React.FC = () => {
           </h2>
         </div>
 
-        {/* Date selector */}
-        <div className="flex gap-2 md:gap-3 overflow-x-auto pb-3 no-scrollbar">
-          {docSlots.map((item, index) => (
-            <button
-              key={index}
-              onClick={() => {
-                setSlotIndex(index);
-                setSlotTime("");
-              }}
-              className={`flex flex-col items-center justify-center min-w-[64px] md:min-w-[76px] py-4 md:py-5 rounded-[20px] md:rounded-[28px] transition-all duration-300 shrink-0 ${
-                slotIndex === index
-                  ? "bg-slate-900 text-white shadow-lg -translate-y-1"
-                  : "bg-slate-50 text-slate-400 border border-transparent hover:border-teal-200 hover:bg-white"
-              }`}
-            >
-              <span className="text-[8px] md:text-[9px] font-black mb-1 opacity-60">
-                {item[0] && daysOfWeek[item[0].datetime.getDay()]}
-              </span>
-              <span className="text-base md:text-lg font-black">
-                {item[0] && item[0].datetime.getDate()}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {/* Time selector */}
-        <div className="flex flex-wrap gap-2 mt-6 md:mt-8">
-          <AnimatePresence mode="wait">
-            {docSlots[slotIndex]?.map((item) => (
-              <motion.button
-                key={`${slotIndex}-${item.time}`}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                onClick={() => setSlotTime(item.time)}
-                className={`flex items-center gap-1.5 px-4 md:px-5 py-2.5 md:py-3 rounded-xl md:rounded-2xl text-[10px] md:text-[11px] font-black uppercase tracking-wider transition-all ${
-                  item.time === slotTime
-                    ? "bg-teal-500 text-white shadow-lg shadow-teal-500/20"
-                    : "bg-white text-slate-500 border border-slate-100 hover:border-teal-300"
+        {/* In person or video */}
+        <div className="grid grid-cols-2 gap-2 md:gap-3 mb-6 md:mb-8 max-w-md">
+          {(
+            [
+              { id: "in-person", title: "At the clinic", hint: "Visit in person", icon: RiHospitalLine },
+              { id: "video", title: "Video call", hint: "From your phone or computer", icon: RiVideoChatLine },
+            ] as const
+          ).map((o) => {
+            const Icon = o.icon;
+            const active = kind === o.id;
+            const offered = !availability || (o.id === "video" ? availability.offersVideo : availability.offersInPerson);
+            return (
+              <button
+                key={o.id}
+                onClick={() => setKind(o.id)}
+                disabled={!offered}
+                title={offered ? undefined : `This doctor doesn't offer ${o.id === "video" ? "video calls" : "clinic visits"}`}
+                className={`flex items-center gap-3 text-left rounded-2xl border px-3 md:px-4 py-3 transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                  active
+                    ? o.id === "video"
+                      ? "border-violet-400 bg-violet-50 ring-2 ring-violet-100"
+                      : "border-teal-400 bg-teal-50 ring-2 ring-teal-100"
+                    : "border-slate-200 hover:bg-slate-50"
                 }`}
               >
-                <RiTimeLine size={11} className="shrink-0" />
-                {item.time}
-              </motion.button>
-            ))}
-          </AnimatePresence>
+                <Icon size={22} className={active ? (o.id === "video" ? "text-violet-600" : "text-teal-600") : "text-slate-400"} />
+                <span>
+                  <span className="block text-sm font-black text-slate-900">{o.title}</span>
+                  <span className="block text-[11px] text-slate-500">{offered ? o.hint : "Not offered"}</span>
+                </span>
+              </button>
+            );
+          })}
         </div>
 
-        <motion.button
-          whileHover={{ scale: 1.01 }}
-          whileTap={{ scale: 0.99 }}
-          onClick={bookAppointment}
-          className="mt-8 md:mt-10 w-full md:w-auto px-10 md:px-14 py-4 md:py-5 bg-slate-900 text-white rounded-xl md:rounded-2xl font-black uppercase tracking-[2px] text-[10px] md:text-[11px] shadow-lg hover:bg-teal-600 transition-all"
-        >
-          Confirm Appointment
-        </motion.button>
+        {!availability ? (
+          <div className="flex gap-2">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div key={i} className="w-16 md:w-[76px] h-20 rounded-[20px] bg-slate-100 animate-pulse" />
+            ))}
+          </div>
+        ) : !availability.available || availability.days.length === 0 ? (
+          <div className="rounded-2xl bg-slate-50 border border-slate-100 px-5 py-6 text-center">
+            <p className="font-black text-slate-800">
+              {!availability.available
+                ? "This doctor isn't taking bookings right now"
+                : `No free ${kind === "video" ? "video call" : "clinic"} times in the next two weeks`}
+            </p>
+            <p className="text-sm text-slate-500 mt-1">
+              Try {kind === "video" ? "a clinic visit" : availability.offersVideo ? "a video call" : "another doctor"}, or message the doctor.
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Date selector */}
+            <div className="flex gap-2 md:gap-3 overflow-x-auto pb-3 no-scrollbar">
+              {availability.days.map((day, index) => (
+                <button
+                  key={day.slotDate}
+                  onClick={() => {
+                    setSlotIndex(index);
+                    setSlotTime("");
+                  }}
+                  className={`flex flex-col items-center justify-center min-w-[64px] md:min-w-[76px] py-4 md:py-5 rounded-[20px] md:rounded-[28px] transition-all duration-300 shrink-0 ${
+                    slotIndex === index
+                      ? "bg-slate-900 text-white shadow-lg -translate-y-1"
+                      : "bg-slate-50 text-slate-400 border border-transparent hover:border-teal-200 hover:bg-white"
+                  }`}
+                >
+                  <span className="text-[8px] md:text-[9px] font-black mb-1 opacity-60">{daysOfWeek[day.weekday]}</span>
+                  <span className="text-base md:text-lg font-black">{Number(day.slotDate.split("_")[0])}</span>
+                  <span className="text-[8px] md:text-[9px] font-bold opacity-50">
+                    {new Date(`${day.iso}T12:00:00`).toLocaleDateString("en-GB", { month: "short" })}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Time selector */}
+            <div className="flex flex-wrap gap-2 mt-6 md:mt-8">
+              <AnimatePresence mode="wait">
+                {availability.days[slotIndex]?.slots.map((time) => (
+                  <motion.button
+                    key={`${slotIndex}-${time}`}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    onClick={() => setSlotTime(time)}
+                    className={`flex items-center gap-1.5 px-4 md:px-5 py-2.5 md:py-3 rounded-xl md:rounded-2xl text-[10px] md:text-[11px] font-black uppercase tracking-wider transition-all ${
+                      time === slotTime
+                        ? kind === "video"
+                          ? "bg-violet-600 text-white shadow-lg shadow-violet-500/20"
+                          : "bg-teal-500 text-white shadow-lg shadow-teal-500/20"
+                        : "bg-white text-slate-500 border border-slate-100 hover:border-teal-300"
+                    }`}
+                  >
+                    <RiTimeLine size={11} className="shrink-0" />
+                    {time}
+                  </motion.button>
+                ))}
+              </AnimatePresence>
+            </div>
+
+            <motion.button
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              onClick={bookAppointment}
+              disabled={holding || !slotTime}
+              className="mt-8 md:mt-10 w-full md:w-auto px-10 md:px-14 py-4 md:py-5 bg-slate-900 text-white rounded-xl md:rounded-2xl font-black uppercase tracking-[2px] text-[10px] md:text-[11px] shadow-lg hover:bg-teal-600 transition-all disabled:opacity-50"
+            >
+              {holding ? "Holding your time…" : `Continue to payment${fee != null ? ` · ${currencySymbol}${fee}` : ""}`}
+            </motion.button>
+            <p className="text-[12px] text-slate-500 mt-3">
+              Your time is held for 30 minutes while you pay; it&apos;s only booked once paid.
+              {kind === "video" && " You'll join the video call from your Appointments page; it opens 10 minutes before."}
+            </p>
+          </>
+        )}
       </div>
+
+      {/* pay for the held time: wallet or card */}
+      <PayAppointmentModal
+        appointment={held}
+        onClose={() => {
+          setHeld(null);
+          // still held for a while: they can finish paying from Appointments
+          navigate("/my-appointments");
+        }}
+        onPaid={() => {
+          getDoctorsData();
+          navigate("/my-appointments");
+        }}
+      />
 
       {/* Related */}
       <div className="mt-16 md:mt-28">

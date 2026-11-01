@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useEmoji } from "@/Context/EmojiContext";
+import { useUserSettings } from "@/hooks/useUserSettings";
 import { Link } from "@/lib/navigation";
 import type { Gift, WalletOverview } from "@/types";
 import { API_PATHS } from "@/utils/apiPath";
@@ -33,15 +34,18 @@ export default function GiftSheet({
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
 
+  // default from Settings → Privacy
+  const settings = useUserSettings();
   useEffect(() => {
     if (!entry) return;
     setSelected(null);
     setMessage("");
+    setAnonymous(!!settings?.privacy.giftAnonymously);
     axiosInstance
       .get(API_PATHS.WALLET.OVERVIEW)
       .then(({ data }) => data.success && setWallet(data))
       .catch(() => toast.error("Couldn't load your wallet"));
-  }, [entry]);
+  }, [entry, settings]);
 
   useEffect(() => {
     if (!entry) return;

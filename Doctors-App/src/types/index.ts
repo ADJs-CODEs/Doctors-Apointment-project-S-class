@@ -91,7 +91,22 @@ export interface Appointment {
   refund?: Refund;
   /** how it was paid (older paid appointments have none: card) */
   paymentMethod?: "stripe" | "wallet";
+  /** at the clinic or a video call (older appointments have none: in person) */
+  kind?: "in-person" | "video";
+  /** set while the time is only held for payment (unpaid); it's released when this passes */
+  holdExpiresAt?: string;
 }
+
+/** A doctor's free times from /api/availability (clinic's local dates and times). */
+export type DoctorAvailability = {
+  kind: "in-person" | "video";
+  available: boolean;
+  offersInPerson: boolean;
+  offersVideo: boolean;
+  fees: number;
+  videoFees: number | null;
+  days: { slotDate: string; iso: string; weekday: number; slots: string[] }[];
+};
 
 export type Refund = {
   percent: number;
@@ -124,6 +139,56 @@ export interface HealthDropdownProps {
   /** Opens the Medications tab on this visit, optionally on one medicine. */
   openMedications: (appointmentId: string, medicine?: string) => void;
 }
+
+// --- settings ---
+
+export type NotificationCategory =
+  | "medication"
+  | "missedDose"
+  | "appointments"
+  | "messages"
+  | "payments"
+  | "careCircle"
+  | "gifts"
+  | "security";
+
+export type TravelMode = "driving" | "walking" | "transit" | "bicycling";
+
+export type UserSettings = {
+  notifications: Record<NotificationCategory, { email: boolean; push: boolean }>;
+  quietHours: { enabled: boolean; start: string; end: string };
+  reminders: { doseMinutesBefore: 15 | 30 | 60; appointmentDayBefore: boolean };
+  privacy: { giftAnonymously: boolean };
+  maps: {
+    enabled: boolean;
+    homeAddress: string;
+    travelMode: TravelMode;
+    /** measure distances from where they are now, or from their home address */
+    origin: "current" | "home";
+  };
+  calendar: { autoAdd: boolean };
+};
+
+/** How far a clinic is (from /api/maps/distance). */
+export type ClinicDistance = {
+  /** route: real road distance/time from Google. straight-line: as the crow flies (no Maps key yet) */
+  kind: "route" | "straight-line";
+  from: "current" | "home";
+  mode: TravelMode;
+  distanceMeters: number;
+  durationSeconds: number | null;
+  traffic?: boolean;
+  clinic: { lat: number; lng: number; address: string };
+};
+
+export type GoogleCalendarStatus = {
+  /** the server has the Google client secret */
+  configured: boolean;
+  connected: boolean;
+  email?: string;
+  connectedAt?: string;
+  lastError?: string;
+};
 
 // --- wish well gifting (1 coin = 1 cent) ---
 
@@ -221,6 +286,8 @@ export type ChatVisit = {
   slotDate: string;
   slotTime: string;
   isCompleted: boolean;
+  kind?: "in-person" | "video";
+  missed?: boolean;
   medicines: string[];
 };
 

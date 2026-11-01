@@ -24,6 +24,7 @@ import { AppContext } from "@/Context/AppContext";
 import { useMessages } from "@/Context/MessagesContext";
 import { Link, NavLink, useNavigate } from "@/lib/navigation";
 import { disablePush, syncPush } from "@/utils/push";
+import { clearCachedSettings } from "@/hooks/useUserSettings";
 import type { AppContextType } from "@/types";
 
 type NavItem = { label: string; path: string; icon: typeof RiHome5Line };
@@ -148,6 +149,7 @@ export default function PatientShell({ children }: { children: ReactNode }) {
     setMoreOpen(false);
     // stop this device getting the next person's notifications; needs the token, so first
     await disablePush().catch(() => {});
+    clearCachedSettings();
     setToken("");
     localStorage.removeItem("token");
     navigate("/login");

@@ -1,12 +1,34 @@
 "use client";
 
-import React, { useContext } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import type { AppContextType, Appointment, MyAppointmentCardProps } from '../types/index';
 import { AppContext } from '../Context/AppContext';
-import { RiErrorWarningLine, RiShieldCheckLine, RiArrowDownSLine, RiCalendarCloseLine } from "@remixicon/react"
+import { RiErrorWarningLine, RiShieldCheckLine, RiArrowDownSLine, RiCalendarCloseLine, RiVideoChatLine, RiTimerLine } from "@remixicon/react"
 import { slotDateFormat } from '../utils/medicationUtils';
 import MessageDoctorButton from '../components/patient/MessageDoctorButton';
+import { DirectionsButton } from '../components/patient/ClinicMap';
+import JoinCallButton from '../components/patient/JoinCallButton';
 
+
+/** A time that's held but not paid for yet, with a live countdown. */
+function HoldBadge({ until }: { until: string }) {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 15_000)
+    return () => clearInterval(t)
+  }, [])
+  const mins = Math.max(0, Math.ceil((new Date(until).getTime() - now) / 60_000))
+  return (
+    <div className='px-4 py-3 rounded-xl md:rounded-2xl border border-amber-200 bg-amber-50 text-center'>
+      <p className='flex items-center justify-center gap-1.5 font-black text-[9px] md:text-[10px] uppercase tracking-wider text-amber-700'>
+        <RiTimerLine size={14} /> Awaiting payment
+      </p>
+      <p className='text-[11px] text-amber-800 mt-1 leading-snug'>
+        {mins > 0 ? `Held for ${mins} more min. Pay to confirm.` : 'Hold expired. Book again.'}
+      </p>
+    </div>
+  )
+}
 
 /** Missed appointment: whose miss it was and what happened to the money. */
 function MissedBadge({ item }: { item: Appointment }) {
@@ -34,6 +56,8 @@ function MissedBadge({ item }: { item: Appointment }) {
 const MyAppointmentCard: React.FC<MyAppointmentCardProps> = ({ item, isCritical, cancelAppointment, payStripe, onViewReport, isExpanded, toggleTracker }) => {
   // still to happen: not done, cancelled or missed
   const open = !item.cancelled && !item.isCompleted && !item.missed
+  // picked but not paid yet: only held for a while
+  const held = !!item.holdExpiresAt && !item.payment
 
   return (
     <div className={`bg-white p-5 md:p-6 rounded-[32px] md:rounded-[40px] flex flex-col md:flex-row gap-6 md:gap-8 items-center shadow-sm border transition-all duration-500 ${isCritical ? 'border-red-500 shadow-[0_0_25px_rgba(239,68,68,0.15)] bg-red-50/30' : 'border-slate-100'}`}>
@@ -66,14 +90,22 @@ const MyAppointmentCard: React.FC<MyAppointmentCardProps> = ({ item, isCritical,
           )}
         </div>
         <p className='text-teal-600 font-bold uppercase text-[9px] tracking-[2px] mt-1'>{item.docData?.speciality}</p>
-        <p className='text-[10px] md:text-xs text-slate-500 font-medium mt-2 bg-slate-100 w-fit px-3 py-1 rounded-full mx-auto md:mx-0'>
-          {slotDateFormat(item.slotDate)} | {item.slotTime}
-        </p>
+        <div className='flex flex-wrap items-center gap-2 mt-2 justify-center md:justify-start'>
+          <p className='text-[10px] md:text-xs text-slate-500 font-medium bg-slate-100 w-fit px-3 py-1 rounded-full'>
+            {slotDateFormat(item.slotDate)} | {item.slotTime}
+          </p>
+          {item.kind === 'video' && (
+            <span className='inline-flex items-center gap-1 text-[10px] md:text-xs font-bold text-violet-700 bg-violet-50 px-3 py-1 rounded-full'>
+              <RiVideoChatLine size={13} /> Video call
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Interactive Buttons */}
       <div className='flex flex-col gap-2 w-full md:w-auto min-w-[140px]'>
         {item.missed && <MissedBadge item={item} />}
+        {held && <HoldBadge until={item.holdExpiresAt!} />}
         {!open ? null : !item.payment && (
           <button onClick={() => payStripe(item._id)} className='w-full px-6 py-3 bg-slate-900 text-white rounded-xl md:rounded-2xl font-bold text-[10px] md:text-xs uppercase hover:bg-slate-800 active:scale-95 transition-all'>
             Pay Online
@@ -86,13 +118,18 @@ const MyAppointmentCard: React.FC<MyAppointmentCardProps> = ({ item, isCritical,
         )}
         {open && (
           <button onClick={() => cancelAppointment(item._id)} className='w-full px-6 py-3 border border-slate-200 text-slate-400 rounded-xl md:rounded-2xl font-bold text-[10px] md:text-xs uppercase hover:bg-red-50 hover:text-red-500 active:scale-95 transition-all'>
-            Cancel
+            {held ? 'Release time' : 'Cancel'}
           </button>
         )}
         {item.cancelled && <button className='w-full px-6 py-3 border border-red-100 text-red-400 rounded-xl md:rounded-2xl font-bold text-[10px] md:text-xs uppercase cursor-not-allowed'>Cancelled</button>}
 
-        {!item.cancelled && (
+        {/* messaging, joining and directions start once it's a real (paid) booking */}
+        {!item.cancelled && !held && (
           <MessageDoctorButton doctorId={item.docId} appointmentId={item._id} label='Message' className='w-full' />
+        )}
+        {open && !held && item.kind === 'video' && <JoinCallButton appointment={item} className='w-full' />}
+        {open && !held && item.kind !== 'video' && (
+          <DirectionsButton docId={item.docId} address={item.docData?.address} className='w-full' />
         )}
 
         {/* Visited Toggle Button */}

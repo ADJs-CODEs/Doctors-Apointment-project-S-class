@@ -18,10 +18,12 @@ import {
   RiTeamLine,
   RiTempHotLine,
   RiTimeLine,
+  RiVideoChatLine,
 } from "@remixicon/react";
 import { motion } from "framer-motion";
 import { type ReactNode, useContext, useState } from "react";
 import PayAppointmentModal from "@/components/patient/PayAppointmentModal";
+import JoinCallButton from "@/components/patient/JoinCallButton";
 import { AppContext } from "@/Context/AppContext";
 import { useMessages } from "@/Context/MessagesContext";
 import MedicineRow from "@/components/patient/MedicineRow";
@@ -286,9 +288,15 @@ export default function Dashboard() {
                 <p className="mt-2 flex items-center gap-2 text-slate-200">
                   <RiTimeLine size={16} />
                   <span className="font-bold">{dayLabel(next.at!)}</span> at {timeLabel(next.at!)}
+                  {next.appointment.kind === "video" && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-violet-200 bg-violet-500/20 px-2 py-0.5 rounded-full">
+                      <RiVideoChatLine size={13} /> Video call
+                    </span>
+                  )}
                 </p>
               </div>
               <div className="flex sm:flex-col gap-2 shrink-0">
+                {next.appointment.kind === "video" && <JoinCallButton appointment={next.appointment} compact />}
                 {next.appointment.payment ? (
                   <span className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-500/15 text-teal-300 text-[11px] font-black uppercase tracking-wider">
                     <RiShieldCheckLine size={15} /> Paid
