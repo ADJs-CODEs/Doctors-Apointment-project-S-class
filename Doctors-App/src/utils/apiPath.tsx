@@ -34,6 +34,15 @@ export const API_PATHS = {
   MAPS: {
     DISTANCE: "/api/maps/distance",
   },
+  SHOP: {
+    BROWSE: "/api/shop/browse",
+    PRESCRIPTIONS: "/api/shop/prescriptions",
+    ORDERS: "/api/shop/orders",
+    ORDER: (id: string) => `/api/shop/orders/${id}`,
+    ORDER_PAY: (id: string) => `/api/shop/orders/${id}/pay`,
+    ORDER_VERIFY: (id: string) => `/api/shop/orders/${id}/verify`,
+    ORDER_CANCEL: (id: string) => `/api/shop/orders/${id}/cancel`,
+  },
   SETTINGS: {
     GET: "/api/user/settings",
     SAVE: "/api/user/settings",

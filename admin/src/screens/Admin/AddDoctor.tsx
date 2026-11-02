@@ -44,7 +44,8 @@ const AddDoctor: React.FC = () => {
       formData.append('address', JSON.stringify({ line1: address1, line2: address2 }))
       formData.append('available', 'true')
 
-      const { data } = await axiosInstance.post(API_PATHS.ADMIN.ADD_DOCTORS, formData)
+      // multipart, or the shared client (JSON by default) would drop the photo
+      const { data } = await axiosInstance.post(API_PATHS.ADMIN.ADD_DOCTORS, formData, { headers: { "Content-Type": "multipart/form-data" } })
 
       if (data.success) {
         toast.success(data.message)

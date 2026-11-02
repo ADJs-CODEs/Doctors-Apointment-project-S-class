@@ -39,6 +39,7 @@ const CATEGORY_INFO: Record<NotificationCategory, { label: string; hint: string 
   appointments: { label: "Appointments", hint: "Booked, reminders, cancelled, missed" },
   messages: { label: "Doctor messages", hint: "Urgent messages always come through" },
   payments: { label: "Payments & receipts", hint: "Receipts are always emailed" },
+  orders: { label: "Pharmacy orders", hint: "Accepted, on the way, delivered" },
   careCircle: { label: "Care circle", hint: "Requests, and updates about people you watch" },
   gifts: { label: "Wish Well gifts", hint: "When someone sends you a gift" },
   security: { label: "Sign-in alerts", hint: "When your account is signed in to" },

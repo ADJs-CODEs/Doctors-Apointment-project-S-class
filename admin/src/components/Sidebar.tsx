@@ -15,7 +15,15 @@ import {
   RiChat3Line,
   RiBankLine,
   RiLineChartLine,
+  RiSettings3Line,
+  RiShoppingBag3Line,
+  RiStore2Line,
+  RiTeamLine,
+  RiCapsuleLine,
+  RiTruckLine,
+  RiMoneyDollarCircleLine,
 } from "@remixicon/react";
+import { usePharmacy } from "../context/PharmacyContext";
 import { useDoctorMessages } from "../context/DoctorMessagesContext";
 import type {
   AdminContextType,
@@ -28,6 +36,7 @@ const Sidebar: React.FC = () => {
   const { dToken } = useContext(DoctorContext) as DoctorContextType;
   const { setProgress } = useContext(AppContext) as AppContextType;
   const { unread: unreadMessages } = useDoctorMessages();
+  const { pToken, staff } = usePharmacy();
 
   const activeClass = "bg-slate-900 text-white shadow-xl lg:translate-x-2";
   const inactiveClass = "text-slate-500 hover:bg-slate-50 hover:text-slate-900";
@@ -133,6 +142,38 @@ const Sidebar: React.FC = () => {
                 className={({ isActive }) =>
                   `${baseClass} ${isActive ? activeClass : inactiveClass}`
                 }
+                to={"/pharmacies"}
+              >
+                <RiStore2Line
+                  size={22}
+                  className="shrink-0 group-hover:text-teal-500 transition-colors"
+                />
+                <p className="hidden lg:block text-[11px] font-black uppercase tracking-widest">
+                  Pharmacies
+                </p>
+              </NavLink>
+
+              <NavLink
+                onClick={handleLinkClick}
+                className={({ isActive }) =>
+                  `${baseClass} ${isActive ? activeClass : inactiveClass}`
+                }
+                to={"/shop-orders"}
+              >
+                <RiShoppingBag3Line
+                  size={22}
+                  className="shrink-0 group-hover:text-teal-500 transition-colors"
+                />
+                <p className="hidden lg:block text-[11px] font-black uppercase tracking-widest">
+                  Shop orders
+                </p>
+              </NavLink>
+
+              <NavLink
+                onClick={handleLinkClick}
+                className={({ isActive }) =>
+                  `${baseClass} ${isActive ? activeClass : inactiveClass}`
+                }
                 to={"/payouts"}
               >
                 <RiBankLine
@@ -143,6 +184,37 @@ const Sidebar: React.FC = () => {
                   Payouts
                 </p>
               </NavLink>
+            </ul>
+          </div>
+        )}
+
+        {/* --- Pharmacy Section --- */}
+        {pToken && !aToken && !dToken && (
+          <div className="animate-reveal flex lg:flex-col items-center lg:items-stretch">
+            <p className="hidden lg:block text-[10px] font-black uppercase tracking-[3px] text-slate-400 mb-8 px-10">
+              Pharmacy Portal
+            </p>
+            <ul className="flex lg:flex-col space-x-1 lg:space-x-0 lg:space-y-1">
+              {[
+                { to: "/pharmacy", label: "Overview", Icon: RiStore2Line, show: true },
+                { to: "/pharmacy-orders", label: "Orders", Icon: RiTruckLine, show: true },
+                { to: "/pharmacy-products", label: "Products", Icon: RiCapsuleLine, show: true },
+                { to: "/pharmacy-earnings", label: "Earnings", Icon: RiMoneyDollarCircleLine, show: staff?.role === "owner" },
+                { to: "/pharmacy-staff", label: "Staff", Icon: RiTeamLine, show: staff?.role === "owner" },
+                { to: "/pharmacy-settings", label: "Settings", Icon: RiSettings3Line, show: true },
+              ]
+                .filter((l) => l.show)
+                .map(({ to, label, Icon }) => (
+                  <NavLink
+                    key={to}
+                    onClick={handleLinkClick}
+                    className={({ isActive }) => `${baseClass} ${isActive ? activeClass : inactiveClass}`}
+                    to={to}
+                  >
+                    <Icon size={22} className="shrink-0 group-hover:text-teal-500 transition-colors" />
+                    <p className="hidden lg:block text-[11px] font-black uppercase tracking-widest">{label}</p>
+                  </NavLink>
+                ))}
             </ul>
           </div>
         )}

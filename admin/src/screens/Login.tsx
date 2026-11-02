@@ -10,11 +10,17 @@ import { useNavigate } from "@/lib/navigation"
 import { motion } from "framer-motion"
 import { API_PATHS } from "../utils/apiPath"
 import axiosInstance from "../utils/axiosInstance"
+import { usePharmacy } from "../context/PharmacyContext"
+import PharmacyApply from "./Pharmacy/PharmacyApply"
+
+const PORTALS = ['Admin', 'Doctor', 'Pharmacy'] as const
 
 const Login: React.FC = () => {
   const navigate = useNavigate()
 
-  const [state, setState] = useState<string>('Admin')
+  const [state, setState] = useState<(typeof PORTALS)[number]>('Admin')
+  const [applying, setApplying] = useState(false)
+  const { setPToken } = usePharmacy()
   const [email, setEmail] = useState<string>('')
   const [password, setPassword] = useState<string>('')
 
@@ -32,6 +38,15 @@ const Login: React.FC = () => {
           setAToken(data.token);
           navigate('/admin-dashboard')
           toast.success("Admin Access Granted")
+        } else {
+          toast.error(data.message)
+        }
+      } else if (state === 'Pharmacy') {
+        const { data } = await axiosInstance.post(API_PATHS.PHARMACY.LOGIN, { email, password })
+        if (data.success) {
+          setPToken(data.token)
+          navigate('/pharmacy')
+          toast.success('Welcome back')
         } else {
           toast.error(data.message)
         }
@@ -79,7 +94,9 @@ const Login: React.FC = () => {
             <span className='text-teal-600'>{state} Portal</span>
           </h2>
           <p className='text-slate-500 mt-6 font-medium text-lg max-w-sm'>
-            Secure access to ADJ's CODEs patient registries, appointment scheduling, and clinical analytics.
+            {state === 'Pharmacy'
+              ? 'Manage your pharmacy, your staff and the orders patients send you through ADJ’s CODEs.'
+              : "Secure access to ADJ's CODEs patient registries, appointment scheduling, and clinical analytics."}
           </p>
         </div>
 
@@ -93,7 +110,23 @@ const Login: React.FC = () => {
             <p className='text-sm font-black text-slate-900 uppercase tracking-tighter'>ADJ'S <span className='text-teal-600'>CODEs</span></p>
           </div>
 
+          {applying ? (
+            <PharmacyApply onDone={() => setApplying(false)} />
+          ) : (
           <form onSubmit={onSubmitHandler} className='space-y-6'>
+            {/* which portal */}
+            <div className='grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-2xl'>
+              {PORTALS.map((p) => (
+                <button
+                  key={p}
+                  type='button'
+                  onClick={() => setState(p)}
+                  className={`py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all ${state === p ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
             <div className='mb-6 sm:mb-8'>
               <p className='text-2xl sm:text-3xl font-black text-slate-900'>{state} Login</p>
               <div className='h-1.5 w-12 bg-teal-600 rounded-full mt-2'></div>
@@ -133,18 +166,18 @@ const Login: React.FC = () => {
               Authorize {state} Access
             </motion.button>
 
-            <div className='text-center mt-6 py-2'>
-              <p className='text-sm font-bold text-slate-400'>
-                {state === 'Admin' ? "Are you a Doctor?" : "Are you an Admin?"} {' '}
-                <span
-                  className='text-teal-600 font-black cursor-pointer hover:underline p-2 inline-block transition-all active:opacity-60'
-                  onClick={() => setState(state === 'Admin' ? 'Doctor' : 'Admin')}
-                >
-                  Switch Portal
-                </span>
-              </p>
-            </div>
+            {state === 'Pharmacy' && (
+              <div className='text-center py-2'>
+                <p className='text-sm font-bold text-slate-400'>
+                  New pharmacy?{' '}
+                  <button type='button' onClick={() => setApplying(true)} className='text-teal-600 font-black hover:underline p-2'>
+                    Apply to sell
+                  </button>
+                </p>
+              </div>
+            )}
           </form>
+          )}
         </div>
       </div>
     </div>

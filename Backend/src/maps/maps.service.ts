@@ -81,6 +81,22 @@ export class MapsService {
     }
   }
 
+  /**
+   * Where the patient is: the coordinates their browser sent, or else the home address in
+   * their settings. Used for clinic distance and for which pharmacies deliver to them.
+   */
+  async patientOrigin(userId: string, origin?: unknown): Promise<{ point: LatLng; from: 'current' | 'home' }> {
+    if (origin !== undefined && origin !== null) {
+      if (!validPoint(origin)) fail('That location looks wrong');
+      return { point: { lat: origin.lat, lng: origin.lng }, from: 'current' };
+    }
+    const settings = await this.prefs.get(userId);
+    if (!settings.maps.homeAddress) fail('Share your location, or add a home address in Settings');
+    const home = await this.geocode(settings.maps.homeAddress);
+    if (!home) fail("We couldn't find your home address on the map. Check it in Settings.");
+    return { point: { lat: home.lat, lng: home.lng }, from: 'home' };
+  }
+
   /** The clinic's coordinates, looked up once per address and saved on the doctor. */
   private async clinicLocation(doctor: IDoctor) {
     const address = [doctor.address?.line1, doctor.address?.line2].filter(Boolean).join(', ');
@@ -108,18 +124,7 @@ export class MapsService {
     const settings = await this.prefs.get(userId);
     const mode: Mode = body.mode && body.mode in ROUTES_MODE ? body.mode : settings.maps.travelMode;
 
-    let origin: LatLng | null = null;
-    let from: 'current' | 'home' = 'current';
-    if (body.origin !== undefined) {
-      if (!validPoint(body.origin)) fail('That location looks wrong');
-      origin = { lat: body.origin.lat, lng: body.origin.lng };
-    } else if (settings.maps.homeAddress) {
-      origin = await this.geocode(settings.maps.homeAddress);
-      from = 'home';
-      if (!origin) fail("We couldn't find your home address on the map. Check it in Settings.");
-    } else {
-      fail('Share your location, or add a home address in Settings');
-    }
+    const { point: origin, from } = await this.patientOrigin(userId, body.origin);
 
     const clinic = await this.clinicLocation(doctor);
     if (!clinic) fail("We couldn't find this clinic on the map");

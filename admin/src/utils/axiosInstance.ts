@@ -13,12 +13,16 @@ const axiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use(
   (config) => {
-    const dtoken = localStorage.getItem("dToken");
-    const atoken = localStorage.getItem("aToken");
-    if (config.url?.includes("/admin") && atoken) {
-      config.headers.Authorization = `Bearer ${atoken}`;
-    } else if (dtoken) {
-      config.headers.Authorization = `Bearer ${dtoken}`;
+    // each API area uses its own login; remember which, so a 401 only clears that one
+    const key = config.url?.startsWith("/api/pharmacy")
+      ? "pToken"
+      : config.url?.includes("/admin") && localStorage.getItem("aToken")
+        ? "aToken"
+        : "dToken";
+    const token = localStorage.getItem(key);
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+      (config as any)._tokenKey = key;
     }
     // requests sent with { silent: true }, like background refreshes, don't move the bar
     if (!(config as any)._tracked && !(config as any).silent) {
@@ -38,9 +42,9 @@ axiosInstance.interceptors.response.use(
     return response;
   },
   (error) => {
-    if (error.response && error.response.status === 401) {
-      localStorage.removeItem("dToken");
-      localStorage.removeItem("aToken");
+    // only the login that was refused is dropped (a wrong password sends no token at all)
+    if (error.response?.status === 401 && error.config?._tokenKey) {
+      localStorage.removeItem(error.config._tokenKey);
     }
     if (error.config?._tracked) requestTracker.finish();
     return Promise.reject(error);

@@ -10,6 +10,8 @@ import {
   PushSubscriptionSchema,
   WishWellSchema,
 } from './schemas/social.schemas';
+import { PharmacyPayoutSchema, PharmacySchema, PharmacyStaffSchema, ProductSchema } from './schemas/pharmacy.schemas';
+import { ShopOrderSchema } from './schemas/shop-order.schema';
 import { UserSchema } from './schemas/user.schema';
 import {
   GiftEventSchema,
@@ -34,6 +36,11 @@ const models = MongooseModule.forFeature([
   { name: MODEL.walletTransaction, schema: WalletTransactionSchema },
   { name: MODEL.giftEvent, schema: GiftEventSchema },
   { name: MODEL.payout, schema: PayoutSchema },
+  { name: MODEL.pharmacy, schema: PharmacySchema },
+  { name: MODEL.pharmacyStaff, schema: PharmacyStaffSchema },
+  { name: MODEL.product, schema: ProductSchema },
+  { name: MODEL.shopOrder, schema: ShopOrderSchema },
+  { name: MODEL.pharmacyPayout, schema: PharmacyPayoutSchema },
 ]);
 
 @Global()

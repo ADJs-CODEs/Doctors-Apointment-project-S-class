@@ -148,6 +148,7 @@ export type NotificationCategory =
   | "appointments"
   | "messages"
   | "payments"
+  | "orders"
   | "careCircle"
   | "gifts"
   | "security";
@@ -212,7 +213,9 @@ export type WalletTransaction = {
     | "payout_requested"
     | "payout_returned"
     | "appointment_payment"
-    | "appointment_refund";
+    | "appointment_refund"
+    | "shop_payment"
+    | "shop_refund";
   coins: number;
   cents: number;
   giftId?: string;

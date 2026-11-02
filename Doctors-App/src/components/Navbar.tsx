@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import NotificationBell from "./NotificationBell";
 import { disablePush } from "../utils/push";
 import { clearCachedSettings } from "../hooks/useUserSettings";
+import { basket } from "../utils/basket";
 import {
   List,
   X,
@@ -38,6 +39,7 @@ const Navbar: React.FC = () => {
     // stop this device getting the next person's notifications (needs the token, so first)
     await disablePush().catch(() => {});
     clearCachedSettings();
+    basket.clear();
     setToken("");
     localStorage.removeItem("token");
     setShowMenu(false);

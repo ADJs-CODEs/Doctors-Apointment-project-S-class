@@ -3,6 +3,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
 import { MODEL } from '../database/models';
 import type { IAppointment, IMedicine, IRefund } from '../database/schemas/appointment.schema';
+import type { IPharmacyPayout } from '../database/schemas/pharmacy.schemas';
+import type { IShopOrder, OrderStatus } from '../database/schemas/shop-order.schema';
 import type { IConnection } from '../database/schemas/social.schemas';
 import type { IUser } from '../database/schemas/user.schema';
 import { type Mail, MailService } from '../integrations/integrations';
@@ -57,6 +59,8 @@ const money = (amount: number) => {
     return `${amount} ${currency}`;
   }
 };
+/** cents -> money(".50") */
+const cents = (c: number) => money(c / 100);
 
 /** "Add to Google Calendar" link and an .ics file (Apple Calendar, Outlook) for a visit. */
 function calendarFor(a: IAppointment) {
@@ -749,6 +753,225 @@ export class EmailNotifications {
       message: `${message ? `“${message}” · ` : ''}${money(fundCents / 100)} added to your care fund.`,
       type: 'care',
       link: '/wallet',
+    });
+  }
+
+  // --- pharmacies ---
+
+  /** A pharmacy applied: thank the owner, tell the admin to review it. */
+  pharmacyApplied(p: { name: string; licenseNumber: string; email: string; address: { line1: string; line2?: string } }, owner: Person, located: boolean) {
+    this.deliver('pharmacy applied', {
+      to: owner.email,
+      subject: `We've received ${p.name}'s application`,
+      html: layout({
+        title: 'Thanks for applying to sell on ADJ’s CODEs',
+        body: `<p>Hi ${escapeHtml(firstName(owner.name))}, we've received the application for <strong>${escapeHtml(p.name)}</strong>.</p>
+               <p>The clinic checks your licence before you can start selling. We'll email you as soon as it's decided. Meanwhile you can log in to set up your delivery area and add your staff.</p>`,
+        button: { label: 'Open the pharmacy portal', url: adminUrl('/') },
+        footer: 'You are receiving this because you applied as a pharmacy partner.',
+      }),
+    });
+    this.deliver('pharmacy applied (admin)', {
+      to: process.env.ADMIN_EMAIL ?? '',
+      subject: `New pharmacy application: ${p.name}`,
+      html: layout({
+        title: 'A pharmacy wants to join the shop',
+        tone: 'orange',
+        body: `${details([
+          ['Pharmacy', p.name],
+          ['Licence number', p.licenseNumber],
+          ['Address', [p.address.line1, p.address.line2].filter(Boolean).join(', ')],
+          ['Contact', `${owner.name} (${p.email})`],
+          ['Found on the map', located ? 'Yes' : 'No: ask them to fix the address'],
+        ])}<p>Check the licence with the Pharmacy Council before approving.</p>`,
+        button: { label: 'Review pharmacies', url: adminUrl('/pharmacies') },
+        footer: 'Sent to the clinic admin.',
+      }),
+    });
+  }
+
+  /** The admin approved, rejected or suspended a pharmacy (or lifted a suspension). */
+  pharmacyStatusChanged(p: { name: string; email: string; status: string; statusNote?: string }) {
+    const copy = {
+      approved: { subject: `${p.name} is approved`, title: 'You can start selling', tone: 'teal' as const, text: 'Your pharmacy has been approved. Add your products and stock, and patients in your delivery area will see you in the shop.' },
+      rejected: { subject: `${p.name}'s application wasn't approved`, title: 'Your application wasn’t approved', tone: 'orange' as const, text: 'We couldn’t approve your pharmacy this time.' },
+      suspended: { subject: `${p.name} has been suspended`, title: 'Your pharmacy is suspended', tone: 'red' as const, text: 'Patients can’t see or order from your pharmacy until the suspension is lifted.' },
+      pending: { subject: `${p.name} is back under review`, title: 'Back under review', tone: 'orange' as const, text: 'Your pharmacy is being reviewed again.' },
+    }[p.status];
+    if (!copy) return;
+    this.deliver(`pharmacy ${p.status}`, {
+      to: p.email,
+      subject: copy.subject,
+      html: layout({
+        title: copy.title,
+        tone: copy.tone,
+        body: `<p>${copy.text}</p>${p.statusNote ? quote(p.statusNote, copy.tone) : ''}`,
+        button: { label: 'Open the pharmacy portal', url: adminUrl('/') },
+        footer: 'You are receiving this because you run a pharmacy on ADJ’s CODEs.',
+      }),
+    });
+  }
+
+  /** An owner (or the admin) added someone to a pharmacy, with a starting password. */
+  pharmacyStaffAdded(staff: Person & { role: string }, pharmacyName: string, tempPassword: string) {
+    this.deliver('pharmacy staff added', {
+      to: staff.email,
+      subject: `You've been added to ${pharmacyName}`,
+      html: layout({
+        title: `Welcome to ${pharmacyName}`,
+        body: `<p>Hi ${escapeHtml(firstName(staff.name))}, you've been added to <strong>${escapeHtml(pharmacyName)}</strong> as <strong>${escapeHtml(staff.role)}</strong>.</p>
+               ${details([
+                 ['Log in with', staff.email],
+                 ['Starting password', tempPassword],
+               ])}
+               <p>Choose the <strong>Pharmacy</strong> tab on the login page. You'll be asked to change this password the first time you log in.</p>`,
+        button: { label: 'Log in', url: adminUrl('/') },
+        footer: 'If you weren’t expecting this, ignore it and tell the pharmacy.',
+      }),
+    });
+  }
+
+  // --- pharmacy orders ---
+
+  /** Paid and sent to the pharmacy: receipt to the patient, "new order" to the pharmacy. */
+  orderPlaced(o: IShopOrder, pharmacyEmail?: string) {
+    const lines = details([
+      ...o.items.map((i) => [`${i.quantity} × ${i.name}${i.strength ? ` (${i.strength})` : ''}`, cents(i.priceCents * i.quantity)] as [string, string]),
+      ['Delivery', o.deliveryFeeCents ? cents(o.deliveryFeeCents) : 'Free'],
+      ['Total', cents(o.totalCents)],
+    ]);
+    const rx = o.items.some((i) => i.requiresPrescription);
+    this.deliver('order placed', {
+      userId: o.userId,
+      category: 'payments',
+      to: o.patientEmail,
+      subject: `Order placed with ${o.pharmacyName} (${cents(o.totalCents)})`,
+      html: layout({
+        title: 'Your order is placed',
+        body: `<p>Hi ${escapeHtml(firstName(o.patientName))}, ${escapeHtml(o.pharmacyName)} has your order${rx ? ' and a pharmacist will check your prescription' : ''}. We'll tell you as soon as they accept it.</p>
+               ${lines}<p style="font-size:13px;color:#64748b;">Delivering to: ${escapeHtml(o.delivery.address)}. Paid ${o.payment.method === 'wallet' ? 'from your wallet' : 'by card'}. You can cancel until the pharmacy accepts it.</p>`,
+        button: { label: 'Track your order', url: patientUrl(`/shop/orders/${o._id}`) },
+      }),
+    });
+    this.app.send(o.userId, {
+      category: 'orders',
+      title: 'Order placed',
+      message: `${o.pharmacyName} has your order. We'll tell you when they accept it.`,
+      type: 'payment',
+      link: `/shop/orders/${o._id}`,
+      inAppOnly: true, // they're looking at the order page
+    });
+    if (pharmacyEmail) {
+      this.deliver('order placed (pharmacy)', {
+        to: pharmacyEmail,
+        subject: `New order: ${o.items.reduce((n, i) => n + i.quantity, 0)} item(s), ${cents(o.totalCents)}${rx ? ' · prescription check needed' : ''}`,
+        html: layout({
+          title: 'You have a new order',
+          tone: rx ? 'orange' : 'teal',
+          body: `${lines}${rx ? '<p><strong>It includes prescription-only medicines.</strong> A pharmacist must check the prescription before accepting it.</p>' : ''}<p>Deliver to: ${escapeHtml(o.delivery.address)}</p>`,
+          button: { label: 'Open orders', url: adminUrl('/pharmacy-orders') },
+          footer: 'You are receiving this because you sell on ADJ’s CODEs.',
+        }),
+      });
+    }
+  }
+
+  /** The order moved on (or didn't go ahead): tell the patient. */
+  orderUpdate(o: IShopOrder) {
+    const refunded = o.refund?.status === 'refunded';
+    const refundText = !o.payment.paid
+      ? ''
+      : refunded
+        ? o.refund!.method === 'wallet'
+          ? ` ${cents(o.totalCents)} is back in your wallet.`
+          : ` ${cents(o.totalCents)} has been refunded to your card (it can take 5-10 days to show).`
+        : ' Your refund is being sent; the clinic will make sure you get it.';
+    const copy: Partial<Record<OrderStatus, { title: string; message: string; email: boolean; push: boolean; tone?: 'teal' | 'orange' | 'red' }>> = {
+      accepted: { title: 'Order accepted', message: `${o.pharmacyName} accepted your order and is getting it ready.`, email: false, push: true },
+      packing: { title: 'Order being packed', message: `${o.pharmacyName} is packing your order.`, email: false, push: false },
+      out_for_delivery: { title: 'On its way', message: `Your order from ${o.pharmacyName} is out for delivery to ${o.delivery.address}.`, email: true, push: true },
+      delivered: { title: 'Delivered', message: `Your order from ${o.pharmacyName} has been delivered.`, email: true, push: true },
+      rejected: { title: 'Order not accepted', message: `${o.pharmacyName} couldn't take your order: ${o.rejectReason}.${refundText}`, email: true, push: true, tone: 'orange' },
+      cancelled: { title: 'Order cancelled', message: `Your order from ${o.pharmacyName} was cancelled${o.rejectReason ? `: ${o.rejectReason}` : ''}.${refundText}`, email: true, push: true, tone: 'orange' },
+    };
+    const c = copy[o.status];
+    if (!c) return;
+    this.app.send(o.userId, { category: 'orders', title: c.title, message: c.message, type: 'payment', link: `/shop/orders/${o._id}`, inAppOnly: !c.push });
+    if (!c.email) return;
+    // refunds are receipts (always sent); progress emails follow their "Pharmacy orders" setting
+    const category: Category = o.status === 'rejected' || o.status === 'cancelled' ? 'payments' : 'orders';
+    this.deliver(`order ${o.status}`, {
+      userId: o.userId,
+      category,
+      to: o.patientEmail,
+      subject: `${c.title}: your order from ${o.pharmacyName}`,
+      html: layout({
+        title: c.title,
+        tone: c.tone,
+        body: `<p>Hi ${escapeHtml(firstName(o.patientName))}, ${escapeHtml(c.message)}</p>`,
+        button: { label: 'View your order', url: patientUrl(`/shop/orders/${o._id}`) },
+      }),
+    });
+  }
+
+  /** A pharmacy asked to withdraw its earnings: the admin approves it. */
+  pharmacyPayoutRequested(p: IPharmacyPayout) {
+    this.deliver('pharmacy payout requested (admin)', {
+      to: process.env.ADMIN_EMAIL ?? '',
+      subject: `Pharmacy withdrawal: ${cents(p.cents)} for ${p.pharmacyName}`,
+      html: layout({
+        title: 'A pharmacy wants to withdraw its earnings',
+        tone: 'orange',
+        body: `${details([
+          ['Pharmacy', p.pharmacyName],
+          ['Amount', cents(p.cents)],
+          ['Bank', `${p.bank.bankName}, ${p.bank.accountName}${p.bank.verified ? ' (confirmed by the bank)' : ' (typed in, not confirmed)'}`],
+          ['Requested by', p.requestedBy?.name ?? ''],
+        ])}`,
+        button: { label: 'Open payouts', url: adminUrl('/payouts?tab=pharmacies') },
+        footer: 'Sent to the clinic admin.',
+      }),
+    });
+  }
+
+  /** The admin (or Paystack) settled a pharmacy withdrawal. */
+  pharmacyPayoutDecided(p: IPharmacyPayout, to?: string) {
+    if (!to) return;
+    const copy = {
+      paid: { title: 'Your withdrawal was sent', tone: 'teal' as const, text: `${cents(p.cents)} has been sent to ${p.bank.bankName} (${p.bank.accountName}).${p.reference ? ` Reference: ${p.reference}.` : ''}` },
+      rejected: { title: 'Your withdrawal wasn’t approved', tone: 'orange' as const, text: `The ${cents(p.cents)} is back in your available balance.` },
+      failed: { title: 'Your withdrawal couldn’t be sent', tone: 'red' as const, text: `The bank transfer failed${p.failureReason ? ` (${p.failureReason})` : ''}. The ${cents(p.cents)} is back in your available balance; check your bank details and try again.` },
+    }[p.status as 'paid' | 'rejected' | 'failed'];
+    if (!copy) return;
+    this.deliver(`pharmacy payout ${p.status}`, {
+      to,
+      subject: `${copy.title}: ${cents(p.cents)}`,
+      html: layout({
+        title: copy.title,
+        tone: copy.tone,
+        body: `<p>${escapeHtml(copy.text)}</p>${p.adminNote && p.status === 'rejected' ? quote(p.adminNote, 'orange') : ''}`,
+        button: { label: 'Open earnings', url: adminUrl('/pharmacy-earnings') },
+        footer: 'You are receiving this because you sell on ADJ’s CODEs.',
+      }),
+    });
+  }
+
+  orderRefundNeedsAdmin(o: IShopOrder, error: string) {
+    this.deliver('order refund needs admin', {
+      to: process.env.ADMIN_EMAIL ?? '',
+      subject: `Action needed: refund ${cents(o.totalCents)} to ${o.patientName}`,
+      html: layout({
+        title: 'A pharmacy order refund needs to be sent by hand',
+        tone: 'red',
+        body: `<p>Stripe refused the automatic refund: <em>${escapeHtml(error)}</em></p>${details([
+          ['Patient', `${o.patientName} (${o.patientEmail})`],
+          ['Pharmacy', o.pharmacyName],
+          ['Amount', cents(o.totalCents)],
+          ['Order ID', String(o._id)],
+        ])}<p>Refund it from the Stripe dashboard (Payments → find the payment → Refund).</p>`,
+        button: { label: 'Open Stripe payments', url: 'https://dashboard.stripe.com/payments' },
+        footer: 'Sent to the clinic admin.',
+      }),
     });
   }
 

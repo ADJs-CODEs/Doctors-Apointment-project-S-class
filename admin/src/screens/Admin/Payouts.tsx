@@ -11,8 +11,48 @@ import {
 } from "@remixicon/react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useNavigate, useSearchParams } from "@/lib/navigation";
 import { API_PATHS } from "../../utils/apiPath";
 import axiosInstance from "../../utils/axiosInstance";
+import PharmacyPayouts from "./PharmacyPayouts";
+
+/** Money going out: patients' care funds, and pharmacies' earnings. */
+export default function Payouts() {
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
+  const tab = params.get("tab") === "pharmacies" ? "pharmacies" : "care";
+  return (
+    <div className="bg-slate-50/50 min-h-screen">
+      <div className="px-4 sm:px-6 md:px-10 pt-6 md:pt-10">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex gap-1 p-1 bg-slate-100 rounded-2xl w-fit">
+            {(
+              [
+                ["care", "Patients' care funds"],
+                ["pharmacies", "Pharmacies"],
+              ] as const
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => navigate(key === "care" ? "/payouts" : "/payouts?tab=pharmacies")}
+                className={`px-4 py-2 rounded-xl text-sm font-bold ${tab === key ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      {tab === "care" ? (
+        <CareFundPayouts />
+      ) : (
+        <div className="p-4 sm:p-6 md:p-10">
+          <PharmacyPayouts />
+        </div>
+      )}
+    </div>
+  );
+}
 
 type Payout = {
   _id: string;
@@ -45,7 +85,7 @@ const when = (iso?: string) =>
   iso ? new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : "";
 
 /** Care fund withdrawals: verify the person, send the transfer, then record it here. */
-export default function Payouts() {
+function CareFundPayouts() {
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("pending");
   const [payouts, setPayouts] = useState<Payout[] | null>(null);
   const [setup, setSetup] = useState<Setup>({ paystack: false, ngnRate: null });

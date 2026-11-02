@@ -15,4 +15,9 @@ export const MODEL = {
   walletTransaction: 'wallettransaction',
   giftEvent: 'giftevent',
   payout: 'payout',
+  pharmacy: 'pharmacy',
+  pharmacyStaff: 'pharmacystaff',
+  product: 'product',
+  shopOrder: 'shoporder',
+  pharmacyPayout: 'pharmacypayout',
 } as const;

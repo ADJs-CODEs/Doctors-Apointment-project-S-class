@@ -2,12 +2,13 @@ import { Controller, Headers, HttpCode, Logger, Post, type RawBodyRequest, Req }
 import type { Request } from 'express';
 import Stripe from 'stripe';
 import { BookingService } from '../appointments/booking.service';
+import { OrderService } from '../pharmacy/order.service';
 import { WalletService } from '../wallet/wallet.service';
 
 /**
  * Stripe tells us directly when a checkout is paid, so a payment never depends on the
  * patient's browser coming back to the site. Handles appointment payments (holds become
- * bookings) and coin top-ups. Both paths are idempotent with the "return to site" ones.
+ * bookings), coin top-ups and pharmacy orders. Both paths are idempotent with the "return to site" ones.
  *
  * Set up in the Stripe dashboard: Developers → Webhooks → endpoint
  * https://<backend>/api/stripe/webhook, events checkout.session.completed and
@@ -21,6 +22,7 @@ export class StripeWebhookController {
   constructor(
     private readonly booking: BookingService,
     private readonly wallet: WalletService,
+    private readonly orders: OrderService,
   ) {}
 
   private get stripe() {
@@ -54,6 +56,8 @@ export class StripeWebhookController {
         try {
           if (session.metadata?.kind === 'coins') {
             await this.wallet.creditTopup(session);
+          } else if (session.metadata?.kind === 'pharmacy_order') {
+            await this.orders.markStripePaid(session);
           } else if (session.metadata?.appointmentId) {
             await this.booking.markStripePaid(session);
           }

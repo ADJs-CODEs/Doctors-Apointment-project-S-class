@@ -43,7 +43,19 @@ type FinanceData = {
     careFundCount: number;
     payoutsHeldCents: number;
     payoutsHeldCount: number;
+    /** pharmacies' earnings on delivered orders not yet paid out */
+    pharmaciesCents: number;
+    /** paid orders still on their way (go to the pharmacy, or back to the patient) */
+    ordersInProgressCents: number;
     totalCents: number;
+  };
+  shop: {
+    ordersCents: number;
+    orders: number;
+    deliveredOrders: number;
+    commissionCents: number;
+    refundedCents: number;
+    pharmacyPayoutsPaidCents: number;
   };
   doctors: {
     docId: string;
@@ -58,6 +70,8 @@ type FinanceData = {
   }[];
   attention: {
     pendingPayouts: number;
+    pendingPharmacyPayouts: number;
+    failedOrderRefunds: number;
     refunds: { appointmentId: string; patient: string; doctor: string; slotDate: string; cents: number; why: string }[];
   };
   trend: Point[];
@@ -200,9 +214,11 @@ export default function Finance() {
               </section>
             </div>
 
+            <ShopPanel data={data} periodName={periodName} />
+
             <p className="text-[11px] text-slate-400 leading-relaxed">
-              Visits paid from the wallet used coins or care fund money that was already counted when the coins were
-              bought, so &quot;Cash in&quot; leaves them out. Totals are in {data.currency}; 1 coin = 1 cent.
+              Visits and orders paid from the wallet used coins or care fund money that was already counted when the coins
+              were bought, so &quot;Cash in&quot; leaves them out. Totals are in {data.currency}; 1 coin = 1 cent.
             </p>
           </div>
         )}
@@ -226,25 +242,31 @@ function Stat({ icon, label, value, hint }: { icon: React.ReactNode; label: stri
 
 /** Things that need someone to act: payouts waiting, refunds that didn't go through. */
 function Attention({ data }: { data: FinanceData }) {
-  const { pendingPayouts, refunds } = data.attention;
-  if (!pendingPayouts && !refunds.length) return null;
+  const { pendingPayouts, pendingPharmacyPayouts, failedOrderRefunds, refunds } = data.attention;
+  if (!pendingPayouts && !pendingPharmacyPayouts && !failedOrderRefunds && !refunds.length) return null;
+  const links = [
+    { n: pendingPayouts, to: "/payouts", text: `care fund withdrawal${pendingPayouts === 1 ? "" : "s"} waiting for approval` },
+    { n: pendingPharmacyPayouts, to: "/payouts?tab=pharmacies", text: `pharmacy withdrawal${pendingPharmacyPayouts === 1 ? "" : "s"} waiting for approval` },
+    { n: failedOrderRefunds, to: "/shop-orders", text: `shop order refund${failedOrderRefunds === 1 ? "" : "s"} failed: send by hand` },
+  ].filter((l) => l.n > 0);
   return (
     <section className="rounded-[28px] border border-orange-200 bg-orange-50/60 p-5 sm:p-6">
       <div className="flex items-center gap-2 text-orange-800">
         <RiAlertLine size={18} />
         <h2 className="font-black">Needs attention</h2>
       </div>
-      {pendingPayouts > 0 && (
+      {links.map((l) => (
         <Link
-          to="/payouts"
+          key={l.to}
+          to={l.to}
           className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-white border border-orange-100 px-4 py-3 text-sm font-bold text-slate-800 hover:border-orange-300"
         >
           <span>
-            {pendingPayouts} care fund withdrawal{pendingPayouts === 1 ? "" : "s"} waiting for approval
+            {l.n} {l.text}
           </span>
           <RiArrowRightLine size={16} className="text-orange-600 shrink-0" />
         </Link>
-      )}
+      ))}
       {refunds.length > 0 && (
         <ul className="mt-3 space-y-2">
           {refunds.map((r) => (
@@ -453,6 +475,39 @@ function TrendChart({ data }: { data: FinanceData }) {
   );
 }
 
+/** The medicine shop's money for the period. */
+function ShopPanel({ data, periodName }: { data: FinanceData; periodName: string }) {
+  const s = data.shop;
+  const tiles = [
+    { label: "Orders paid", value: money(s.ordersCents), hint: `${s.orders} order${s.orders === 1 ? "" : "s"}, card and wallet` },
+    { label: "Your commission", value: money(s.commissionCents), hint: `From ${s.deliveredOrders} delivered order${s.deliveredOrders === 1 ? "" : "s"}` },
+    { label: "Order refunds", value: money(s.refundedCents), hint: "Rejected or cancelled orders" },
+    { label: "Paid to pharmacies", value: money(s.pharmacyPayoutsPaidCents), hint: "Withdrawals sent" },
+  ];
+  return (
+    <section className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-5 sm:p-6">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h2 className="font-black text-slate-900">Pharmacy shop</h2>
+          <p className="text-[12px] text-slate-400 mt-0.5">The last {periodName}</p>
+        </div>
+        <Link to="/shop-orders" className="text-[12px] font-bold text-teal-700 hover:underline">
+          See all orders →
+        </Link>
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+        {tiles.map((t) => (
+          <div key={t.label} className="rounded-2xl bg-slate-50 px-4 py-3">
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">{t.label}</p>
+            <p className="text-xl font-black text-slate-900 tabular-nums mt-1">{t.value}</p>
+            <p className="text-[11px] text-slate-400 leading-snug">{t.hint}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 /** What the clinic is holding for other people right now. */
 function Owed({ data }: { data: FinanceData }) {
   const o = data.owed;
@@ -472,6 +527,16 @@ function Owed({ data }: { data: FinanceData }) {
       value: `${o.unspentCoins.toLocaleString()} coins`,
       hint: `Up to ${money(o.unspentCoins)} of gifts or visits still to be used`,
     },
+    {
+      label: "Pharmacies' earnings",
+      value: money(o.pharmaciesCents),
+      hint: "Delivered orders not paid out to the pharmacy yet",
+    },
+    {
+      label: "Paid orders on their way",
+      value: money(o.ordersInProgressCents),
+      hint: "Goes to the pharmacy on delivery, or back to the patient",
+    },
   ];
   return (
     <section className="bg-slate-900 text-white rounded-[28px] p-5 sm:p-6">
@@ -480,7 +545,7 @@ function Owed({ data }: { data: FinanceData }) {
         <h2 className="font-black">Owed right now</h2>
       </div>
       <p className="text-4xl font-black mt-3 tabular-nums">{money(o.totalCents)}</p>
-      <p className="text-[12px] text-slate-400 mt-1">Money the clinic is holding for patients. Keep at least this in the account.</p>
+      <p className="text-[12px] text-slate-400 mt-1">Money the clinic is holding for patients and pharmacies. Keep at least this in the account.</p>
       <div className="mt-5 space-y-3">
         {rows.map((r) => (
           <div key={r.label} className="rounded-2xl bg-white/5 px-4 py-3">

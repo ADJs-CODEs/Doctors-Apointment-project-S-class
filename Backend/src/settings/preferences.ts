@@ -12,6 +12,7 @@ export const CATEGORIES = [
   'appointments', // booked, reminders, cancelled, missed
   'messages', // from doctors
   'payments', // receipts, refunds, withdrawals
+  'orders', // pharmacy orders: accepted, on the way, delivered
   'careCircle', // requests and updates about people you watch
   'gifts', // Wish Well gifts you receive
   'security', // sign-in alerts

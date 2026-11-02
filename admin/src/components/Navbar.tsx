@@ -5,15 +5,18 @@ import { AdminContext } from '../context/AdminContext'
 import { useNavigate } from "@/lib/navigation"
 import { DoctorContext } from '../context/DoctorContext'
 import { AppContext } from '../context/AppContext'
-import { RiLogoutCircleRLine, RiShieldUserLine, RiStethoscopeLine } from '@remixicon/react'
+import { RiLogoutCircleRLine, RiShieldUserLine, RiStethoscopeLine, RiStore2Line } from '@remixicon/react'
 import type { AdminContextType, DoctorContextType, AppContextType } from '../types/index'
 import { motion } from 'framer-motion'
 import DoctorBell from './DoctorBell'
+import { usePharmacy } from '../context/PharmacyContext'
 
 const Navbar: React.FC = () => {
   const { aToken, setAToken } = useContext(AdminContext) as AdminContextType
   const { dToken, setDToken } = useContext(DoctorContext) as DoctorContextType
   const { setProgress } = useContext(AppContext) as AppContextType
+  const { pToken, logout: pharmacyLogout } = usePharmacy()
+  const role = aToken ? 'Admin' : dToken ? 'Doctor' : pToken ? 'Pharmacy' : ''
 
   const navigate = useNavigate()
 
@@ -27,10 +30,11 @@ const Navbar: React.FC = () => {
       setDToken('')
       localStorage.removeItem('dToken')
     }
+    if (pToken) pharmacyLogout()
   }
 
   const handleLogoClick = () => {
-    navigate(aToken ? '/admin-dashboard' : '/doctor-dashboard')
+    navigate(aToken ? '/admin-dashboard' : dToken ? '/doctor-dashboard' : '/pharmacy')
   }
 
   return (
@@ -62,13 +66,15 @@ const Navbar: React.FC = () => {
 
         {/* Status Badge: Hidden on mobile, visible from sm (tablet) upwards */}
         <div className='hidden sm:flex items-center gap-2 px-3 sm:px-4 py-1.5 bg-slate-900 rounded-full text-white shadow-lg shadow-slate-200'>
-          {aToken ? (
+          {role === 'Admin' ? (
             <RiShieldUserLine size={12} className='text-teal-400' />
-          ) : (
+          ) : role === 'Doctor' ? (
             <RiStethoscopeLine size={12} className='text-teal-400' />
+          ) : (
+            <RiStore2Line size={12} className='text-teal-400' />
           )}
           <span className='text-[8px] sm:text-[10px] font-black uppercase tracking-[1px] sm:tracking-[2px]'>
-            {aToken ? 'Admin' : 'Doctor'}
+            {role}
           </span>
         </div>
       </div>

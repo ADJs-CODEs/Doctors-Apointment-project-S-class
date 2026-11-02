@@ -31,6 +31,12 @@ import { EmailNotifications } from './notifications/email-notifications';
 import { PushController } from './notifications/push.controller';
 import { MapsController } from './maps/maps.controller';
 import { PaystackWebhookController } from './payments/paystack-webhook.controller';
+import { AdminPharmaciesController, AdminShopController, PharmacyController, ShopController } from './pharmacy/pharmacy.controller';
+import { PharmacyEarningsService } from './pharmacy/earnings.service';
+import { OrderService } from './pharmacy/order.service';
+import { ProductService } from './pharmacy/product.service';
+import { ShopService } from './pharmacy/shop.service';
+import { PharmacyService } from './pharmacy/pharmacy.service';
 import { PaystackService } from './payments/paystack.service';
 import { StripeWebhookController } from './payments/stripe-webhook.controller';
 import { MapsService } from './maps/maps.service';
@@ -77,9 +83,18 @@ class HealthController {
     DoctorScheduleController,
     StripeWebhookController,
     PaystackWebhookController,
+    PharmacyController,
+    AdminPharmaciesController,
+    ShopController,
+    AdminShopController,
   ],
   providers: [
     PaystackService,
+    PharmacyService,
+    ProductService,
+    ShopService,
+    OrderService,
+    PharmacyEarningsService,
     BookingService,
     VideoService,
     MapsService,
