@@ -13,7 +13,7 @@ export type DistanceStatus = "idle" | "locating" | "loading" | "done" | "error";
 // appointments doesn't ask for location once per card. Never sent anywhere but our API.
 let lastPosition: { point: Point; at: number } | null = null;
 
-function currentPosition(): Promise<Point> {
+export function currentPosition(): Promise<Point> {
   if (lastPosition && Date.now() - lastPosition.at < 5 * 60_000) return Promise.resolve(lastPosition.point);
   return new Promise((resolve, reject) => {
     if (!("geolocation" in navigator)) return reject(new Error("Your browser can't share your location"));
@@ -41,7 +41,7 @@ export const lastKnownOrigin = () =>
   lastPosition ? `${lastPosition.point.lat.toFixed(5)},${lastPosition.point.lng.toFixed(5)}` : null;
 
 /** Has the patient already allowed location for this site? (so we can measure without asking) */
-async function locationAllowed() {
+export async function locationAllowed() {
   try {
     const p = await navigator.permissions?.query({ name: "geolocation" as PermissionName });
     return p?.state === "granted";

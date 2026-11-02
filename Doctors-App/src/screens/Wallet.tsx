@@ -9,6 +9,7 @@ import {
   RiCoinsLine,
   RiGiftLine,
   RiHandHeartLine,
+  RiShoppingBag3Line,
   RiStethoscopeLine,
   RiTimeLine,
 } from "@remixicon/react";
@@ -54,6 +55,18 @@ function TxRow({ tx, money }: { tx: WalletTransaction; money: (cents: number) =>
     },
     appointment_refund: {
       label: `Refund: ${tx.counterpartyName ?? "appointment"}`,
+      icon: <RiArrowDownLine size={16} />,
+      tone: "bg-teal-50 text-teal-600",
+      amount: `+${walletAmount(tx, money)}`,
+    },
+    shop_payment: {
+      label: `Pharmacy order: ${tx.counterpartyName ?? "pharmacy"}`,
+      icon: <RiShoppingBag3Line size={16} />,
+      tone: "bg-violet-50 text-violet-600",
+      amount: walletAmount(tx, money),
+    },
+    shop_refund: {
+      label: `Refund: ${tx.counterpartyName ?? "pharmacy order"}`,
       icon: <RiArrowDownLine size={16} />,
       tone: "bg-teal-50 text-teal-600",
       amount: `+${walletAmount(tx, money)}`,

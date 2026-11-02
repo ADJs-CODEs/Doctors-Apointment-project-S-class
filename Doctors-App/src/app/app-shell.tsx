@@ -69,6 +69,7 @@ const PATIENT_ONLY = [
   '/medication-history',
   '/messages',
   '/wallet',
+  '/shop',
   '/call/',
   '/my-profile',
   '/account-settings',

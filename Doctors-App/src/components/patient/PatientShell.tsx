@@ -4,6 +4,7 @@ import {
   RiApps2Line,
   RiCalendarCheckLine,
   RiCapsuleLine,
+  RiShoppingBag3Line,
   RiChat3Line,
   RiCloseLine,
   RiCustomerService2Line,
@@ -25,6 +26,7 @@ import { useMessages } from "@/Context/MessagesContext";
 import { Link, NavLink, useNavigate } from "@/lib/navigation";
 import { disablePush, syncPush } from "@/utils/push";
 import { clearCachedSettings } from "@/hooks/useUserSettings";
+import { basket } from "@/utils/basket";
 import type { AppContextType } from "@/types";
 
 type NavItem = { label: string; path: string; icon: typeof RiHome5Line };
@@ -34,6 +36,7 @@ const MAIN_NAV: NavItem[] = [
   { label: "Appointments", path: "/my-appointments", icon: RiCalendarCheckLine },
   { label: "Medications", path: "/medication-history", icon: RiCapsuleLine },
   { label: "Messages", path: "/messages", icon: RiChat3Line },
+  { label: "Pharmacy", path: "/shop", icon: RiShoppingBag3Line },
   { label: "Find a doctor", path: "/doctors", icon: RiStethoscopeLine },
   { label: "Care circle", path: "/watching-over", icon: RiTeamLine },
   { label: "Wish Well", path: "/wish-well", icon: RiHeart3Line },
@@ -150,6 +153,7 @@ export default function PatientShell({ children }: { children: ReactNode }) {
     // stop this device getting the next person's notifications; needs the token, so first
     await disablePush().catch(() => {});
     clearCachedSettings();
+    basket.clear();
     setToken("");
     localStorage.removeItem("token");
     navigate("/login");
