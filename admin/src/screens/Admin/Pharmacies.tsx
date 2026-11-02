@@ -127,6 +127,11 @@ function PharmacyCard({ p, onChanged }: { p: Row; onChanged: () => void }) {
           <p className="text-xl font-black text-slate-900 flex flex-wrap items-center gap-2">
             {p.name}
             {p.operatedByClinic && <span className="text-[10px] font-black uppercase tracking-wider bg-slate-900 text-white px-2.5 py-1 rounded-full">Clinic</span>}
+            {p.demo && (
+              <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full" title="Only shown to the test accounts in SHOP_DEMO_USERS">
+                Demo
+              </span>
+            )}
           </p>
           <p className="text-[12px] text-slate-400">
             Applied {when(p.createdAt)} · {p.staffCount} active staff
