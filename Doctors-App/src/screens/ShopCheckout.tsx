@@ -49,15 +49,16 @@ export default function ShopCheckout() {
   const [walletCents, setWalletCents] = useState<number | null>(null);
   const [placing, setPlacing] = useState(false);
 
-  // prefill from the profile once it's loaded
+  // prefill: the address they typed in the shop (ordering for someone else), else their profile
+  const typedAddress = current?.deliverTo.where === "other" ? current.deliverTo.label ?? "" : "";
   useEffect(() => {
-    if (!userData) return;
     setForm((f) => ({
       ...f,
-      address: f.address || [userData.address?.line1, userData.address?.line2].filter(Boolean).join(", "),
-      phone: f.phone || userData.phone || "",
+      address: f.address || typedAddress || [userData?.address?.line1, userData?.address?.line2].filter(Boolean).join(", "),
+      // someone else's address: their phone is probably different, so don't assume ours
+      phone: f.phone || (typedAddress ? "" : userData?.phone || ""),
     }));
-  }, [userData]);
+  }, [userData, typedAddress]);
 
   useEffect(() => {
     axiosInstance
@@ -104,7 +105,8 @@ export default function ShopCheckout() {
         pharmacyId: current.pharmacy._id,
         items: current.items.map((i) => ({ productId: i.productId, quantity: i.quantity, prescriptionAppointmentId: linked[i.productId] })),
         delivery: form,
-        origin: current.deliverTo.where === "current" ? current.deliverTo.point : undefined,
+        // the exact point the shop matched this pharmacy for (where they are, home, or another address)
+        origin: current.deliverTo.point,
         payWith,
       });
       if (!data.success) return toast.error(data.message);
@@ -209,7 +211,11 @@ export default function ShopCheckout() {
             <h2 className="font-black text-slate-900">Delivery</h2>
             <p className="text-[12px] text-slate-500 flex items-center gap-1.5">
               <RiMapPin2Line size={14} />
-              {current.deliverTo.where === "current" ? "To where you were when you picked these" : "To your home address (from Settings)"}, within{" "}
+              {current.deliverTo.where === "current"
+                ? "To where you were when you picked these"
+                : current.deliverTo.where === "other"
+                  ? `To ${current.deliverTo.label}`
+                  : "To your home address (from Settings)"}, within{" "}
               {current.pharmacy.name}&apos;s delivery area.
             </p>
             <label className="block">

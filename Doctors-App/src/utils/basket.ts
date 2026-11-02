@@ -19,8 +19,8 @@ export type BasketItem = {
 
 export type Basket = {
   pharmacy: { _id: string; name: string; deliveryFeeCents: number; distanceKm: number };
-  /** where the shop was showing pharmacies for: the order is delivered there */
-  deliverTo: { where: "current" | "home"; point?: { lat: number; lng: number } };
+  /** where the shop was showing pharmacies for: the order is delivered there (label: a typed address) */
+  deliverTo: { where: "current" | "home" | "other"; point?: { lat: number; lng: number }; label?: string };
   items: BasketItem[];
 };
 
