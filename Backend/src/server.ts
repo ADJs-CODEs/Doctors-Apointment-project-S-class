@@ -15,8 +15,10 @@ async function bootstrap() {
   app.enableShutdownHooks();
 
   const port = Number(process.env.PORT) || 4000;
-  await app.listen(port);
-  Logger.log(`Server started on port ${port}`, 'Bootstrap');
+  // 0.0.0.0 explicitly: Render only detects ports bound there (Node's default address
+  // didn't show up for it on Node 26, so the deploy timed out)
+  await app.listen(port, '0.0.0.0');
+  Logger.log(`Server started on 0.0.0.0:${port}`, 'Bootstrap');
 }
 
 void bootstrap();
