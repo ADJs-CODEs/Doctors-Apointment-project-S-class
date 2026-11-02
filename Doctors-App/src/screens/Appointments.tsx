@@ -15,7 +15,7 @@ import {
   RiCalendarEventLine,
   RiTimeLine,
   RiHospitalLine,
-  RiVideoChatLine,
+  RiVideoOnLine,
 } from "@remixicon/react";
 import type { AppContextType, Appointment, Doctor, DoctorAvailability } from "../types/index";
 import axiosInstance from "../utils/axiosInstance";
@@ -195,7 +195,7 @@ const Appointments: React.FC = () => {
           {(
             [
               { id: "in-person", title: "At the clinic", hint: "Visit in person", icon: RiHospitalLine },
-              { id: "video", title: "Video call", hint: "From your phone or computer", icon: RiVideoChatLine },
+              { id: "video", title: "Video call", hint: "From your phone or computer", icon: RiVideoOnLine },
             ] as const
           ).map((o) => {
             const Icon = o.icon;

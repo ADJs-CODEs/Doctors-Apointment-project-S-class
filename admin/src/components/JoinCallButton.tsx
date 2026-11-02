@@ -1,6 +1,6 @@
 "use client";
 
-import { RiTimeLine, RiVideoChatLine } from "@remixicon/react";
+import { RiTimeLine, RiVideoOnLine } from "@remixicon/react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "@/lib/navigation";
 
@@ -65,7 +65,7 @@ export default function JoinCallButton({
       className={`relative inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-violet-600 text-white text-[11px] font-black hover:bg-violet-700 ${className}`}
     >
       <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-400 border-2 border-white animate-pulse" />
-      <RiVideoChatLine size={15} /> Join call
+      <RiVideoOnLine size={15} /> Join call
     </button>
   );
 }

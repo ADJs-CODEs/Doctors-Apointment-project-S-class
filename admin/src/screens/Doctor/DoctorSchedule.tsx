@@ -1,6 +1,6 @@
 "use client";
 
-import { RiAddLine, RiCalendarCloseLine, RiDeleteBinLine, RiFileCopyLine, RiHospitalLine, RiTimeLine, RiVideoChatLine } from "@remixicon/react";
+import { RiAddLine, RiCalendarCloseLine, RiDeleteBinLine, RiFileCopyLine, RiHospitalLine, RiTimeLine, RiVideoOnLine } from "@remixicon/react";
 import { useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AppContext } from "../../context/AppContext";
@@ -103,7 +103,7 @@ export default function DoctorSchedule() {
       <div className="grid sm:grid-cols-2 gap-4 mb-6">
         <label className="rounded-2xl bg-violet-50/60 border border-violet-100 p-4">
           <span className="flex items-center gap-1.5 text-[12px] font-black text-violet-800">
-            <RiVideoChatLine size={15} /> Video call fee
+            <RiVideoOnLine size={15} /> Video call fee
           </span>
           <span className="flex items-center gap-2 mt-2">
             <span className="font-black text-slate-700">{currency}</span>
@@ -159,7 +159,7 @@ export default function DoctorSchedule() {
                     {(
                       [
                         { kind: "in-person" as const, label: "Clinic", icon: RiHospitalLine, on: "bg-teal-600 text-white border-teal-600" },
-                        { kind: "video" as const, label: "Video", icon: RiVideoChatLine, on: "bg-violet-600 text-white border-violet-600" },
+                        { kind: "video" as const, label: "Video", icon: RiVideoOnLine, on: "bg-violet-600 text-white border-violet-600" },
                       ]
                     ).map(({ kind, label, icon: Icon, on }) => {
                       const active = r.kinds.includes(kind);

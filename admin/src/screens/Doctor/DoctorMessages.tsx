@@ -15,7 +15,7 @@ import {
   RiSearchLine,
   RiSendPlane2Fill,
   RiUser3Line,
-  RiVideoChatLine,
+  RiVideoOnLine,
 } from "@remixicon/react";
 import { type FormEvent, type KeyboardEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -418,7 +418,7 @@ export default function DoctorMessages() {
               {nextVideoCall && (
                 <div className="flex items-center justify-between gap-3 px-4 sm:px-5 py-2.5 bg-violet-50 border-b border-violet-100">
                   <p className="flex items-center gap-2 text-[13px] text-violet-900 min-w-0">
-                    <RiVideoChatLine size={16} className="text-violet-600 shrink-0" />
+                    <RiVideoOnLine size={16} className="text-violet-600 shrink-0" />
                     <span className="truncate">
                       <span className="font-bold">Video call</span> · {visitDate(nextVideoCall.slotDate)}, {nextVideoCall.slotTime}
                     </span>
