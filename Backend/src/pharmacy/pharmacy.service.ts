@@ -44,6 +44,7 @@ const pharmacyView = (p: IPharmacy) => ({
   status: p.status,
   statusNote: p.statusNote,
   operatedByClinic: p.operatedByClinic,
+  demo: !!p.demo,
   approvedAt: p.approvedAt,
   createdAt: p.createdAt,
 });

@@ -117,7 +117,7 @@ export class OrderService {
     // the pharmacy must be approved and deliver to where the patient is
     if (!body.pharmacyId || !isValidObjectId(body.pharmacyId)) fail('Pharmacy not found', HttpStatus.NOT_FOUND);
     const { point } = await this.maps.patientOrigin(userId, body.origin);
-    const reach = (await this.shop.reachable(point)).find((p) => String(p._id) === body.pharmacyId);
+    const reach = (await this.shop.reachable(point, userId)).find((p) => String(p._id) === body.pharmacyId);
     if (!reach) fail("This pharmacy doesn't deliver to that address");
     const pharmacy = (await this.pharmacies.findById(body.pharmacyId))!;
     const user = await this.users.findById(userId).select(['name', 'email']);

@@ -21,6 +21,8 @@ export interface IPharmacy extends Document {
   status: PharmacyStatus;
   /** the clinic's own pharmacy: no commission is taken */
   operatedByClinic: boolean;
+  /** seeded demo data: only shown to the patients in SHOP_DEMO_USERS (see shop.service) */
+  demo?: boolean;
   /** why it was rejected/suspended, shown to the pharmacy */
   statusNote?: string;
   approvedAt?: Date;
@@ -47,6 +49,7 @@ export const PharmacySchema = new Schema<IPharmacy>(
     deliveryFeeCents: { type: Number, default: 0, min: 0 },
     status: { type: String, enum: ['pending', 'approved', 'rejected', 'suspended'], default: 'pending', index: true },
     operatedByClinic: { type: Boolean, default: false },
+    demo: { type: Boolean },
     statusNote: { type: String, maxlength: 500 },
     approvedAt: { type: Date },
     payoutBank: {

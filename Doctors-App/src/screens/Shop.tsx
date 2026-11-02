@@ -50,7 +50,7 @@ type ShopProduct = {
   pharmacy: { _id: string; name: string; distanceKm: number; deliveryFeeCents: number };
 };
 
-type Where = "current" | "home";
+type Where = "current" | "home" | "other";
 
 const money = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 const fee = (cents: number) => (cents ? `${money(cents)} delivery` : "Free delivery");
@@ -70,6 +70,13 @@ export default function Shop() {
   const [pharmacyId, setPharmacyId] = useState("");
   const [open, setOpen] = useState<ShopProduct | null>(null);
   const origin = useRef<{ lat: number; lng: number } | undefined>(undefined);
+  // "Another address" (ordering for someone else): what they typed, and the box to type it in
+  const [otherAddress, setOtherAddress] = useState("");
+  const [addressBox, setAddressBox] = useState(false);
+  // the "Change location" choices under the delivery bar
+  const [chooser, setChooser] = useState(false);
+  // the exact point the server matched pharmacies for; the basket delivers there
+  const deliveryPoint = useRef<{ lat: number; lng: number } | undefined>(undefined);
 
   // where to deliver: their location if they've already allowed it, else home, else ask
   useEffect(() => {
@@ -107,17 +114,32 @@ export default function Shop() {
     try {
       const { data } = await axiosInstance.post(
         API_PATHS.SHOP.BROWSE,
-        { origin: where === "current" ? origin.current : undefined, q: query || undefined, category: category || undefined, pharmacyId: pharmacyId || undefined },
+        {
+          origin: where === "current" ? origin.current : undefined,
+          address: where === "other" ? otherAddress : undefined,
+          q: query || undefined,
+          category: category || undefined,
+          pharmacyId: pharmacyId || undefined,
+        },
         { silent: true } as any,
       );
-      if (data.success) setData(data);
-      else setError(data.message);
+      if (data.success) {
+        setData(data);
+        deliveryPoint.current = data.point;
+      } else setError(data.message);
     } catch (err: any) {
       setError(err.response?.data?.message || "Couldn't load the shop");
     } finally {
       setLoading(false);
     }
-  }, [where, query, category, pharmacyId]);
+  }, [where, otherAddress, query, category, pharmacyId]);
+
+  const useOtherAddress = (address: string) => {
+    setOtherAddress(address);
+    setWhere("other");
+    setPharmacyId("");
+    setAddressBox(false);
+  };
 
   useEffect(() => {
     load();
@@ -133,7 +155,7 @@ export default function Shop() {
     const added = basket.add(
       { productId: p._id, name: p.name, genericName: p.genericName, strength: p.strength, image: p.image, priceCents: p.priceCents, requiresPrescription: p.requiresPrescription },
       { _id: p.pharmacy._id, name: p.pharmacy.name, deliveryFeeCents: p.pharmacy.deliveryFeeCents, distanceKm: p.pharmacy.distanceKm },
-      { where: where ?? "home", point: where === "current" ? origin.current : undefined },
+      { where: where ?? "home", point: deliveryPoint.current, label: where === "other" ? otherAddress : undefined },
       quantity,
       replace,
     );
@@ -145,44 +167,115 @@ export default function Shop() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 md:py-10">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-black text-slate-900">
-            Pharmacy <span className="text-teal-600 font-serif italic">shop</span>
-          </h1>
-          <p className="text-slate-500 mt-1">
-            Medicines from certified pharmacies that deliver to you.{" "}
-            <Link to="/shop/orders" className="font-bold text-teal-700 hover:underline whitespace-nowrap">
-              My orders →
-            </Link>
-          </p>
-        </div>
-        {where && (
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-slate-400">Delivering to</span>
-            <div className="flex p-1 bg-slate-100 rounded-xl">
-              <button
-                onClick={locateMe}
-                disabled={locating}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold ${where === "current" ? "bg-white shadow-sm text-slate-900" : "text-slate-500"}`}
-              >
-                <RiNavigationLine size={14} /> {locating ? "Finding you…" : "Where I am"}
-              </button>
-              {homeAddress && (
-                <button
-                  onClick={() => setWhere("home")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold ${where === "home" ? "bg-white shadow-sm text-slate-900" : "text-slate-500"}`}
-                >
-                  <RiHome4Line size={14} /> Home
-                </button>
-              )}
-            </div>
-          </div>
-        )}
+      <div className="mb-5">
+        <h1 className="text-3xl md:text-4xl font-black text-slate-900">
+          Pharmacy <span className="text-teal-600 font-serif italic">shop</span>
+        </h1>
+        <p className="text-slate-500 mt-1">
+          Medicines from certified pharmacies that deliver to you.{" "}
+          <Link to="/shop/orders" className="font-bold text-teal-700 hover:underline whitespace-nowrap">
+            My orders →
+          </Link>
+        </p>
       </div>
 
+      {/* where we're delivering: always in plain sight, one tap to change */}
+      {where && (
+        <div className="mb-5 rounded-3xl border-2 border-teal-100 bg-teal-50/60 p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <span className="w-11 h-11 rounded-2xl bg-teal-600 text-white flex items-center justify-center shrink-0">
+              {where === "current" ? <RiNavigationLine size={20} /> : where === "home" ? <RiHome4Line size={20} /> : <RiMapPin2Line size={20} />}
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-black uppercase tracking-wider text-teal-700">Delivering to</p>
+              <p className="font-black text-slate-900 truncate">
+                {where === "current" ? "Where you are now" : where === "home" ? "Your home address" : otherAddress}
+              </p>
+              {where === "home" && homeAddress && <p className="text-[12px] text-slate-500 truncate">{homeAddress}</p>}
+            </div>
+            <button
+              onClick={() => setChooser((c) => !c)}
+              aria-expanded={chooser}
+              className="shrink-0 px-5 py-3 rounded-2xl bg-white border-2 border-teal-600 text-teal-700 font-black hover:bg-teal-600 hover:text-white transition-colors"
+            >
+              {chooser ? "Close" : "Change location"}
+            </button>
+          </div>
+
+          {chooser && (
+            <div className="grid sm:grid-cols-3 gap-2 mt-4">
+              {[
+                {
+                  key: "current",
+                  Icon: RiNavigationLine,
+                  title: locating ? "Finding you…" : "Where I am now",
+                  hint: "Uses your phone or browser location",
+                  onClick: async () => {
+                    await locateMe();
+                    setChooser(false);
+                  },
+                },
+                ...(homeAddress
+                  ? [
+                      {
+                        key: "home",
+                        Icon: RiHome4Line,
+                        title: "My home address",
+                        hint: homeAddress,
+                        onClick: () => {
+                          setWhere("home");
+                          setChooser(false);
+                        },
+                      },
+                    ]
+                  : []),
+                {
+                  key: "other",
+                  Icon: RiMapPin2Line,
+                  title: "Another address",
+                  hint: "Ordering for someone else, or your office",
+                  onClick: () => {
+                    setAddressBox(true);
+                    setChooser(false);
+                  },
+                },
+              ].map((o) => (
+                <button
+                  key={o.key}
+                  onClick={o.onClick}
+                  disabled={o.key === "current" && locating}
+                  className={`text-left rounded-2xl border-2 p-4 bg-white transition-colors ${where === o.key ? "border-teal-500" : "border-slate-200 hover:border-teal-300"}`}
+                >
+                  <o.Icon size={20} className="text-teal-600" />
+                  <p className="font-black text-slate-900 mt-2">{o.title}</p>
+                  <p className="text-[12px] text-slate-500 truncate">{o.hint}</p>
+                </button>
+              ))}
+              {!homeAddress && (
+                <Link to="/account-settings" className="text-left rounded-2xl border-2 border-dashed border-slate-200 p-4 hover:border-teal-300">
+                  <RiHome4Line size={20} className="text-slate-400" />
+                  <p className="font-black text-slate-700 mt-2">Add a home address</p>
+                  <p className="text-[12px] text-slate-500">In Settings, to use it every time</p>
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {addressBox && (
+        <AddressBox initial={otherAddress} onUse={useOtherAddress} onCancel={() => setAddressBox(false)} />
+      )}
+
       {!where ? (
-        <WhereToDeliver homeAddress={homeAddress} locating={locating} error={error} onLocation={locateMe} onHome={() => setWhere("home")} />
+        <WhereToDeliver
+          homeAddress={homeAddress}
+          locating={locating}
+          error={error}
+          onLocation={locateMe}
+          onHome={() => setWhere("home")}
+          onOther={() => setAddressBox(true)}
+        />
       ) : (
         <>
           <label className="relative block mb-4">
@@ -239,9 +332,15 @@ export default function Shop() {
           {error ? (
             <div className="rounded-3xl border border-orange-200 bg-orange-50 p-6 text-orange-900">
               <p className="font-black">{error}</p>
-              <Link to="/account-settings" className="inline-block mt-2 text-sm font-bold text-orange-700 underline">
-                Add or fix your home address in Settings
-              </Link>
+              <p className="text-sm mt-1">Pick another way to deliver above, or type an address:</p>
+              <div className="flex flex-wrap gap-2 mt-3">
+                <button onClick={() => setAddressBox(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-orange-200 text-sm font-bold text-orange-800 hover:bg-orange-100">
+                  <RiMapPin2Line size={15} /> Another address
+                </button>
+                <Link to="/account-settings" className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-orange-700 underline">
+                  Add or fix your home address
+                </Link>
+              </div>
             </div>
           ) : !data ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -254,8 +353,37 @@ export default function Shop() {
               <RiTruckLine size={32} className="mx-auto text-slate-300" />
               <p className="font-black text-slate-900 mt-3">No pharmacy delivers here yet</p>
               <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
-                We&apos;re adding certified pharmacies area by area. {where === "home" ? "Try your current location instead." : "Try your home address instead."}
+                We&apos;re adding certified pharmacies area by area. Deliver somewhere else instead, like a relative&apos;s place or your office:
               </p>
+              {/* switch right here, without hunting for the toggle at the top */}
+              <div className="flex flex-col sm:flex-row flex-wrap gap-2 justify-center mt-5">
+                <button
+                  onClick={() => {
+                    setAddressBox(true);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-teal-600 text-white font-bold hover:bg-teal-700"
+                >
+                  <RiMapPin2Line size={18} /> Use another address
+                </button>
+                {where !== "current" && (
+                  <button
+                    onClick={locateMe}
+                    disabled={locating}
+                    className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl border border-slate-200 font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                  >
+                    <RiNavigationLine size={18} /> {locating ? "Finding you…" : "Use where I am"}
+                  </button>
+                )}
+                {where !== "home" && homeAddress && (
+                  <button
+                    onClick={() => setWhere("home")}
+                    className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl border border-slate-200 font-bold text-slate-700 hover:bg-slate-50"
+                  >
+                    <RiHome4Line size={18} /> Use my home address
+                  </button>
+                )}
+              </div>
             </div>
           ) : data.products.length === 0 ? (
             <p className="text-center text-slate-400 py-12">
@@ -333,12 +461,14 @@ function WhereToDeliver({
   error,
   onLocation,
   onHome,
+  onOther,
 }: {
   homeAddress: string;
   locating: boolean;
   error: string | null;
   onLocation: () => void;
   onHome: () => void;
+  onOther: () => void;
 }) {
   return (
     <div className="rounded-[32px] border border-slate-200 bg-white p-6 sm:p-10 text-center max-w-xl mx-auto">
@@ -346,8 +476,11 @@ function WhereToDeliver({
         <RiMapPin2Line size={28} />
       </div>
       <p className="text-xl font-black text-slate-900 mt-4">Where should we deliver?</p>
-      <p className="text-sm text-slate-500 mt-1">We only show pharmacies that deliver to you. Your location is only used to find them; it isn&apos;t saved.</p>
-      <div className="flex flex-col sm:flex-row gap-2 justify-center mt-6">
+      <p className="text-sm text-slate-500 mt-1">
+        We show pharmacies that deliver there. Ordering for someone else? Use their address. Your location is only used to find pharmacies; it
+        isn&apos;t saved.
+      </p>
+      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 justify-center mt-6">
         <button
           onClick={onLocation}
           disabled={locating}
@@ -364,9 +497,44 @@ function WhereToDeliver({
             <RiHome4Line size={18} /> Add a home address
           </Link>
         )}
+        <button onClick={onOther} className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl border border-slate-200 font-bold text-slate-700 hover:bg-slate-50">
+          <RiMapPin2Line size={18} /> Another address
+        </button>
       </div>
       {error && <p className="text-sm text-orange-700 mt-4">{error}</p>}
     </div>
+  );
+}
+
+/** Type any address (e.g. a relative's) to see the pharmacies that deliver there. */
+function AddressBox({ initial, onUse, onCancel }: { initial: string; onUse: (address: string) => void; onCancel: () => void }) {
+  const [value, setValue] = useState(initial);
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (value.trim()) onUse(value.trim());
+      }}
+      className="mb-6 rounded-3xl border border-teal-200 bg-teal-50/50 p-4 sm:p-5"
+    >
+      <p className="font-black text-slate-900">Deliver to another address</p>
+      <p className="text-[12px] text-slate-500">Include the area and city, e.g. &quot;12 Allen Avenue, Ikeja, Lagos&quot;.</p>
+      <div className="flex flex-col sm:flex-row gap-2 mt-3">
+        <input
+          autoFocus
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="Street, area, city"
+          className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-base outline-none focus:border-teal-400"
+        />
+        <button type="submit" disabled={!value.trim()} className="px-5 py-3 rounded-2xl bg-teal-600 text-white font-bold hover:bg-teal-700 disabled:opacity-40">
+          Show pharmacies there
+        </button>
+        <button type="button" onClick={onCancel} className="px-4 py-3 rounded-2xl text-slate-500 font-bold hover:bg-white">
+          Cancel
+        </button>
+      </div>
+    </form>
   );
 }
 

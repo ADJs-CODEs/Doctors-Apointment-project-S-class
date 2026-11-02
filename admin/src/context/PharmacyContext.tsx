@@ -30,6 +30,7 @@ export type Pharmacy = {
   status: "pending" | "approved" | "rejected" | "suspended";
   statusNote?: string;
   operatedByClinic: boolean;
+  demo?: boolean;
   approvedAt?: string;
   createdAt: string;
 };

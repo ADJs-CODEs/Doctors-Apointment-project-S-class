@@ -31,6 +31,10 @@ export interface Doctor {
   fees: number;
   address: { line1: string; line2: string };
   slots_booked: Record<string, string[]>;
+  /** video consultation fee; no fee = no video calls */
+  videoFees?: number;
+  /** weekly hours (day 0 = Sunday); unset = the old 10am–9pm every day, clinic only */
+  availability?: { weekly: { day: number; start: string; end: string; kinds: ("in-person" | "video")[] }[] };
 }
 
 export interface UserData {

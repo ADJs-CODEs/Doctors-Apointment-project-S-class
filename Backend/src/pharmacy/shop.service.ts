@@ -5,6 +5,7 @@ import { fail } from '../common/http';
 import { MODEL } from '../database/models';
 import type { IAppointment } from '../database/schemas/appointment.schema';
 import { type IPharmacy, type IProduct, PRODUCT_CATEGORIES } from '../database/schemas/pharmacy.schemas';
+import type { IUser } from '../database/schemas/user.schema';
 import { MapsService } from '../maps/maps.service';
 import { productView } from './product.service';
 
@@ -35,18 +36,35 @@ export class ShopService {
     @InjectModel(MODEL.pharmacy) private readonly pharmacies: Model<IPharmacy>,
     @InjectModel(MODEL.product) private readonly products: Model<IProduct>,
     @InjectModel(MODEL.appointment) private readonly appointments: Model<IAppointment>,
+    @InjectModel(MODEL.user) private readonly users: Model<IUser>,
     private readonly maps: MapsService,
   ) {}
 
+  /**
+   * Demo pharmacies (seeded to try the shop on the live database) are only shown to the
+   * patient accounts listed in SHOP_DEMO_USERS (emails, comma-separated). Everyone else
+   * never sees them.
+   */
+  private async seesDemo(userId: string) {
+    const testers = (process.env.SHOP_DEMO_USERS ?? '')
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+    if (!testers.length) return false;
+    const user = await this.users.findById(userId).select('email').lean();
+    return !!user && testers.includes(user.email.toLowerCase());
+  }
+
   /** Approved pharmacies that deliver to this point, nearest first. */
-  async reachable(point: { lat: number; lng: number }): Promise<Nearby[]> {
+  async reachable(point: { lat: number; lng: number }, userId?: string): Promise<Nearby[]> {
+    const showDemo = userId ? await this.seesDemo(userId) : false;
     return this.pharmacies.aggregate<Nearby>([
       {
         $geoNear: {
           near: { type: 'Point', coordinates: [point.lng, point.lat] },
           distanceField: 'distanceMeters',
           maxDistance: MAX_SEARCH_METERS,
-          query: { status: 'approved' },
+          query: { status: 'approved', ...(!showDemo && { demo: { $ne: true } }) },
           spherical: true,
         },
       },
@@ -57,14 +75,16 @@ export class ShopService {
   }
 
   /**
-   * The shop: products from pharmacies that deliver to the patient.
-   * body: { origin?: {lat,lng}, q?, category?, pharmacyId? }
+   * The shop: products from pharmacies that deliver to the chosen place.
+   * body: { origin?: {lat,lng}, address?: string (another address, e.g. ordering for someone
+   * else), q?, category?, pharmacyId? }. Neither origin nor address: their home address.
    */
-  async browse(userId: string, body: { origin?: unknown; q?: string; category?: string; pharmacyId?: string }) {
-    const { point, from } = await this.maps.patientOrigin(userId, body.origin);
-    const nearby = await this.reachable(point);
+  async browse(userId: string, body: { origin?: unknown; address?: string; q?: string; category?: string; pharmacyId?: string }) {
+    const { point, from } = await this.deliveryPoint(userId, body);
+    const nearby = await this.reachable(point, userId);
     const prescribed = await this.prescribedWords(userId);
-    const base = { success: true, from, categories: PRODUCT_CATEGORIES };
+    // the point is returned so the basket can deliver exactly there
+    const base = { success: true, from, point, categories: PRODUCT_CATEGORIES };
     if (!nearby.length) return { ...base, pharmacies: [], products: [] };
 
     let ids = nearby.map((p) => p._id);
@@ -128,6 +148,15 @@ export class ShopService {
         return { ...p, pharmacy: { _id: p.pharmacyId, name: ph.name, distanceKm: Math.round(ph.distanceMeters / 100) / 10, deliveryFeeCents: ph.deliveryFeeCents } };
       }),
     };
+  }
+
+  /** Where to deliver: a typed address (looked up on the map), their location, or home. */
+  private async deliveryPoint(userId: string, body: { origin?: unknown; address?: string }) {
+    const address = typeof body.address === 'string' ? body.address.trim().slice(0, 300) : '';
+    if (!address) return this.maps.patientOrigin(userId, body.origin);
+    const found = await this.maps.geocode(address);
+    if (!found) fail("We couldn't find that address on the map. Add the area and city, e.g. \"12 Allen Avenue, Ikeja, Lagos\".");
+    return { point: { lat: found.lat, lng: found.lng }, from: 'address' as const };
   }
 
   /** Words from medicines our doctors prescribed this patient (latest visits first). */
