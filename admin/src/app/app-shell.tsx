@@ -10,8 +10,12 @@ import AdminContextProvider, { AdminContext } from '@/context/AdminContext';
 import AppContextProvider from '@/context/AppContext';
 import DoctorContextProvider, { DoctorContext } from '@/context/DoctorContext';
 import { DoctorMessagesProvider } from '@/context/DoctorMessagesContext';
+import { PharmacyContextProvider, usePharmacy } from '@/context/PharmacyContext';
 import { NavigationWatcher } from '@/lib/navigation';
 import Login from '@/screens/Login';
+import ChangePasswordGate from '@/screens/Pharmacy/ChangePassword';
+import PharmacyHome from '@/screens/Pharmacy/PharmacyHome';
+import { usePathname } from 'next/navigation';
 import type { AdminContextType, DoctorContextType } from '@/types';
 import { requestTracker } from '@/utils/requestTracker';
 
@@ -58,6 +62,8 @@ function RequestLoadingBar() {
 function Shell({ children }: { children: ReactNode }) {
   const { aToken } = useContext(AdminContext) as AdminContextType;
   const { dToken } = useContext(DoctorContext) as DoctorContextType;
+  const { pToken, staff } = usePharmacy();
+  const pathname = usePathname();
 
   const loadingBar = (
     <>
@@ -67,13 +73,38 @@ function Shell({ children }: { children: ReactNode }) {
   );
 
   // Logged out: every address shows the login screen.
-  if (!aToken && !dToken) {
+  if (!aToken && !dToken && !pToken) {
     return (
       <>
         {loadingBar}
         <Login />
         <Toaster richColors position="top-right" />
       </>
+    );
+  }
+
+  // Pharmacy personnel only ever see pharmacy pages; first they replace their emailed password.
+  if (pToken && !aToken && !dToken) {
+    if (staff?.mustChangePassword) {
+      return (
+        <>
+          {loadingBar}
+          <ChangePasswordGate />
+          <Toaster richColors position="top-right" />
+        </>
+      );
+    }
+    const pharmacyPage = /^\/pharmacy(-staff|-settings|-products|-orders|-earnings)?$/.test(pathname) ? children : <PharmacyHome />;
+    return (
+      <div className="bg-[#F8F9FD] min-h-screen flex flex-col">
+        {loadingBar}
+        <Toaster richColors position="top-right" />
+        <Navbar />
+        <div className="flex flex-col lg:flex-row items-start flex-1 w-full">
+          <Sidebar />
+          <div className="flex-1 w-full overflow-x-hidden p-4 sm:p-6 lg:p-0">{pharmacyPage}</div>
+        </div>
+      </div>
     );
   }
 
@@ -99,9 +130,11 @@ export default function AppShell({ children }: { children: ReactNode }) {
   return (
     <AdminContextProvider>
       <DoctorContextProvider>
-        <AppContextProvider>
-          <Shell>{children}</Shell>
-        </AppContextProvider>
+        <PharmacyContextProvider>
+          <AppContextProvider>
+            <Shell>{children}</Shell>
+          </AppContextProvider>
+        </PharmacyContextProvider>
       </DoctorContextProvider>
     </AdminContextProvider>
   );
