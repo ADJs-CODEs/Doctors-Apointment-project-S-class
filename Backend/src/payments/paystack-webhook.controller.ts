@@ -1,10 +1,11 @@
 import { Controller, Headers, HttpCode, Logger, Post, type RawBodyRequest, Req } from '@nestjs/common';
 import type { Request } from 'express';
+import { PharmacyEarningsService } from '../pharmacy/earnings.service';
 import { WalletService } from '../wallet/wallet.service';
 import { PaystackService } from './paystack.service';
 
 /**
- * Paystack tells us how a care-fund transfer ended. Set the webhook URL in the Paystack
+ * Paystack tells us how a transfer ended (care-fund or pharmacy withdrawals). Set the webhook URL in the Paystack
  * dashboard (Settings → API Keys & Webhooks) to https://<backend>/api/paystack/webhook.
  */
 @Controller('api/paystack')
@@ -14,6 +15,7 @@ export class PaystackWebhookController {
   constructor(
     private readonly paystack: PaystackService,
     private readonly wallet: WalletService,
+    private readonly pharmacyEarnings: PharmacyEarningsService,
   ) {}
 
   @Post('webhook')
@@ -28,7 +30,12 @@ export class PaystackWebhookController {
     const { event, data } = (req.body ?? {}) as { event?: string; data?: { reference?: string; reason?: string } };
     const outcome = { 'transfer.success': 'success', 'transfer.failed': 'failed', 'transfer.reversed': 'reversed' }[event ?? ''];
     if (outcome && data?.reference) {
-      await this.wallet.completeTransfer(data.reference, outcome, data.reason);
+      // pharmacy withdrawals and care-fund withdrawals are told apart by their reference
+      if (PharmacyEarningsService.isOurReference(data.reference)) {
+        await this.pharmacyEarnings.completeTransfer(data.reference, outcome, data.reason);
+      } else {
+        await this.wallet.completeTransfer(data.reference, outcome, data.reason);
+      }
     }
     return { received: true };
   }

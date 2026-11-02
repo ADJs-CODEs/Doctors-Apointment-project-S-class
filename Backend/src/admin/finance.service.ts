@@ -4,6 +4,8 @@ import type { Model, PipelineStage } from 'mongoose';
 import { NOT_A_HOLD } from '../appointments/booking.service';
 import { MODEL } from '../database/models';
 import type { IAppointment } from '../database/schemas/appointment.schema';
+import type { IPharmacyPayout } from '../database/schemas/pharmacy.schemas';
+import { type IShopOrder, OPEN_ORDER } from '../database/schemas/shop-order.schema';
 import type { IPayout, IWallet, IWalletTransaction } from '../database/schemas/wallet.schemas';
 
 const DAY = 24 * 60 * 60_000;
@@ -27,6 +29,8 @@ export class FinanceService {
     @InjectModel(MODEL.wallet) private readonly wallets: Model<IWallet>,
     @InjectModel(MODEL.walletTransaction) private readonly ledger: Model<IWalletTransaction>,
     @InjectModel(MODEL.payout) private readonly payouts: Model<IPayout>,
+    @InjectModel(MODEL.shopOrder) private readonly shopOrders: Model<IShopOrder>,
+    @InjectModel(MODEL.pharmacyPayout) private readonly pharmacyPayouts: Model<IPharmacyPayout>,
   ) {}
 
   async overview(daysParam?: string) {
@@ -35,7 +39,7 @@ export class FinanceService {
     const bucket: Bucket = days === 30 ? 'day' : days === 90 ? 'week' : 'month';
 
     const paid = { ...NOT_A_HOLD, payment: true, date: { $gte: since.getTime() } };
-    const [visits, doctors, ledger, refunds, owed, payouts, attention, trend] = await Promise.all([
+    const [visits, doctors, ledger, refunds, owed, payouts, attention, trend, shop] = await Promise.all([
       this.visitTotals(paid),
       this.doctorEarnings(paid),
       this.ledgerTotals(since),
@@ -44,6 +48,7 @@ export class FinanceService {
       this.payoutTotals(since),
       this.needsAttention(),
       this.trend(since, bucket, paid),
+      this.shopTotals(since),
     ]);
 
     const cardCents = visits.card + visits.legacy;
@@ -53,7 +58,7 @@ export class FinanceService {
       bucket,
       currency: (process.env.CURRENCY || 'usd').toUpperCase(),
       summary: {
-        cashInCents: cardCents + ledger.coinSalesCents,
+        cashInCents: cardCents + ledger.coinSalesCents + shop.cardCents,
         appointmentFeesCents: visits.card + visits.wallet + visits.legacy,
         paidVisits: visits.count,
         byMethod: { cardCents: visits.card, walletCents: visits.wallet, olderCents: visits.legacy },
@@ -67,9 +72,17 @@ export class FinanceService {
         payoutsPaidCents: payouts.paidCents,
         payoutsPaidCount: payouts.paidCount,
       },
-      owed,
+      owed: { ...owed, pharmaciesCents: shop.owedToPharmaciesCents, ordersInProgressCents: shop.inProgressCents, totalCents: owed.totalCents + shop.owedToPharmaciesCents + shop.inProgressCents },
+      shop: {
+        ordersCents: shop.ordersCents,
+        orders: shop.orders,
+        deliveredOrders: shop.deliveredOrders,
+        commissionCents: shop.commissionCents,
+        refundedCents: shop.refundedCents,
+        pharmacyPayoutsPaidCents: shop.payoutsPaidCents,
+      },
       doctors,
-      attention,
+      attention: { ...attention, pendingPharmacyPayouts: shop.pendingPayouts, failedOrderRefunds: shop.failedRefunds },
       trend,
     };
   }
@@ -191,6 +204,63 @@ export class FinanceService {
       { $group: { _id: null, cents: { $sum: '$cents' }, count: { $sum: 1 } } },
     ]);
     return { paidCents: row?.cents ?? 0, paidCount: row?.count ?? 0 };
+  }
+
+  /**
+   * The medicine shop. Orders count once paid (card ones are cash in; wallet ones were already
+   * counted as coins/gifts). Commission is earned on delivery. What the clinic still holds:
+   * pharmacies' earned-but-not-withdrawn money, and paid orders still on their way.
+   */
+  private async shopTotals(since: Date) {
+    const paidOrders = { 'payment.paid': true, createdAt: { $gte: since } };
+    const [[orders], [delivered], [refunded], [earned], [withdrawn], [inProgress], payoutsPaid, pendingPayouts, failedRefunds] = await Promise.all([
+      this.shopOrders.aggregate<{ cents: number; card: number; n: number }>([
+        { $match: paidOrders },
+        {
+          $group: {
+            _id: null,
+            cents: { $sum: '$totalCents' },
+            card: { $sum: { $cond: [{ $eq: ['$payment.method', 'stripe'] }, '$totalCents', 0] } },
+            n: { $sum: 1 },
+          },
+        },
+      ]),
+      this.shopOrders.aggregate<{ commission: number; n: number }>([
+        { $match: { status: 'delivered', deliveredAt: { $gte: since } } },
+        { $group: { _id: null, commission: { $sum: '$commissionCents' }, n: { $sum: 1 } } },
+      ]),
+      this.shopOrders.aggregate<{ cents: number }>([
+        { $match: { 'refund.status': 'refunded', 'refund.at': { $gte: since } } },
+        { $group: { _id: null, cents: { $sum: '$refund.cents' } } },
+      ]),
+      // all time: what pharmacies have earned vs what has gone (or is going) to them
+      this.shopOrders.aggregate<{ cents: number }>([{ $match: { status: 'delivered' } }, { $group: { _id: null, cents: { $sum: '$pharmacyEarningCents' } } }]),
+      this.pharmacyPayouts.aggregate<{ cents: number }>([{ $match: { status: 'paid' } }, { $group: { _id: null, cents: { $sum: '$cents' } } }]),
+      this.shopOrders.aggregate<{ cents: number }>([
+        { $match: { status: { $in: OPEN_ORDER }, 'payment.paid': true } },
+        { $group: { _id: null, cents: { $sum: '$totalCents' } } },
+      ]),
+      this.pharmacyPayouts.aggregate<{ cents: number }>([
+        { $match: { status: 'paid', decidedAt: { $gte: since } } },
+        { $group: { _id: null, cents: { $sum: '$cents' } } },
+      ]),
+      this.pharmacyPayouts.countDocuments({ status: 'pending' }),
+      this.shopOrders.countDocuments({ 'refund.status': 'failed' }),
+    ]);
+    return {
+      ordersCents: orders?.cents ?? 0,
+      cardCents: orders?.card ?? 0,
+      orders: orders?.n ?? 0,
+      deliveredOrders: delivered?.n ?? 0,
+      commissionCents: delivered?.commission ?? 0,
+      refundedCents: refunded?.cents ?? 0,
+      // earned on delivered orders minus what has actually been sent (open withdrawals are still owed)
+      owedToPharmaciesCents: Math.max(0, (earned?.cents ?? 0) - (withdrawn?.cents ?? 0)),
+      inProgressCents: inProgress?.cents ?? 0,
+      payoutsPaidCents: payoutsPaid[0]?.cents ?? 0,
+      pendingPayouts,
+      failedRefunds,
+    };
   }
 
   /** Money that needs someone to do something. */

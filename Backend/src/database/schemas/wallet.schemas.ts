@@ -38,8 +38,12 @@ export interface IWalletTransaction extends Document {
     | 'payout_requested'
     | 'payout_returned'
     | 'appointment_payment'
-    | 'appointment_refund';
+    | 'appointment_refund'
+    | 'shop_payment'
+    | 'shop_refund';
   appointmentId?: string;
+  /** a pharmacy order paid from (or refunded to) the wallet */
+  orderId?: string;
   coins: number;
   cents: number;
   giftId?: string;
@@ -67,10 +71,13 @@ export const WalletTransactionSchema = new Schema<IWalletTransaction>(
         'payout_returned',
         'appointment_payment',
         'appointment_refund',
+        'shop_payment',
+        'shop_refund',
       ],
       required: true,
     },
     appointmentId: { type: String },
+    orderId: { type: String },
     coins: { type: Number, default: 0 },
     cents: { type: Number, default: 0 },
     giftId: { type: String },
