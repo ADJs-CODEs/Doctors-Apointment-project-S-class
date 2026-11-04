@@ -9,11 +9,16 @@ import React, {
   useRef,
 } from "react";
 import { getSocket } from "../utils/socket";
+import axiosInstance from "../utils/axiosInstance";
+import { API_PATHS } from "../utils/apiPath";
 import EmojiRain from "../components/EmojiRain";
 import LiveLoveCounter, { type LiveLove } from "../components/wishwell/LiveLoveCounter";
 
 // the counter stays this long after the last wish arrives
 const COUNTER_MS = 4500;
+// "while you were away": at most this many emoji replay, this far apart
+const REPLAY_MAX = 12;
+const REPLAY_GAP_MS = 220;
 
 interface EmojiParticle {
   id: string;
@@ -73,12 +78,35 @@ export const EmojiProvider: React.FC<{
     setParticles((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
+  // love that arrived while the app wasn't open: replay it, newest few, with a "while you were away" count
+  const replayMissed = useCallback(async () => {
+    try {
+      const { data } = await axiosInstance.get(API_PATHS.EMOJI.UNDELIVERED, { silent: true } as any);
+      const pings: { emoji: string }[] = data?.pings ?? [];
+      const total: number = data?.total ?? pings.length;
+      if (!data?.success || !total) return;
+      const shown = pings.slice(0, REPLAY_MAX).reverse(); // oldest of the newest first
+      clearTimeout(hideLove.current);
+      setLove({ emoji: shown[shown.length - 1]?.emoji ?? "❤️", burst: total, away: true, tick: Date.now() });
+      shown.forEach((p, i) => setTimeout(() => addEmoji(p.emoji, 1), 400 + i * REPLAY_GAP_MS));
+      hideLove.current = setTimeout(() => setLove(null), 400 + shown.length * REPLAY_GAP_MS + COUNTER_MS);
+    } catch {
+      // nice to have: if it fails, the love is still counted on their Wish Well entry
+    }
+  }, [addEmoji]);
+
   // Connect socket and listen for emojis
   useEffect(() => {
     if (!userId) return;
 
     const socket = getSocket();
-    socket.emit("register", userId);
+    // tell the server who this is on every (re)connect, then catch up on anything missed meanwhile
+    const onConnect = () => {
+      socket.emit("register", userId);
+      replayMissed();
+    };
+    socket.on("connect", onConnect);
+    if (socket.connected) onConnect();
 
     socket.on(
       "emoji_received",
@@ -105,8 +133,9 @@ export const EmojiProvider: React.FC<{
 
     return () => {
       socket.off("emoji_received");
+      socket.off("connect", onConnect);
     };
-  }, [userId, addEmoji, countLove]);
+  }, [userId, addEmoji, countLove, replayMissed]);
 
   return (
     <EmojiContext.Provider value={{ addEmoji }}>

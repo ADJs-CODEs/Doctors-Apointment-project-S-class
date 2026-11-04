@@ -14,6 +14,7 @@ import type { IUser } from '../database/schemas/user.schema';
 import { PATIENT_AUDIENCE } from '../database/schemas/social.schemas';
 import { RealtimeGateway } from '../integrations/realtime.gateway';
 import { AppNotifier } from '../notifications/app-notifier';
+import { LoveDigest } from '../notifications/love-digest';
 
 const EMOJI_KEYS: Record<string, keyof IWishWell['emojiCounts']> = {
   '❤️': 'heart',
@@ -46,6 +47,7 @@ export class WishWellService {
     @InjectModel(MODEL.appointment) private readonly appointments: Model<IAppointment>,
     private readonly realtime: RealtimeGateway,
     private readonly notifier: AppNotifier,
+    private readonly love: LoveDigest,
   ) {}
 
   async publicEntries() {
@@ -148,13 +150,18 @@ export class WishWellService {
       { $inc: congratulating ? { totalEmojis: 1 } : { [`emojiCounts.${EMOJI_KEYS[emoji as string]}`]: 1, totalEmojis: 1 } },
       { returnDocument: 'after' },
     );
-    // the patient's screen shows the emoji rising and their running total going up
-    this.realtime.sendEmojiToUser(entry.patientId, {
+    // the patient's screen shows the emoji rising and their running total going up; if their app
+    // isn't open, it's kept for a replay and one device notification says love is waiting
+    const delivered = this.realtime.sendEmojiToUser(entry.patientId, {
       emoji,
       fromName: 'The Community',
       isWishWell: true,
       total: updated?.totalEmojis,
     });
+    if (!delivered) {
+      await this.love.keep(entry.patientId, emoji as string, 'The Community').catch(() => undefined);
+      void this.love.notify(entry.patientId, 'gifts');
+    }
     return { success: true, message: 'Emoji sent' };
   }
 
@@ -314,6 +321,7 @@ export class EmojiService {
     @InjectModel(MODEL.connection) private readonly connections: Model<IConnection>,
     @InjectModel(MODEL.user) private readonly users: Model<IUser>,
     private readonly realtime: RealtimeGateway,
+    private readonly love: LoveDigest,
   ) {}
 
   async send(fromUserId: string, body: { toUserId?: string; emoji?: string }) {
@@ -341,13 +349,22 @@ export class EmojiService {
       fromUserId,
     });
     if (delivered) await this.pings.findByIdAndUpdate(ping._id, { delivered: true });
+    // not open: it stays undelivered for the replay, and their device says love is waiting
+    else void this.love.notify(toUserId, 'careCircle', fromName);
     return { success: true, message: 'Emoji sent', delivered };
   }
 
-  /** Pings that arrived while the user was offline; they're marked delivered once fetched. */
+  /**
+   * Love that arrived while the user's app wasn't open, for the "while you were away" replay: how
+   * much in total, and the newest few to show. All of it is marked delivered once fetched.
+   */
   async undelivered(userId: string) {
-    const pings = await this.pings.find({ toUserId: userId, delivered: false }).sort({ createdAt: -1 }).limit(20);
-    await this.pings.updateMany({ toUserId: userId, delivered: false }, { delivered: true });
-    return { success: true, pings };
+    const filter = { toUserId: userId, delivered: false };
+    const [total, pings] = await Promise.all([
+      this.pings.countDocuments(filter),
+      this.pings.find(filter).sort({ createdAt: -1 }).limit(20),
+    ]);
+    await this.pings.updateMany(filter, { delivered: true });
+    return { success: true, total, pings };
   }
 }

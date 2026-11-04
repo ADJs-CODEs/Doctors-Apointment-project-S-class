@@ -33,6 +33,7 @@ import { LegacyMessageCopier } from './messages/legacy-message-copier';
 import { DoctorMessagesController, PatientMessagesController } from './messages/messages.controller';
 import { MessagesService } from './messages/messages.service';
 import { AppNotifier } from './notifications/app-notifier';
+import { LoveDigest } from './notifications/love-digest';
 import { DoseReminders } from './notifications/dose-reminders';
 import { EmailNotifications } from './notifications/email-notifications';
 import { PushController } from './notifications/push.controller';
@@ -121,6 +122,7 @@ class HealthController {
     MissedAppointments,
     AppointmentRefunds,
     AppNotifier,
+    LoveDigest,
     EmailNotifications,
     DoseReminders,
     MessagesService,

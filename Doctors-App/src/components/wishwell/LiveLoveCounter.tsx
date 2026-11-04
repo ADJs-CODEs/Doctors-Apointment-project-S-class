@@ -13,6 +13,8 @@ export type LiveLove = {
   burst: number;
   /** who it's from, when it's a person (care circle); the Wish Well is anonymous */
   from?: string;
+  /** love that arrived while the app was closed, being replayed now (`burst` = how much) */
+  away?: boolean;
   /** bumps on every arrival, so the emoji replays */
   tick: number;
 };
@@ -44,7 +46,14 @@ export default function LiveLoveCounter({ love }: { love: LiveLove | null }) {
               <NotoEmoji emoji={love.emoji} size={28} animated />
             </motion.span>
             <span className="flex flex-col leading-tight">
-              {love.total != null ? (
+              {love.away ? (
+                <>
+                  <span className="text-[14px] font-bold text-ink">
+                    <span className="num">{love.burst.toLocaleString("en-US")}</span> {love.burst === 1 ? "wish" : "wishes"} for you
+                  </span>
+                  <span className="text-[12px] font-semibold text-ink-3">while you were away</span>
+                </>
+              ) : love.total != null ? (
                 <>
                   <RollingNumber value={love.total} className="text-[18px] text-ink" />
                   <span className="text-[12px] font-semibold text-ink-3">wishes for you</span>
