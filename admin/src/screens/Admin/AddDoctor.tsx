@@ -103,7 +103,7 @@ const AddDoctor: React.FC = () => {
               <RiUserAddLine size={20} />
             </div>
             <h1 className="text-xl sm:text-3xl font-black text-slate-900">
-              Add a <span className="text-teal-500 font-serif italic normal-case">Doctor</span>
+              Add a doctor
             </h1>
           </div>
           <p className="text-slate-500 text-sm ml-12">Their profile, fees and hours. They get their login by email and choose their own password at first sign-in.</p>

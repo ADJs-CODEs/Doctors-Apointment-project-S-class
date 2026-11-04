@@ -119,7 +119,7 @@ export default function DoctorWallet() {
               <RiWallet3Line size={20} />
             </div>
             <h1 className="text-xl sm:text-3xl font-black text-slate-900">
-              Your <span className="text-teal-500 font-serif italic">wallet</span>
+              Wallet
             </h1>
           </div>
           <p className="text-slate-500 text-sm ml-12">

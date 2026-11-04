@@ -68,7 +68,7 @@ const DoctorList: React.FC = () => {
               <div className='p-2.5 sm:p-3 bg-slate-900 rounded-xl sm:rounded-2xl text-teal-400 shadow-lg'>
                 <RiUserStarLine size={24} />
               </div>
-              <h1 className='text-2xl sm:text-3xl font-black text-slate-900'>Medical <span className='text-teal-500 font-serif italic normal-case'>Registry</span></h1>
+              <h1 className='text-2xl sm:text-3xl font-black text-slate-900'>Doctors</h1>
             </div>
             <p className='text-slate-500 text-xs sm:text-sm font-medium ml-12 sm:ml-14'>Manage practitioner status and visibility.</p>
           </div>

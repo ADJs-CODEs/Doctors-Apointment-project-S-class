@@ -1,6 +1,6 @@
 "use client";
 
-import { RiArrowLeftLine, RiExternalLinkLine, RiLoader4Line, RiVideoOnLine } from "@remixicon/react";
+import { RiArrowLeftLine, RiExternalLinkLine, RiLoader4Line, RiMicLine, RiShieldCheckLine, RiVideoOnLine } from "@remixicon/react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "@/lib/navigation";
 import { API_PATHS } from "@/utils/apiPath";
@@ -29,55 +29,61 @@ export default function VideoCall() {
 
   if (join?.embed) {
     return (
-      <div className="max-w-6xl mx-auto py-4 space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <Link to="/my-appointments" className="inline-flex items-center gap-1.5 text-sm font-bold text-slate-500 hover:text-slate-900">
-            <RiArrowLeftLine size={18} /> Leave call
+      <div className="max-w-6xl mx-auto py-3 space-y-3">
+        <div className="glass rounded-[18px] flex items-center justify-between gap-3 px-3 py-2">
+          <Link to="/my-appointments" className="btn !py-2 !px-3.5 !text-[14px] !rounded-xl text-white border border-rose-700 bg-[linear-gradient(180deg,#F05468,#D62F45)]">
+            <RiArrowLeftLine size={17} /> Leave call
           </Link>
-          <a href={join.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12px] font-bold text-slate-400 hover:text-teal-600">
-            Open in a new tab <RiExternalLinkLine size={14} />
+          <span className="hidden sm:inline-flex items-center gap-1.5 text-[13px] font-semibold text-ink-3">
+            <RiShieldCheckLine size={16} className="text-brand-ink" /> Private room for you and your doctor
+          </span>
+          <a href={join.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[13px] font-semibold text-ink-3 hover:text-brand-ink">
+            Open in a new tab <RiExternalLinkLine size={15} />
           </a>
         </div>
         <iframe
           title="Video consultation"
           src={join.url}
           allow="camera; microphone; fullscreen; display-capture; autoplay"
-          className="w-full h-[calc(100dvh-11rem)] min-h-[420px] rounded-[24px] border border-slate-200 bg-slate-900"
+          className="w-full h-[calc(100dvh-11rem)] min-h-[420px] rounded-[22px] border border-[#071A33] bg-ink shadow-[0_18px_40px_rgba(11,37,69,.2)]"
         />
       </div>
     );
   }
 
   return (
-    <div className="max-w-lg mx-auto py-16 text-center">
-      <div className="w-16 h-16 mx-auto rounded-2xl bg-violet-50 text-violet-600 flex items-center justify-center mb-5">
-        <RiVideoOnLine size={30} />
+    <div className="max-w-lg mx-auto py-10 md:py-16 px-4 md:px-0">
+      <div className="glass rounded-[24px] p-7 sm:p-9 text-center">
+        <span className="w-16 h-16 mx-auto rounded-[20px] grid place-items-center mb-5 text-white border border-violet-800 bg-[linear-gradient(180deg,#8B5CF6,#6D28D9)] shadow-[inset_0_1px_0_rgba(255,255,255,.25),0_10px_24px_rgba(109,40,217,.25)]">
+          <RiVideoOnLine size={28} />
+        </span>
+        {error ? (
+          <>
+            <h1 className="text-[26px] font-extrabold tracking-[-0.02em] text-ink">You can&apos;t join just yet</h1>
+            <p className="text-[15px] text-ink-2 mt-2">{error}</p>
+            <p className="text-[13px] text-ink-3 mt-3">Calls open 10 minutes before your visit and stay open for an hour after.</p>
+          </>
+        ) : join ? (
+          <>
+            <h1 className="text-[26px] font-extrabold tracking-[-0.02em] text-ink">Your call is ready</h1>
+            <p className="text-[15px] text-ink-2 mt-2">It opens in a new tab.</p>
+            <a href={join.url} target="_blank" rel="noreferrer" className="btn mt-6 text-white border border-violet-800 bg-[linear-gradient(180deg,#8B5CF6,#6D28D9)] shadow-[inset_0_1px_0_rgba(255,255,255,.22),0_8px_20px_rgba(109,40,217,.25)]">
+              <RiVideoOnLine size={18} /> Join video call
+            </a>
+          </>
+        ) : (
+          <p className="flex items-center justify-center gap-2 text-[15px] font-semibold text-ink-2">
+            <RiLoader4Line size={18} className="animate-spin" /> Opening your call…
+          </p>
+        )}
+        {!error && (
+          <p className="inline-flex items-center gap-1.5 text-[13px] text-ink-3 mt-5">
+            <RiMicLine size={15} /> Allow your camera and microphone when your browser asks.
+          </p>
+        )}
       </div>
-      {error ? (
-        <>
-          <h1 className="text-2xl font-black text-slate-900">Can&apos;t join yet</h1>
-          <p className="text-slate-500 mt-2">{error}</p>
-        </>
-      ) : join ? (
-        <>
-          <h1 className="text-2xl font-black text-slate-900">Your call is ready</h1>
-          <p className="text-slate-500 mt-2">It opens in a new tab. Allow your camera and microphone when asked.</p>
-          <a
-            href={join.url}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-6 inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-violet-600 text-white font-bold hover:bg-violet-700"
-          >
-            <RiVideoOnLine size={18} /> Join video call
-          </a>
-        </>
-      ) : (
-        <p className="flex items-center justify-center gap-2 text-slate-500 font-bold">
-          <RiLoader4Line size={18} className="animate-spin" /> Opening your call…
-        </p>
-      )}
-      <Link to="/my-appointments" className="block mt-6 text-sm font-bold text-slate-400 hover:text-slate-700">
-        Back to appointments
+      <Link to="/my-appointments" className="flex justify-center items-center gap-1.5 mt-5 text-[14px] font-semibold text-ink-3 hover:text-ink">
+        <RiArrowLeftLine size={16} /> Back to appointments
       </Link>
     </div>
   );

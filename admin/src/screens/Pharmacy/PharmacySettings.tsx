@@ -58,7 +58,7 @@ export default function PharmacySettings() {
             <RiSettings3Line size={20} />
           </div>
           <h1 className="text-xl sm:text-3xl font-black text-slate-900">
-            Pharmacy <span className="text-teal-500 font-serif italic">settings</span>
+            Settings
           </h1>
         </div>
 

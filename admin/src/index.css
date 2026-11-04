@@ -1,17 +1,152 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap');
 @import "tailwindcss";
 
+/*
+ * The brand (Calm & clinical), the same as the patient site (Doctors-App/src/index.css).
+ * Manrope and IBM Plex Mono are self-hosted by next/font in app/layout.tsx.
+ * The panel was built on Tailwind's slate and teal, so those names are re-pointed at the brand's
+ * shades here: every page moves to the new look together, and new code can use the brand names
+ * (ink, brand, line, canvas…) directly.
+ */
 @theme {
-  --color-primary: #5F6FF5;
-  --color-teal-500: #14b8a6;
-  --color-slate-900: #0f172a;
-  --font-outfit: "Outfit", sans-serif;
-  --font-urbanist: "Urbanist", sans-serif;
+  --font-main: var(--font-manrope), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-num: var(--font-plex-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+  /* kept so old class names still work */
+  --font-outfit: var(--font-main);
+  --font-urbanist: var(--font-main);
+
+  --color-ink: #0B2545;
+  --color-ink-2: #3B4A60;
+  --color-ink-3: #5A6B82;
+  --color-brand: #0EA5A4;
+  --color-brand-ink: #0B7C7B;
+  --color-brand-soft: #E2F5F4;
+  --color-video: #6D28D9;
+  --color-video-soft: #EDE7FB;
+  --color-line: #E3EAF2;
+  --color-canvas: #F6F8FB;
+  --color-primary: #0EA5A4;
+
+  /* slate -> the brand's navy and blue-greys */
+  --color-slate-50: #F6F8FB;
+  --color-slate-100: #EEF2F7;
+  --color-slate-200: #E3EAF2;
+  --color-slate-300: #C6D2E0;
+  --color-slate-400: #8494A8;
+  --color-slate-500: #5A6B82;
+  --color-slate-600: #4A5A70;
+  --color-slate-700: #3B4A60;
+  --color-slate-800: #13345F;
+  --color-slate-900: #0B2545;
+  --color-slate-950: #081A33;
+
+  /* teal -> the brand's teal */
+  --color-teal-50: #E2F5F4;
+  --color-teal-100: #C4E8E5;
+  --color-teal-200: #9FDCD8;
+  --color-teal-300: #6BCBC6;
+  --color-teal-400: #2CC2C0;
+  --color-teal-500: #0EA5A4;
+  --color-teal-600: #0B7C7B;
+  --color-teal-700: #0A6968;
+  --color-teal-800: #08504F;
+  --color-teal-900: #063C3B;
 }
 
 /* --- Global Reset --- */
 * {
-  font-family: var(--font-outfit);
+  font-family: var(--font-main);
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- Brand pieces (same as the patient site) --- */
+
+/* frosted glass for things that float (bars, panels over the background) */
+@utility glass {
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 1px 0 #fff, 0 10px 30px rgba(11, 37, 69, 0.08);
+}
+
+/* solid white surface for content (cards, lists, forms) */
+@utility surface {
+  background: #fff;
+  border: 1px solid var(--color-line);
+  box-shadow: 0 1px 2px rgba(11, 37, 69, .04), 0 8px 20px rgba(11, 37, 69, .05);
+}
+
+/* buttons: gloss on the things you press */
+@utility btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 15px;
+  border-radius: 14px;
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: transform .18s cubic-bezier(.34, 1.56, .64, 1), box-shadow .18s, background .3s;
+  &:hover { transform: translateY(-2px); }
+  &:active { transform: scale(.96); }
+  &:focus-visible { outline: 3px solid var(--color-brand); outline-offset: 3px; }
+  &:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+}
+@utility btn-ink {
+  color: #fff;
+  border: 1px solid #071A33;
+  background: linear-gradient(180deg, #1C3D68 0%, #0B2545 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 8px 20px rgba(11, 37, 69, .25);
+}
+@utility btn-teal {
+  color: #fff;
+  border: 1px solid #08605F;
+  background: linear-gradient(180deg, #2CC2C0, #0B7C7B);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 6px 16px rgba(11, 124, 123, .25);
+}
+@utility btn-glass {
+  color: var(--color-ink);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: inset 0 1px 0 #fff, 0 6px 16px rgba(11, 37, 69, .06);
+}
+
+/* text inputs */
+@utility field {
+  width: 100%;
+  background: #fff;
+  border: 1.5px solid var(--color-line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 15px;
+  color: var(--color-ink);
+  outline: none;
+  transition: border-color .18s, box-shadow .18s;
+  &::placeholder { color: #94A3B8; }
+  &:focus { border-color: var(--color-brand); box-shadow: 0 0 0 4px rgba(14, 165, 164, .12); }
+}
+
+/* the small teal heading above a title */
+@utility eyebrow {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--color-brand-ink);
+}
+
+/* numbers that tick (times, prices, counters) */
+@utility num {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
 }
 
 /* --- Individual Flat Utilities (No Nesting) --- */
@@ -20,19 +155,20 @@
 }
 
 @utility shadow-portal {
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.03), 0 0 1px 1px rgba(0, 0, 0, 0.01);
+  box-shadow: 0 1px 2px rgba(11, 37, 69, .04), 0 8px 20px rgba(11, 37, 69, .05);
 }
 
 @utility admin-input {
   width: 100%;
-  background-color: #f8fafc;
-  border: 1px solid #f1f5f9;
-  border-radius: 1rem;
-  padding: 1rem 1.25rem;
-  font-size: 0.875rem;
+  background-color: #fff;
+  border: 1.5px solid var(--color-line);
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  font-size: 0.9375rem;
   font-weight: 500;
+  color: var(--color-ink);
   outline: none;
-  transition: all 0.3s ease;
+  transition: border-color .18s, box-shadow .18s;
 }
 
 @utility animate-reveal {
@@ -45,9 +181,8 @@
 }
 
 .admin-input:focus {
-  background-color: #ffffff;
-  border-color: rgba(20, 184, 166, 0.3);
-  box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.05);
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 4px rgba(14, 165, 164, .12);
 }
 
 @keyframes reveal {
@@ -63,11 +198,11 @@
 }
 
 @utility img-sharp {
-  /* 🛡️ Forces high-contrast, sharp pixel rendering */
+  /* Forces high-contrast, sharp pixel rendering */
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
 
-  /* 🚀 Forces GPU rendering to prevent "scrambling" during scrolls */
+  /* Forces GPU rendering to prevent "scrambling" during scrolls */
   transform: translateZ(0);
   backface-visibility: hidden;
 }
@@ -78,14 +213,14 @@
 }
 
 @utility img-layer {
-  /* 🛡️ Forces the browser to keep this in its own graphics layer */
+  /* Forces the browser to keep this in its own graphics layer */
   will-change: transform, opacity;
   transform: translateZ(0);
 
-  /* 🚀 Prevents the "rainbow/scramble" during repaints */
+  /* Prevents the "rainbow/scramble" during repaints */
   backface-visibility: hidden;
   perspective: 1000px;
 
-  /* 🎨 Ensure the background doesn't bleed through while loading */
+  /* Ensure the background doesn't bleed through while loading */
   background-color: transparent;
 }

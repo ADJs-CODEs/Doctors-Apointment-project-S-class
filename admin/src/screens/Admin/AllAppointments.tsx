@@ -84,7 +84,7 @@ const AllAppointments: React.FC = () => {
                 <RiCalendarEventLine size={20} />
               </div>
               <h1 className="text-xl sm:text-3xl font-black text-slate-900">
-                All <span className="text-teal-500 font-serif italic normal-case">Appointments</span>
+                Appointments
               </h1>
             </div>
             <p className="text-slate-500 text-sm ml-12">Every visit at the clinic, soonest first. {appointments.length} in total.</p>

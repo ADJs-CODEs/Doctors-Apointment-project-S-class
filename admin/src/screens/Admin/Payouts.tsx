@@ -120,7 +120,7 @@ function CareFundPayouts() {
                 <RiBankLine size={20} />
               </div>
               <h1 className="text-xl sm:text-3xl font-black text-slate-900">
-                Care fund <span className="text-teal-500 font-serif italic">payouts</span>
+                Payouts
               </h1>
             </div>
             <p className="text-slate-500 text-sm ml-12">

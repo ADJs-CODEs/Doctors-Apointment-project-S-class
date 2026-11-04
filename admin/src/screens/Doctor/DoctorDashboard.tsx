@@ -139,10 +139,7 @@ const DoctorDashboard: React.FC = () => {
         {/* Header */}
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900">
-            Doctor{" "}
-            <span className="text-teal-500 font-serif italic normal-case">
-              Dashboard
-            </span>
+            Dashboard
           </h1>
           <p className="text-slate-400 text-xs font-medium mt-1">
             Your earnings, bookings and latest appointments.

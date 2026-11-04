@@ -96,7 +96,7 @@ export default function PharmacyProducts() {
                 <RiCapsuleLine size={20} />
               </div>
               <h1 className="text-xl sm:text-3xl font-black text-slate-900">
-                Products <span className="text-teal-500 font-serif italic">&amp; stock</span>
+                Products and stock
               </h1>
             </div>
             <p className="text-slate-500 text-sm ml-12">What you sell. Patients near you see listed products that are in stock.</p>

@@ -56,7 +56,7 @@ const Dashboard: React.FC = () => {
       <div className="max-w-5xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900">
-            Admin <span className="text-teal-500 font-serif italic normal-case">Dashboard</span>
+            Dashboard
           </h1>
           <p className="text-slate-400 text-xs font-medium mt-1">Your doctors, bookings and the latest appointments across the clinic.</p>
         </div>
