@@ -4,81 +4,88 @@ import React, { useEffect, useState, useContext } from "react";
 import { AppContext } from "../Context/AppContext";
 import { toast } from "sonner";
 import { useNavigate, Link } from "@/lib/navigation";
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import type { AppContextType } from "../types/index";
 import { useGoogleLogin } from "@react-oauth/google";
 import {
-  RiMailLine,
-  RiLock2Line,
-  RiUserLine,
-  RiPulseFill,
   RiArrowRightLine,
   RiGoogleFill,
-  RiAppleFill,
+  RiEyeLine,
+  RiEyeOffLine,
+  RiStethoscopeLine,
+  RiCapsuleLine,
+  RiTeamLine,
+  RiShieldCheckLine,
+  RiLockLine,
 } from "@remixicon/react";
 import axiosInstance from "../utils/axiosInstance";
 import { API_PATHS } from "../utils/apiPath";
 
-const Login: React.FC = () => {
-  const context = useContext(AppContext) as AppContextType;
-  const { token, setToken, setProgress } = context;
+// what an account gives you, beside the form on wide screens
+const PERKS = [
+  { icon: <RiStethoscopeLine size={20} />, title: "Clinic and video visits", text: "Book specialists at times they're really free." },
+  { icon: <RiCapsuleLine size={20} />, title: "A reminder for every dose", text: "Your prescriptions become a schedule you can follow." },
+  { icon: <RiTeamLine size={20} />, title: "Family in the loop", text: "Let the people who love you watch over your care." },
+];
 
+const Login: React.FC = () => {
+  const { token, setToken } = useContext(AppContext) as AppContextType;
   const navigate = useNavigate();
   const [state, setState] = useState<"Sign Up" | "Login">("Login");
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [name, setName] = useState<string>("");
+  // the landing page's "Get started" links here with ?mode=signup
+  const wantsSignup = useSearchParams()?.get("mode") === "signup";
+  useEffect(() => {
+    if (wantsSignup) setState("Sign Up");
+  }, [wantsSignup]);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const signingUp = state === "Sign Up";
 
-  // --- GOOGLE LOGIN LOGIC ---
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        toast.info("Verifying credentials with ADJ's CODEs...");
-
+        toast.info("Signing you in with Google…");
         const { data } = await axiosInstance.post(API_PATHS.AUTH.GOOGLE_AUTH, {
           access_token: tokenResponse.access_token,
         });
-
         if (data.success) {
           localStorage.setItem("token", data.token);
           setToken(data.token);
-          toast.success(`Welcome back, ${data.name.split(" ")[0]}!`);
+          toast.success(`Welcome, ${data.name.split(" ")[0]}!`);
         } else {
           toast.error(data.message);
         }
       } catch (error: any) {
-        toast.error(error.response?.data?.message || "Authentication failed");
-      } finally {
+        toast.error(error.response?.data?.message || "Google sign-in didn't work. Please try again.");
       }
     },
-    onError: () => toast.error("Connection interrupted"),
+    onError: () => toast.error("Google sign-in was closed before it finished."),
   });
 
-  const handleAppleLogin = () => {
-    toast.error("Apple Sign-In is currently in development for ADJ's CODEs.");
-  };
-
-  const onSubmitHandler = async (event: React.BaseSyntheticEvent) => {
+  const onSubmitHandler = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (busy) return;
+    setBusy(true);
     try {
-      const endpoint =
-        state === "Sign Up" ? API_PATHS.AUTH.REGISTER : API_PATHS.AUTH.LOGIN;
+      const endpoint = signingUp ? API_PATHS.AUTH.REGISTER : API_PATHS.AUTH.LOGIN;
       const normalizedEmail = email.toLowerCase().trim();
-      const payload =
-        state === "Sign Up" ? { name, email: normalizedEmail, password } : { email: normalizedEmail, password };
-
+      const payload = signingUp ? { name, email: normalizedEmail, password } : { email: normalizedEmail, password };
       const { data } = await axiosInstance.post(endpoint, payload);
-
       if (data.success) {
         localStorage.setItem("token", data.token);
         setToken(data.token);
-        toast.success(`Access Granted to Patient Portal`);
+        toast.success(signingUp ? "Your account is ready." : "Welcome back.");
       } else {
         toast.error(data.message);
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Connection failed");
+      toast.error(error.response?.data?.message || "We couldn't reach the server. Please try again.");
     } finally {
+      setBusy(false);
     }
   };
 
@@ -87,144 +94,142 @@ const Login: React.FC = () => {
   }, [token, navigate]);
 
   return (
-    <div className="min-h-[90vh] flex items-center justify-center px-4 sm:px-8 md:px-12 py-12 bg-clinic-bg">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        // Added max-w-lg for tablets to keep the form centered and readable
-        className="w-full max-w-md lg:max-w-lg bg-white border border-slate-100 p-6 sm:p-10 md:p-12 rounded-[40px] md:rounded-[48px] shadow-clinical"
-      >
-        {/* Header Branding */}
-        <div className="mb-8 md:mb-10 text-center">
-          <div className="inline-flex items-center gap-2 px-5 py-2 bg-teal-50 rounded-full text-teal-600 mb-6 md:mb-8 border border-teal-100/50">
-            <div className="w-5 h-5 bg-teal-600 rounded-full flex items-center justify-center text-white font-black text-[10px]">
-              +
-            </div>
-            <span className="text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-[2px] md:tracking-[2.5px]">
-              ADJ's CODEs Verified
-            </span>
-          </div>
+    <div className="max-w-[1080px] mx-auto px-4 py-8 md:py-14 grid gap-8 lg:grid-cols-[1fr_minmax(0,460px)] items-center">
+      {/* why sign up (wide screens) */}
+      <div className="hidden lg:flex flex-col gap-6 pr-6">
+        <p className="eyebrow">Your care, all together</p>
+        <h1 className="text-[52px] leading-[1.02] font-extrabold tracking-[-0.035em] text-ink text-balance">
+          Your whole health story, in one place.
+        </h1>
+        <ul className="glass rounded-[22px] mt-2 divide-y divide-line/80">
+          {PERKS.map((p, i) => (
+            <motion.li
+              key={p.title}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 + i * 0.08 }}
+              className="flex items-center gap-4 p-4"
+            >
+              <span className="w-11 h-11 shrink-0 rounded-xl grid place-items-center text-brand-ink border border-[#C4E8E5] bg-[linear-gradient(180deg,#EFFAF9,#D3F0EE)] shadow-[inset_0_1px_0_#fff,0_4px_10px_rgba(11,124,123,0.12)]">
+                {p.icon}
+              </span>
+              <div>
+                <b className="block text-[16px] text-ink">{p.title}</b>
+                <span className="text-[14px] text-ink-3">{p.text}</span>
+              </div>
+            </motion.li>
+          ))}
+        </ul>
+        <div className="flex flex-wrap gap-x-6 gap-y-2 text-[13px] font-semibold text-ink-3">
+          <span className="inline-flex items-center gap-1.5">
+            <RiShieldCheckLine size={16} className="text-brand-ink" /> Doctors verified by the clinic
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <RiLockLine size={16} className="text-brand-ink" /> Card payments by Stripe
+          </span>
+        </div>
+      </div>
 
-          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2 tracking-tight">
-            {state === "Sign Up" ? "Join the Network" : "Patient Access"}
+      {/* the form */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass rounded-[28px] p-6 sm:p-9 w-full max-w-[460px] mx-auto"
+      >
+        <div className="mb-7">
+          <h2 className="text-[30px] leading-tight font-extrabold tracking-[-0.03em] text-ink">
+            {signingUp ? "Create your account" : "Welcome back"}
           </h2>
-          <p className="text-slate-400 text-xs sm:text-sm font-medium px-2">
-            {state === "Sign Up"
-              ? "Create your ADJ's CODEs medical profile."
-              : "Secure medical data synchronization."}
+          <p className="text-[15px] text-ink-3 mt-1.5">
+            {signingUp
+              ? "It takes a minute. Book your first visit when you're ready."
+              : "Log in to see your visits, medicines and messages."}
           </p>
         </div>
 
-        {/* Social Auth Buttons - Tab/Medium Screen optimization */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 mb-8">
-          <button
-            type="button"
-            onClick={() => handleGoogleLogin()}
-            className="flex items-center justify-center gap-3 py-3 md:py-3.5 border border-slate-100 rounded-2xl hover:bg-slate-50 active:scale-95 transition-all text-slate-600 font-black text-[10px] uppercase tracking-wider w-full"
-          >
-            <RiGoogleFill size={18} className="text-teal-600" /> Google
-          </button>
-          <button
-            type="button"
-            onClick={handleAppleLogin}
-            className="flex items-center justify-center gap-3 py-3 md:py-3.5 border border-slate-100 rounded-2xl hover:bg-slate-50 active:scale-95 transition-all text-slate-600 font-black text-[10px] uppercase tracking-wider w-full"
-          >
-            <RiAppleFill size={18} /> Apple
-          </button>
+        <button type="button" onClick={() => handleGoogleLogin()} className="btn btn-glass w-full !bg-white">
+          <RiGoogleFill size={18} className="text-[#4285F4]" /> Continue with Google
+        </button>
+
+        <div className="flex items-center gap-3 my-6 text-[13px] text-ink-3">
+          <span className="h-px flex-1 bg-line" /> or with your email <span className="h-px flex-1 bg-line" />
         </div>
 
-        <div className="relative mb-8">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-slate-100"></span>
-          </div>
-          <div className="relative flex justify-center text-[8px] md:text-[9px] uppercase font-black tracking-[3px] text-slate-300">
-            <span className="bg-white px-4 md:px-6">Official Registry</span>
-          </div>
-        </div>
-
-        {/* Email Form */}
-        <form onSubmit={onSubmitHandler} className="space-y-4">
-          {state === "Sign Up" && (
-            <div className="relative group">
+        <form onSubmit={onSubmitHandler} className="flex flex-col gap-4">
+          {signingUp && (
+            <label className="flex flex-col gap-1.5">
+              <span className="text-[14px] font-bold text-ink">Full name</span>
               <input
                 type="text"
-                placeholder="Your Full Name"
-                className="medical-input pl-14 w-full focus:border-teal-600 transition-all text-sm h-12 md:h-14"
+                autoComplete="name"
+                className="field"
                 onChange={(e) => setName(e.target.value)}
                 value={name}
                 required
               />
-              <RiUserLine
-                size={20}
-                className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-teal-600 transition-colors"
-              />
-            </div>
+            </label>
           )}
 
-          <div className="relative group">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-[14px] font-bold text-ink">Email</span>
             <input
               type="email"
-              placeholder="patient@adjscodes.com"
-              className="medical-input pl-14 w-full focus:border-teal-600 transition-all text-sm h-12 md:h-14"
+              autoComplete="email"
+              placeholder="you@example.com"
+              className="field"
               onChange={(e) => setEmail(e.target.value)}
               value={email}
               required
             />
-            <RiMailLine
-              size={20}
-              className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-teal-600 transition-colors"
-            />
-          </div>
+          </label>
 
-          <div className="relative group">
-            <input
-              type="password"
-              placeholder="Security Password"
-              className="medical-input pl-14 w-full focus:border-teal-600 transition-all text-sm h-12 md:h-14"
-              onChange={(e) => setPassword(e.target.value)}
-              value={password}
-              required
-            />
-            <RiLock2Line
-              size={20}
-              className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-teal-600 transition-colors"
-            />
-          </div>
-
-          {state === "Login" && (
-            <div className="flex justify-end mt-1">
-              <Link
-                to="/forgot-password"
-                className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-teal-600 transition-colors"
+          <label className="flex flex-col gap-1.5">
+            <span className="flex items-center justify-between">
+              <span className="text-[14px] font-bold text-ink">Password</span>
+              {!signingUp && (
+                <Link to="/forgot-password" className="text-[13px] font-semibold text-brand-ink hover:underline">
+                  Forgot it?
+                </Link>
+              )}
+            </span>
+            <span className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                autoComplete={signingUp ? "new-password" : "current-password"}
+                minLength={signingUp ? 8 : undefined}
+                className="field !pr-12"
+                onChange={(e) => setPassword(e.target.value)}
+                value={password}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg text-ink-3 hover:text-ink"
               >
-                Reset Login Details
-              </Link>
-            </div>
-          )}
+                {showPassword ? <RiEyeOffLine size={18} /> : <RiEyeLine size={18} />}
+              </button>
+            </span>
+            {signingUp && <span className="text-[13px] text-ink-3">At least 8 characters.</span>}
+          </label>
 
-          <button
-            type="submit"
-            className="w-full flex items-center justify-center gap-3 mt-4 bg-slate-900 hover:bg-teal-600 active:scale-[0.98] transition-all py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white shadow-lg"
-          >
-            {state === "Sign Up" ? "Sign Up" : "Login"}
-            <RiArrowRightLine size={18} />
+          <button type="submit" disabled={busy} className="btn btn-ink w-full mt-2">
+            {busy ? "One moment…" : signingUp ? "Create my account" : "Log in"}
+            {!busy && <RiArrowRightLine size={18} />}
           </button>
         </form>
 
-        {/* Footer Toggle */}
-        <div className="mt-8 md:mt-10 text-center border-t border-slate-50 pt-6 md:pt-8">
-          <p className="text-slate-400 text-[9px] md:text-[10px] font-bold uppercase tracking-widest leading-relaxed">
-            {state === "Sign Up" ? "Already in the registry?" : "New patient?"}
-            <span
-              onClick={() =>
-                setState(state === "Sign Up" ? "Login" : "Sign Up")
-              }
-              className="block sm:inline-block sm:ml-2 text-teal-600 cursor-pointer hover:underline font-black mt-2 sm:mt-0"
-            >
-              {state === "Sign Up" ? "Login" : "Sign Up"}
-            </span>
-          </p>
-        </div>
+        <p className="mt-6 text-center text-[14px] text-ink-3">
+          {signingUp ? "Already have an account?" : "New here?"}{" "}
+          <button
+            type="button"
+            onClick={() => setState(signingUp ? "Login" : "Sign Up")}
+            className="font-bold text-brand-ink hover:underline"
+          >
+            {signingUp ? "Log in" : "Create an account"}
+          </button>
+        </p>
       </motion.div>
     </div>
   );

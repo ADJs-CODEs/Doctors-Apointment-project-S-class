@@ -2,30 +2,37 @@
 
 import React, { useContext, useState, useEffect } from "react";
 import { NavLink, useNavigate } from "@/lib/navigation";
+import Link from "next/link";
 import { AppContext } from "../Context/AppContext";
 import type { AppContextType } from "../types/index";
 import { motion, AnimatePresence } from "framer-motion";
 import NotificationBell from "./NotificationBell";
+import Logo from "./brand/Logo";
 import { disablePush } from "../utils/push";
 import { clearCachedSettings } from "../hooks/useUserSettings";
 import { basket } from "../utils/basket";
-import {
-  List,
-  X,
-  SignOut,
-  CalendarCheck,
-  UserGear,
-  CaretDown,
-  Fingerprint,
-  ArrowUpRight,
-} from "@phosphor-icons/react";
+import { List, X, SignOut, CalendarCheck, UserGear, CaretDown, Fingerprint } from "@phosphor-icons/react";
 import { RiEyeLine } from "@remixicon/react";
 
+// the public pages; the landing page has its own header
+const LINKS = [
+  { label: "Doctors", to: "/doctors" },
+  { label: "Wish Well", to: "/wish-well" },
+  { label: "About", to: "/about" },
+  { label: "Contact", to: "/contact" },
+];
+
+const ACCOUNT = [
+  { icon: <CalendarCheck size={18} weight="duotone" />, label: "My appointments", path: "/my-appointments" },
+  { icon: <UserGear size={18} weight="duotone" />, label: "My profile", path: "/my-profile" },
+  { icon: <Fingerprint size={18} weight="duotone" />, label: "Settings", path: "/account-settings" },
+  { icon: <RiEyeLine size={18} />, label: "Watching over", path: "/watching-over" },
+];
+
+/** The glass header on the public pages (doctors, about, contact, login). */
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
-  const { token, setToken, userData } = useContext(
-    AppContext,
-  ) as AppContextType;
+  const { token, setToken, userData } = useContext(AppContext) as AppContextType;
   const [showMenu, setShowMenu] = useState(false);
 
   useEffect(() => {
@@ -52,155 +59,88 @@ const Navbar: React.FC = () => {
     window.scrollTo(0, 0);
   };
 
-  const activeClass =
-    "relative py-1 text-teal-600 font-bold after:content-[''] after:absolute after:bottom-[-4px] after:left-0 after:w-full after:h-0.5 after:bg-teal-500 after:rounded-full";
-  const normalClass =
-    "py-1 text-slate-500 font-bold hover:text-teal-600 transition-all duration-300";
-
   return (
-    <nav className="sticky top-0 z-50 py-3 px-4 md:px-8 bg-white/80 backdrop-blur-xl border-b border-slate-100 md:mt-3 md:mx-3 md:rounded-[24px] shadow-sm">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
-        {/* Logo */}
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          onClick={() => go("/")}
-          className="flex items-center gap-2 md:gap-3 cursor-pointer shrink-0"
-        >
-          <div className="w-9 h-9 md:w-11 md:h-11 bg-teal-50 rounded-full border-2 border-dotted border-teal-200 flex items-center justify-center shadow-sm shrink-0">
-            <span className="text-teal-600 font-black text-lg md:text-2xl leading-none">
-              +
-            </span>
-          </div>
-          <div className="flex flex-col leading-tight">
-            <span className="text-[13px] md:text-[17px] font-black text-slate-800 tracking-tighter uppercase whitespace-nowrap">
-              ADJ's <span className="text-teal-600">CODEs</span>
-            </span>
-            <span className="text-[7px] md:text-[9px] font-bold text-slate-400 uppercase tracking-[2px] -mt-0.5 hidden xs:block">
-              Pharmaceutical
-            </span>
-          </div>
-        </motion.div>
+    <nav className="sticky top-0 z-50 px-4 pt-3.5 pb-2">
+      <div className="glass max-w-[1180px] mx-auto flex items-center gap-5 rounded-[18px] py-2.5 pl-5 pr-3">
+        <Logo compact />
 
-        {/* Desktop nav */}
-        <ul className="hidden md:flex items-center gap-8 text-[11px] tracking-[2px] font-bold">
-          {["HOME", "DOCTORS", "ABOUT", "WISH WELL", "CONTACT"].map((item) => (
-            <NavLink
-              key={item}
-              to={
-                item === "HOME"
-                  ? "/"
-                  : item === "WISH WELL"
-                    ? "/wish-well"
-                    : `/${item.toLowerCase()}`
-              }
-              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            >
-              {({ isActive }) => (
-                <li className={isActive ? activeClass : normalClass}>{item}</li>
-              )}
-            </NavLink>
+        <ul className="hidden md:flex items-center gap-6 ml-auto">
+          {LINKS.map((l) => (
+            <li key={l.to}>
+              <NavLink to={l.to}>
+                {({ isActive }) => (
+                  <span
+                    className={`text-[14px] font-semibold transition-colors ${
+                      isActive ? "text-brand-ink" : "text-ink-2 hover:text-brand-ink"
+                    }`}
+                  >
+                    {l.label}
+                  </span>
+                )}
+              </NavLink>
+            </li>
           ))}
         </ul>
 
-        {/* Desktop right */}
-        <div className="flex items-center gap-3 md:gap-5">
+        <div className="flex items-center gap-2 ml-auto md:ml-0">
           {token && <NotificationBell />}
           {token && userData ? (
-            <div className="hidden md:flex items-center gap-3 cursor-pointer group relative">
-              <div className="relative isolate">
-                <div className="absolute -inset-1 bg-teal-500/10 rounded-full blur-sm group-hover:bg-teal-500/20 transition duration-500" />
-                <img
-                  className="w-9 h-9 rounded-xl border border-slate-100 relative z-10 object-cover bg-white shadow-sm"
-                  src={userData.image.replace(
-                    "/upload/",
-                    "/upload/f_jpg,q_auto:best/",
-                  )}
-                  alt="Profile"
-                />
-              </div>
-              <div className="flex items-center gap-1">
-                <p className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-                  {userData.name.split(" ")[0]}
-                </p>
-                <CaretDown
-                  size={12}
-                  weight="bold"
-                  className="text-slate-400 group-hover:rotate-180 transition-transform"
-                />
-              </div>
-              {/* Dropdown */}
-              <div className="absolute top-full right-0 pt-4 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-300 z-50">
-                <div className="min-w-60 bg-white border border-slate-100 rounded-[20px] p-2 shadow-[0_20px_40px_rgba(0,0,0,0.08)]">
-                  {[
-                    {
-                      icon: <UserGear size={18} weight="duotone" />,
-                      label: "Medical Profile",
-                      path: "/my-profile",
-                    },
-                    {
-                      icon: <CalendarCheck size={18} weight="duotone" />,
-                      label: "My Appointments",
-                      path: "/my-appointments",
-                    },
-                    {
-                      icon: <Fingerprint size={18} weight="duotone" />,
-                      label: "Security & Credentials",
-                      path: "/account-settings",
-                    },
-                    {
-                      icon: <RiEyeLine size={18} />,
-                      label: "Watching Over",
-                      path: "/watching-over",
-                    },
-                  ].map((item) => (
-                    <div
+            <div className="hidden md:flex items-center gap-2 cursor-pointer group relative py-1">
+              <img
+                className="w-9 h-9 rounded-xl border border-line object-cover bg-white"
+                src={userData.image.replace("/upload/", "/upload/f_jpg,q_auto:best/")}
+                alt=""
+              />
+              <span className="text-[14px] font-bold text-ink">{userData.name.split(" ")[0]}</span>
+              <CaretDown size={12} weight="bold" className="text-ink-3 group-hover:rotate-180 transition-transform" />
+              <div className="absolute top-full right-0 pt-3 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-200 z-50">
+                <div className="surface min-w-56 rounded-[18px] p-1.5">
+                  {ACCOUNT.map((item) => (
+                    <button
                       key={item.path}
+                      type="button"
                       onClick={() => go(item.path)}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 rounded-xl transition-all cursor-pointer text-slate-400 hover:text-teal-600 group/item"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-ink-3 hover:bg-canvas hover:text-brand-ink transition-colors"
                     >
                       {item.icon}
-                      <span className="text-xs font-bold text-slate-600 group-hover/item:text-slate-900">
-                        {item.label}
-                      </span>
-                    </div>
+                      <span className="text-[14px] font-semibold text-ink">{item.label}</span>
+                    </button>
                   ))}
-                  <div className="h-px bg-slate-50 my-1 mx-2" />
-                  <div
+                  <div className="h-px bg-line my-1 mx-2" />
+                  <button
+                    type="button"
                     onClick={logout}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-rose-50 rounded-xl transition-all cursor-pointer"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-rose-600 hover:bg-rose-50 transition-colors"
                   >
-                    <SignOut
-                      size={18}
-                      weight="duotone"
-                      className="text-rose-500"
-                    />
-                    <span className="text-xs font-bold text-rose-500">
-                      Sign Out
-                    </span>
-                  </div>
+                    <SignOut size={18} weight="duotone" />
+                    <span className="text-[14px] font-semibold">Log out</span>
+                  </button>
                 </div>
               </div>
             </div>
           ) : (
-            <button
-              onClick={() => navigate("/login")}
-              className="hidden md:flex items-center gap-2 bg-slate-900 text-white px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-[2px] hover:bg-teal-600 transition-all shadow-sm whitespace-nowrap"
-            >
-              Patient Portal
-            </button>
+            <>
+              <Link href="/login" className="btn btn-glass !py-2.5 !px-4 !text-[14px] !rounded-xl hidden sm:inline-flex">
+                Log in
+              </Link>
+              <Link href="/login?mode=signup" className="btn btn-ink !py-2.5 !px-4 !text-[14px] !rounded-xl whitespace-nowrap">
+                Get started
+              </Link>
+            </>
           )}
 
-          {/* Mobile hamburger */}
-          <div
+          <button
+            type="button"
+            aria-label="Open menu"
             onClick={() => setShowMenu(true)}
-            className="md:hidden p-2 bg-slate-50 rounded-xl border border-slate-100 cursor-pointer active:scale-90 transition-all"
+            className="md:hidden p-2 rounded-xl bg-white border border-line active:scale-90 transition-transform"
           >
-            <List size={22} weight="bold" className="text-slate-900" />
-          </div>
+            <List size={20} weight="bold" className="text-ink" />
+          </button>
         </div>
       </div>
 
-      {/* Mobile full-screen menu */}
+      {/* phone menu */}
       <AnimatePresence>
         {showMenu && (
           <motion.div
@@ -208,126 +148,79 @@ const Navbar: React.FC = () => {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 28, stiffness: 220 }}
-            className="fixed inset-0 z-[100] bg-white flex flex-col h-[100dvh] w-screen overflow-hidden"
+            className="fixed inset-0 z-[100] bg-canvas flex flex-col h-[100dvh] w-screen overflow-hidden"
           >
-            {/* Mobile header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-slate-50 shrink-0">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-teal-50 rounded-full flex items-center justify-center">
-                  <span className="text-teal-600 font-black text-lg">+</span>
-                </div>
-                <span className="font-black text-slate-900 tracking-tighter uppercase text-sm">
-                  ADJ's CODEs
-                </span>
-              </div>
-              <div
+            <div className="flex items-center justify-between px-5 py-4 border-b border-line shrink-0">
+              <Logo onClick={() => setShowMenu(false)} />
+              <button
+                type="button"
+                aria-label="Close menu"
                 onClick={() => setShowMenu(false)}
-                className="p-2 bg-slate-50 rounded-xl cursor-pointer active:scale-95"
+                className="p-2 rounded-xl bg-white border border-line active:scale-95"
               >
-                <X size={22} weight="bold" className="text-slate-900" />
-              </div>
+                <X size={20} weight="bold" className="text-ink" />
+              </button>
             </div>
 
-            {/* Scrollable content */}
-            <div className="flex-1 overflow-y-auto px-6 py-8 space-y-10">
-              {/* Nav links */}
-              <div>
-                <p className="text-[9px] font-black text-teal-600 uppercase tracking-[4px] mb-5 opacity-60">
-                  Navigation
-                </p>
-                <ul className="flex flex-col gap-5">
-                  {["HOME", "DOCTORS", "ABOUT", "WISH WELL", "CONTACT"].map(
-                    (item, i) => (
-                      <motion.li
-                        key={item}
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.05 }}
-                        onClick={() =>
-                          go(
-                            item === "HOME"
-                              ? "/"
-                              : item === "WISH WELL"
-                                ? "/wish-well"
-                                : `/${item.toLowerCase()}`,
-                          )
-                        }
-                        className="text-3xl font-black text-slate-800 tracking-tighter uppercase cursor-pointer hover:text-teal-600 transition-colors active:scale-95"
-                      >
-                        {item}
-                      </motion.li>
-                    ),
-                  )}
-                </ul>
-              </div>
+            <div className="flex-1 overflow-y-auto px-5 py-8 space-y-10">
+              <ul className="flex flex-col gap-4">
+                {[{ label: "Home", to: "/" }, ...LINKS].map((l, i) => (
+                  <motion.li
+                    key={l.to}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => go(l.to)}
+                      className="text-[32px] font-extrabold tracking-[-0.03em] text-ink active:scale-95 transition-transform"
+                    >
+                      {l.label}
+                    </button>
+                  </motion.li>
+                ))}
+              </ul>
 
-              {/* Dashboard section */}
               {token && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.25 }}
-                >
-                  <p className="text-[9px] font-black text-teal-600 uppercase tracking-[4px] mb-5 opacity-60">
-                    My Account
-                  </p>
-                  <div className="flex flex-col gap-5">
-                    {[
-                      {
-                        icon: <UserGear size={26} weight="duotone" />,
-                        label: "Medical Profile",
-                        path: "/my-profile",
-                      },
-                      {
-                        icon: <CalendarCheck size={26} weight="duotone" />,
-                        label: "My Appointments",
-                        path: "/my-appointments",
-                      },
-                      {
-                        icon: <Fingerprint size={26} weight="duotone" />,
-                        label: "Security & Credentials",
-                        path: "/account-settings",
-                      },
-                      {
-                        icon: <RiEyeLine size={18} />,
-                        label: "Watching Over",
-                        path: "/watching-over",
-                      },
-                    ].map((item) => (
+                <div>
+                  <p className="eyebrow mb-4">My account</p>
+                  <div className="flex flex-col gap-4">
+                    {ACCOUNT.map((item) => (
                       <button
                         key={item.path}
+                        type="button"
                         onClick={() => go(item.path)}
-                        className="flex items-center gap-4 text-slate-700 font-bold text-lg active:scale-95 transition-transform"
+                        className="flex items-center gap-3 text-ink font-semibold text-[17px] active:scale-95 transition-transform"
                       >
-                        <span className="text-teal-500">{item.icon}</span>{" "}
+                        <span className="text-brand-ink">{item.icon}</span>
                         {item.label}
                       </button>
                     ))}
                   </div>
-                </motion.div>
+                </div>
               )}
             </div>
 
-            {/* Bottom actions */}
-            <div className="p-6 bg-slate-50 border-t border-slate-100 shrink-0 safe-area-bottom">
+            <div className="p-5 border-t border-line shrink-0 flex flex-col gap-2.5">
               {!token ? (
-                <button
-                  onClick={() => go("/login")}
-                  className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest active:scale-95 transition-transform"
-                >
-                  Patient Portal Login
-                </button>
+                <>
+                  <button type="button" onClick={() => go("/login?mode=signup")} className="btn btn-ink w-full">
+                    Create my account
+                  </button>
+                  <button type="button" onClick={() => go("/login")} className="btn btn-glass w-full">
+                    Log in
+                  </button>
+                </>
               ) : (
                 <button
+                  type="button"
                   onClick={logout}
-                  className="w-full bg-rose-50 text-rose-500 py-4 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-transform"
+                  className="btn w-full bg-rose-50 text-rose-600 border border-rose-100"
                 >
-                  <SignOut size={18} weight="bold" /> Sign Out
+                  <SignOut size={18} weight="bold" /> Log out
                 </button>
               )}
-              <p className="mt-4 text-center text-[9px] font-bold text-slate-400 uppercase tracking-[2px]">
-                (+234) 704 203 0981
-              </p>
             </div>
           </motion.div>
         )}
