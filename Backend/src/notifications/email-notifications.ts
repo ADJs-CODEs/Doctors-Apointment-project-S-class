@@ -513,13 +513,16 @@ export class EmailNotifications {
     });
   }
 
-  /** Tells the other side(s) about a cancellation. refund: set when a wallet payment went back. */
+  /** Tells the other side(s) about a cancellation. refund: what happened to a paid fee. */
   appointmentCancelled(a: IAppointment, by: 'patient' | 'doctor' | 'admin', refund?: IRefund | null) {
-    const refundText = refund
-      ? ` ${money(refund.amount)} has been refunded to your wallet.`
-      : a.payment
-        ? ' Your payment will be refunded.'
-        : '';
+    const refundText =
+      refund?.status === 'refunded'
+        ? refund.method === 'wallet'
+          ? ` ${money(refund.amount)} has been refunded to your wallet.`
+          : ` ${money(refund.amount)} has been refunded to your card. It can take 5 to 10 days to show on your statement.`
+        : a.payment
+          ? ' Your payment will be refunded by the clinic.'
+          : '';
     const rows = details([
       ['Doctor', a.docData?.name],
       ['Patient', a.userData?.name],

@@ -16,7 +16,8 @@ import { CloudinaryService } from '../integrations/integrations';
 import { EmailNotifications } from '../notifications/email-notifications';
 import { BookingService } from '../appointments/booking.service';
 import { GoogleCalendar } from '../settings/google-calendar';
-import { WalletService } from '../wallet/wallet.service';
+import { AppointmentRefunds } from '../appointments/appointment-refunds';
+import { slotInstant } from '../notifications/clinic-time';
 
 const normalizeEmail = (email: unknown) =>
   typeof email === 'string' ? email.toLowerCase().trim() : '';
@@ -35,9 +36,9 @@ export class UserService {
     @InjectModel(MODEL.appointment) private readonly appointments: Model<IAppointment>,
     private readonly cloudinary: CloudinaryService,
     private readonly emails: EmailNotifications,
-    private readonly wallet: WalletService,
     private readonly calendar: GoogleCalendar,
     private readonly booking: BookingService,
+    private readonly refunds: AppointmentRefunds,
   ) {}
 
   private get stripe() {
@@ -154,11 +155,23 @@ export class UserService {
       return { success: true, message: 'Time released' };
     }
 
-    await this.appointments.findByIdAndUpdate(appointmentId, { cancelled: true });
+    // once a paid visit has started it can't be cancelled for a refund (it's missed or done instead)
+    const startsAt = slotInstant(appointment.slotDate, appointment.slotTime);
+    if (appointment.payment && startsAt && Date.now() >= startsAt.getTime()) {
+      fail("This visit has already started, so it can't be cancelled. Message your doctor or the clinic if something went wrong.");
+    }
+
+    // claim it atomically, so a double tap can't cancel (and refund) twice
+    const cancelled = await this.appointments.findOneAndUpdate(
+      { _id: appointment._id, cancelled: false, isCompleted: false, missed: { $exists: false } },
+      { $set: { cancelled: true } },
+      { returnDocument: 'after' },
+    );
+    if (!cancelled) fail('This appointment is already closed');
     await releaseSlot(this.doctors, appointment);
 
-    // paid from the wallet: the money goes straight back into it
-    const refund = await this.wallet.refundAppointmentToWallet(String(appointment._id), 100, 'cancelled');
+    // the full fee goes back the way it was paid: wallet, or card through Stripe
+    const refund = await this.refunds.refund(cancelled, 100, 'cancelled');
     this.emails.appointmentCancelled(appointment, 'patient', refund);
     void this.calendar.remove(appointment);
     return { success: true, message: 'Appointment Canceled' };
