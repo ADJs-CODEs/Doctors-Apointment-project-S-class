@@ -59,7 +59,10 @@ export class DoctorSettingsController {
     if (!doctor || !(await bcrypt.compare(body.currentPassword ?? '', doctor.password))) fail('Your current password is wrong');
     if (!body.newPassword || body.newPassword.length < 8) fail('Use at least 8 characters');
     if (body.newPassword === body.currentPassword) fail('Pick a different password');
-    await this.doctors.updateOne({ _id: docId }, { $set: { password: await bcrypt.hash(body.newPassword, await bcrypt.genSalt(10)) } });
+    await this.doctors.updateOne(
+      { _id: docId },
+      { $set: { password: await bcrypt.hash(body.newPassword, await bcrypt.genSalt(10)) }, $unset: { mustChangePassword: 1 } },
+    );
     return { success: true, message: 'Password changed' };
   }
 

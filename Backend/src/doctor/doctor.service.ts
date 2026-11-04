@@ -35,7 +35,7 @@ export class DoctorService {
 
   async list() {
     // public list: no login or private settings
-    const doctors = await this.doctors.find({}).select(['-password', '-email', '-settings', '-googleCalendar']);
+    const doctors = await this.doctors.find({}).select(['-password', '-email', '-settings', '-googleCalendar', '-payoutBank', '-mustChangePassword']);
     return { success: true, doctors };
   }
 
@@ -157,10 +157,37 @@ export class DoctorService {
     return { success: true, message: cleared ? 'Marked as resolved' : 'Nothing to resolve', cleared };
   }
 
-  async updateProfile(docId: string, body: { fees?: number; address?: any; available?: boolean }) {
-    const { fees, address, available } = body;
-    await this.doctors.findByIdAndUpdate(docId, { fees, address, available });
-    return { success: true, message: 'profile Updates' };
+  /** What the doctor can change about themselves; anything not sent stays as it is. */
+  async updateProfile(
+    docId: string,
+    body: { fees?: unknown; address?: any; available?: unknown; about?: unknown; experience?: unknown; degree?: unknown },
+  ) {
+    const text = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : undefined);
+    const update: Partial<Pick<IDoctor, 'fees' | 'address' | 'available' | 'about' | 'experience' | 'degree'>> = {};
+
+    if (body.fees !== undefined) {
+      const fees = Number(body.fees);
+      if (!Number.isFinite(fees) || fees <= 0 || fees > 100_000) failOk('Enter a fee above 0');
+      update.fees = Math.round(fees * 100) / 100;
+    }
+    if (body.address !== undefined) {
+      const line1 = text(body.address?.line1, 200) ?? '';
+      if (!line1) failOk('Enter the first line of the clinic address');
+      update.address = { line1, line2: text(body.address?.line2, 200) ?? '' };
+    }
+    if (typeof body.available === 'boolean') update.available = body.available;
+    const about = text(body.about, 2000);
+    if (about !== undefined) {
+      if (about.length < 20) failOk('Write at least a sentence or two about yourself (20+ characters)');
+      update.about = about;
+    }
+    const experience = text(body.experience, 40);
+    if (experience) update.experience = experience;
+    const degree = text(body.degree, 60);
+    if (degree) update.degree = degree;
+
+    await this.doctors.updateOne({ _id: docId }, { $set: update });
+    return { success: true, message: 'Profile saved' };
   }
 
   async sendPatientAlert(

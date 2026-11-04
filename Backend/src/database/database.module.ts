@@ -1,12 +1,14 @@
 import { Global, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppointmentSchema } from './schemas/appointment.schema';
+import { CallSchema } from './schemas/call.schema';
 import { DoctorSchema } from './schemas/doctor.schema';
 import {
   ChatMessageSchema,
   ConnectionSchema,
   EmojiPingSchema,
   NotificationSchema,
+  NudgeSchema,
   PushSubscriptionSchema,
   WishWellSchema,
 } from './schemas/social.schemas';
@@ -44,6 +46,8 @@ const models = MongooseModule.forFeature([
   { name: MODEL.pharmacyPayout, schema: PharmacyPayoutSchema },
   { name: MODEL.doctorPayout, schema: DoctorPayoutSchema },
   { name: MODEL.platformSetting, schema: PlatformSettingSchema },
+  { name: MODEL.call, schema: CallSchema },
+  { name: MODEL.nudge, schema: NudgeSchema },
 ]);
 
 @Global()

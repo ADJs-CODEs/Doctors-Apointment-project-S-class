@@ -39,6 +39,18 @@ export class ConnectionsController {
     return this.connections.remove(userId, connectionId);
   }
 
+  /** a short notification to someone in my care circle (either direction) */
+  @Post('nudge')
+  @HttpCode(200)
+  nudge(@UserId() userId: string, @Body() body: any) {
+    return this.connections.nudge(userId, body ?? {});
+  }
+
+  @Get('nudges/:otherId')
+  nudges(@UserId() userId: string, @Param('otherId') otherId: string) {
+    return this.connections.nudgeHistory(userId, otherId);
+  }
+
   @Get('patient/:patientId')
   patient(@UserId() userId: string, @Param('patientId') patientId: string) {
     return this.connections.patientData(userId, patientId);

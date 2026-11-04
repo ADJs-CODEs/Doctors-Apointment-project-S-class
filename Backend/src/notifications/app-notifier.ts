@@ -70,6 +70,15 @@ export class AppNotifier {
   }
 
   /**
+   * Buzzes the patient's devices only (no bell item), e.g. an incoming call that's either
+   * answered or becomes a "missed call" bell item a few seconds later. Never throws.
+   */
+  pushOnly(userId: string, n: AppNotification & { tag: string }) {
+    if (!userId) return;
+    this.push(userId, n, n.tag).catch((err) => this.logger.warn(`push for ${userId} failed: ${err.message}`));
+  }
+
+  /**
    * A doctor's bell (doctor panel): saved and pushed live to their open tabs. No device
    * push yet: the doctor panel has no service worker, and they also get an email.
    */

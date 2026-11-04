@@ -42,6 +42,30 @@ export const EmojiPingSchema = new Schema<IEmojiPing>(
   { timestamps: true },
 );
 
+// --- care circle nudges ---
+
+/** A short notification between two people in an accepted care-circle connection (either way). */
+export interface INudge extends Document {
+  fromUserId: string;
+  toUserId: string;
+  fromName: string;
+  kind: string;
+  text: string;
+  createdAt: Date;
+}
+
+export const NudgeSchema = new Schema<INudge>(
+  {
+    fromUserId: { type: String, required: true },
+    toUserId: { type: String, required: true },
+    fromName: { type: String, required: true },
+    kind: { type: String, required: true },
+    text: { type: String, required: true, maxlength: 200 },
+  },
+  { timestamps: true },
+);
+NudgeSchema.index({ fromUserId: 1, toUserId: 1, createdAt: -1 });
+
 // --- notifications ---
 
 export type NotificationType = 'dose' | 'appointment' | 'alert' | 'message' | 'payment' | 'care' | 'general';
@@ -149,8 +173,14 @@ export interface IWishWell extends Document {
   condition: string;
   story: string;
   status: 'critical' | 'recovered' | 'passed';
+  /** false until the patient accepts; nothing is public before that */
   consentGiven: boolean;
   optedOut: boolean;
+  /** who put them forward (older entries: the doctor) */
+  nominatedBy?: 'doctor' | 'admin';
+  /** taken off the public Wish Well by the admin (moderation), with the reason */
+  hidden?: boolean;
+  hiddenReason?: string;
   emojiCounts: { heart: number; flower: number; clap: number; star: number; prayer: number };
   totalEmojis: number;
   /** paid gifts received: how many and their total in coins */
@@ -172,6 +202,9 @@ export const WishWellSchema = new Schema<IWishWell>(
     status: { type: String, enum: ['critical', 'recovered', 'passed'], default: 'critical' },
     consentGiven: { type: Boolean, default: false },
     optedOut: { type: Boolean, default: false },
+    nominatedBy: { type: String, enum: ['doctor', 'admin'] },
+    hidden: { type: Boolean },
+    hiddenReason: { type: String, maxlength: 300 },
     emojiCounts: {
       heart: { type: Number, default: 0 },
       flower: { type: Number, default: 0 },

@@ -7,9 +7,12 @@ import { BookingService } from './appointments/booking.service';
 import { MissedAppointments } from './appointments/missed-appointments';
 import { DoctorVideoController, PatientVideoController } from './appointments/video.controller';
 import { VideoService } from './appointments/video.service';
+import { DoctorCallsController, PatientCallsController } from './calls/calls.controller';
+import { CallsService } from './calls/calls.service';
 import { ChatController } from './chat/chat.controller';
 import { ChatService } from './chat/chat.service';
 import {
+  AdminWishWellController,
   DoctorNotificationsController,
   EmojiController,
   NotificationsController,
@@ -71,6 +74,7 @@ class HealthController {
     ChatController,
     ConnectionsController,
     WishWellController,
+    AdminWishWellController,
     NotificationsController,
     DoctorNotificationsController,
     EmojiController,
@@ -86,6 +90,8 @@ class HealthController {
     MapsController,
     PatientVideoController,
     DoctorVideoController,
+    PatientCallsController,
+    DoctorCallsController,
     AvailabilityController,
     DoctorScheduleController,
     StripeWebhookController,
@@ -105,6 +111,7 @@ class HealthController {
     DoctorEarningsService,
     BookingService,
     VideoService,
+    CallsService,
     MapsService,
     Preferences,
     DoctorPreferences,

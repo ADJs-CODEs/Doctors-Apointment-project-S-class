@@ -1,5 +1,5 @@
-import { Body, Controller, Get, HttpCode, Post, UseGuards } from '@nestjs/common';
-import { DocId, DoctorAuthGuard, UserAuthGuard, UserId } from '../common/auth';
+import { Body, Controller, Get, HttpCode, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { AdminAuthGuard, DocId, DoctorAuthGuard, UserAuthGuard, UserId } from '../common/auth';
 import { EmojiService, NotificationsService, WishWellService } from './community.service';
 
 @Controller('api/wish-well')
@@ -38,6 +38,13 @@ export class WishWellController {
     return this.wishWell.sendEmoji(body);
   }
 
+  /** the doctor's own nominations, including ones waiting for the patient */
+  @Get('mine')
+  @UseGuards(DoctorAuthGuard)
+  mine(@DocId() docId: string) {
+    return this.wishWell.doctorEntries(docId);
+  }
+
   @Post('nominate')
   @UseGuards(DoctorAuthGuard)
   nominate(@DocId() docId: string, @Body() body: any) {
@@ -56,6 +63,52 @@ export class WishWellController {
   @UseGuards(DoctorAuthGuard)
   remove(@DocId() docId: string, @Body('entryId') entryId?: string) {
     return this.wishWell.remove(docId, entryId);
+  }
+}
+
+/** The admin's Wish Well: see everything, put a patient forward for their doctor, moderate. */
+@Controller('api/admin/wish-well')
+@UseGuards(AdminAuthGuard)
+export class AdminWishWellController {
+  constructor(private readonly wishWell: WishWellService) {}
+
+  @Get()
+  list() {
+    return this.wishWell.adminList();
+  }
+
+  @Get('candidates')
+  candidates(@Query('q') q?: string) {
+    return this.wishWell.candidates(q);
+  }
+
+  @Post('nominate')
+  @HttpCode(200)
+  nominate(@Body() body: any) {
+    return this.wishWell.nominate(typeof body?.docId === 'string' ? body.docId : '', body ?? {}, 'admin');
+  }
+
+  @Put(':id')
+  edit(@Param('id') id: string, @Body() body: any) {
+    return this.wishWell.adminEdit(id, body ?? {});
+  }
+
+  @Post(':id/hide')
+  @HttpCode(200)
+  hide(@Param('id') id: string, @Body() body: any) {
+    return this.wishWell.adminHide(id, body ?? {});
+  }
+
+  @Post(':id/status')
+  @HttpCode(200)
+  status(@Param('id') id: string, @Body('status') status?: string) {
+    return this.wishWell.updateStatus(null, { entryId: id, status });
+  }
+
+  @Post(':id/remove')
+  @HttpCode(200)
+  remove(@Param('id') id: string) {
+    return this.wishWell.remove(null, id);
   }
 }
 
