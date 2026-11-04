@@ -2,7 +2,6 @@
 
 import React, { useContext } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
-import SkeletonCard from '../components/SkeletonCard';
 import type { AppContextType, Doctor, DoctorsCardGridProps } from '../types/index';
 import {
   RiArrowRightLine,
@@ -10,8 +9,6 @@ import {
   RiHospitalLine,
   RiMapPin2Line,
   RiShieldCheckFill,
-  RiUserSearchLine,
-  RiRefreshLine,
   RiVideoOnLine,
 } from "@remixicon/react";
 
@@ -33,7 +30,10 @@ const experienceText = (exp?: string) => {
 const area = (d: Doctor) => d.address?.line2?.trim() || d.address?.line1?.trim() || '';
 
 /** Video needs a video fee and some video hours (same rule as the booking page). */
-const offersVideo = (d: Doctor) => (d.videoFees ?? 0) > 0 && !!d.availability?.weekly?.some((w) => w.kinds.includes('video'));
+export const offersVideo = (d: Doctor) => (d.videoFees ?? 0) > 0 && !!d.availability?.weekly?.some((w) => w.kinds.includes('video'));
+
+/** Clinic visits: no hours set means the old every-day clinic hours. */
+export const offersClinic = (d: Doctor) => !d.availability?.weekly?.length || d.availability.weekly.some((w) => w.kinds.includes('in-person'));
 
 /** Their working days, e.g. "Mon–Fri", "Mon, Wed, Fri", "every day". No hours set = the old every day. */
 const daysText = (d: Doctor) => {
@@ -46,6 +46,7 @@ const daysText = (d: Doctor) => {
   return consecutive && days.length > 2 ? `${DAY[days[0]]}–${DAY[days[days.length - 1]]}` : days.map((x) => DAY[x]).join(', ');
 };
 
+const GRID = 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6';
 
 const DoctorsCardGrid: React.FC<DoctorsCardGridProps> = ({ filteredDoctors, handleClearFilters }) => {
   const navigate = useNavigate()
@@ -54,103 +55,107 @@ const DoctorsCardGrid: React.FC<DoctorsCardGridProps> = ({ filteredDoctors, hand
   return (
     <AnimatePresence mode='popLayout'>
       {loading ? (
-        <div className='grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8'>
-          {Array(6).fill(0).map((_, i) => <SkeletonCard key={i} type="grid" />)}
+        <div className={GRID} aria-busy="true" aria-label="Loading doctors">
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className='surface rounded-[24px] overflow-hidden animate-pulse'>
+              <div className='aspect-[5/4] bg-line/60' />
+              <div className='p-5 space-y-3'>
+                <div className='h-3 w-24 rounded bg-line' />
+                <div className='h-5 w-48 rounded bg-line' />
+                <div className='h-3 w-36 rounded bg-line' />
+                <div className='h-11 rounded-2xl bg-line mt-5' />
+              </div>
+            </div>
+          ))}
         </div>
       ) : filteredDoctors.length > 0 ? (
-        <motion.div layout className='grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8'>
+        <motion.div layout className={GRID}>
           {filteredDoctors.map((item: Doctor) => (
-            <motion.div
+            <motion.button
+              type='button'
               layout
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
+              exit={{ opacity: 0, scale: 0.97 }}
               onClick={() => { navigate(`/appointments/${item._id}`); window.scrollTo(0, 0); }}
-              className='group bg-white border border-slate-100 rounded-[28px] md:rounded-4xl overflow-hidden cursor-pointer hover:shadow-[0_24px_48px_rgba(0,0,0,0.06)] transition-all duration-500 relative'
+              className='group surface text-left rounded-[24px] overflow-hidden cursor-pointer transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-[0_24px_48px_rgba(11,37,69,0.10)] focus-visible:outline-3 focus-visible:outline-brand focus-visible:outline-offset-3'
               key={item._id}
             >
-              <div className='aspect-[5/4] overflow-hidden bg-slate-100 relative'>
+              <div className='aspect-[5/4] overflow-hidden bg-brand-soft relative'>
                 <img
                   src={item.image}
-                  className='w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700'
-                  alt={item.name}
+                  className='w-full h-full object-cover object-top group-hover:scale-[1.04] transition-transform duration-700'
+                  alt=''
                 />
-                <div className='absolute top-4 left-4 z-20'>
-                  <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-md border shadow-sm ${item.available
-                    ? 'bg-white/90 border-teal-100 text-teal-700'
-                    : 'bg-white/90 border-rose-100 text-rose-600'
-                    }`}>
-                    <div className={`w-1.5 h-1.5 rounded-full ${item.available ? 'bg-teal-500 animate-pulse' : 'bg-rose-400'}`} />
-                    <span className='text-[10px] font-black uppercase tracking-wider'>
-                      {item.available ? 'Taking bookings' : 'Not taking bookings'}
-                    </span>
-                  </div>
-                </div>
+                <span className={`glass absolute top-3 left-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-bold ${item.available ? 'text-brand-ink' : 'text-rose-600'}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${item.available ? 'bg-brand animate-pulse' : 'bg-rose-400'}`} />
+                  {item.available ? 'Taking bookings' : 'Not taking bookings'}
+                </span>
               </div>
 
-              <div className='p-5 md:p-6'>
-                <p className='text-teal-600 font-bold text-[10px] uppercase tracking-[2px] mb-1'>
-                  {item.speciality}
-                </p>
-                <h3 className='text-lg font-black text-slate-900 group-hover:text-teal-600 transition-colors leading-snug flex items-center gap-1.5'>
+              <div className='p-5'>
+                <p className='eyebrow !text-[12px] mb-1'>{item.speciality}</p>
+                <h3 className='text-[19px] font-extrabold tracking-[-0.01em] text-ink leading-snug flex items-center gap-1.5'>
                   {item.name}
-                  <RiShieldCheckFill size={16} className="text-teal-500 shrink-0" aria-label="Verified doctor" />
+                  <RiShieldCheckFill size={16} className="text-brand shrink-0" aria-label="Verified doctor" />
                 </h3>
-                <p className='text-[12px] text-slate-500 mt-0.5'>
+                <p className='text-[13px] text-ink-3 mt-0.5'>
                   {[item.degree, experienceText(item.experience)].filter(Boolean).join(' · ')}
                 </p>
 
                 {/* where, when and how: the things people need before booking */}
-                <ul className='mt-4 space-y-2 text-[13px] text-slate-600'>
+                <ul className='mt-4 space-y-2 text-[14px] text-ink-2'>
                   {area(item) && (
                     <li className='flex items-start gap-2'>
-                      <RiMapPin2Line size={16} className='text-teal-600 shrink-0 mt-0.5' />
+                      <RiMapPin2Line size={16} className='text-brand-ink shrink-0 mt-0.5' />
                       <span className='line-clamp-2'>{area(item)}</span>
                     </li>
                   )}
                   <li className='flex items-start gap-2'>
-                    <RiCalendarLine size={16} className='text-teal-600 shrink-0 mt-0.5' />
+                    <RiCalendarLine size={16} className='text-brand-ink shrink-0 mt-0.5' />
                     <span>Sees patients {daysText(item)}</span>
                   </li>
                 </ul>
 
-                <div className='flex flex-wrap gap-2 mt-4'>
-                  <span className='inline-flex items-center gap-1.5 text-[12px] font-bold text-teal-800 bg-teal-50 border border-teal-100 px-2.5 py-1.5 rounded-xl'>
-                    <RiHospitalLine size={14} /> Clinic visit · {money(item.fees)}
-                  </span>
+                <div className='grid grid-cols-2 gap-2 mt-4'>
+                  {offersClinic(item) && (
+                    <span className='flex flex-col gap-0.5 rounded-2xl border border-line bg-white px-3 py-2.5'>
+                      <span className='inline-flex items-center gap-1.5 text-[13px] font-bold text-brand-ink'>
+                        <RiHospitalLine size={15} /> Clinic
+                      </span>
+                      <span className='num text-[15px] text-ink'>{money(item.fees)}</span>
+                    </span>
+                  )}
                   {offersVideo(item) && (
-                    <span className='inline-flex items-center gap-1.5 text-[12px] font-bold text-violet-800 bg-violet-50 border border-violet-100 px-2.5 py-1.5 rounded-xl'>
-                      <RiVideoOnLine size={14} /> Video call · {money(item.videoFees!)}
+                    <span className='flex flex-col gap-0.5 rounded-2xl border border-line bg-white px-3 py-2.5'>
+                      <span className='inline-flex items-center gap-1.5 text-[13px] font-bold text-video'>
+                        <RiVideoOnLine size={15} /> Video call
+                      </span>
+                      <span className='num text-[15px] text-ink'>{money(item.videoFees!)}</span>
                     </span>
                   )}
                 </div>
 
-                <div className='mt-5 flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-slate-900 text-white text-sm font-black group-hover:bg-teal-600 transition-colors'>
-                  Book appointment <RiArrowRightLine size={18} />
-                </div>
+                <span className='btn btn-ink w-full mt-5 group-hover:-translate-y-0.5'>
+                  Book a visit <RiArrowRightLine size={18} />
+                </span>
               </div>
-            </motion.div>
+            </motion.button>
           ))}
         </motion.div>
       ) : (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className='flex flex-col items-center justify-center py-20 text-center bg-white rounded-[40px] border border-dashed border-slate-200'
+          className='glass flex flex-col items-center justify-center py-16 px-6 text-center rounded-[28px]'
         >
-          <div className='w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 mb-6'>
-            <RiUserSearchLine size={40} />
-          </div>
-          <h3 className='text-xl font-bold text-slate-800 mb-2'>No practitioners found</h3>
-          <p className='text-slate-500 max-w-xs text-sm mb-8'>
-            We couldn't find any doctors matching your criteria. Try adjusting your search or department.
+          <img src='/emoji/hug.webp' alt='' className='w-16 h-16 mb-4 animate-bob' />
+          <h3 className='text-[20px] font-extrabold text-ink mb-1.5'>No doctors match that</h3>
+          <p className='text-ink-3 max-w-xs text-[15px] mb-6'>
+            Try another speciality or visit type, or clear the search.
           </p>
-          <button
-            onClick={handleClearFilters}
-            className='flex items-center gap-2 px-8 py-4 bg-teal-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-xl shadow-teal-100 active:scale-95'
-          >
-            <RiRefreshLine size={16} />
-            Reset Registry Filters
+          <button type='button' onClick={handleClearFilters} className='btn btn-ink'>
+            Show all doctors
           </button>
         </motion.div>
       )}

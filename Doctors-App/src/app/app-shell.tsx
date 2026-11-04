@@ -129,9 +129,15 @@ function Shell({ children }: { children: ReactNode }) {
     );
   }
 
+  // the landing page brings its own navigation, footer and full-width layout
+  if (pathname === '/') return <>{overlays}{children}</>;
+
   return (
     <EmojiProvider userId={userData?._id}>
-      <div className="px-2 sm:px-0 sm:mx-[10%] min-h-screen flex flex-col">
+      <div className="relative isolate min-h-screen flex flex-col bg-canvas text-ink overflow-x-clip">
+        {/* the same soft teal and blue glow as the landing page */}
+        <div aria-hidden="true" className="fixed -z-10 rounded-full blur-[60px] opacity-55 pointer-events-none w-[46vw] h-[46vw] bg-[#CDEFED] -right-[12vw] -top-[10vw]" />
+        <div aria-hidden="true" className="fixed -z-10 rounded-full blur-[60px] opacity-55 pointer-events-none w-[40vw] h-[40vw] bg-[#DCE3FA] -left-[14vw] top-[40vh]" />
         {overlays}
         <Navbar />
         <main className="grow">{children}</main>

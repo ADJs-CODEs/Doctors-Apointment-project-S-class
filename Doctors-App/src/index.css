@@ -1,10 +1,120 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200..800&family=Instrument+Serif:ital@0;1&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
 @import "tailwindcss";
 
 /* --- Global Resets & Typography --- */
+/* Manrope and IBM Plex Mono are self-hosted by next/font in app/layout.tsx */
 @theme {
-  --font-main: "Plus Jakarta Sans";
+  --font-main: var(--font-manrope), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-num: var(--font-plex-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
   --transition-smooth: all 0.3s ease-in-out;
+}
+
+/* --- The brand (Calm & clinical), same values as the landing page --- */
+@theme {
+  --color-ink: #0B2545;
+  --color-ink-2: #3B4A60;
+  --color-ink-3: #5A6B82;
+  --color-brand: #0EA5A4;
+  --color-brand-ink: #0B7C7B;
+  --color-brand-soft: #E2F5F4;
+  --color-video: #6D28D9;
+  --color-video-soft: #EDE7FB;
+  --color-line: #E3EAF2;
+  --color-canvas: #F6F8FB;
+  --animate-bob: bob 2.6s cubic-bezier(.34, 1.56, .64, 1) infinite;
+
+  @keyframes bob {
+    0%, 100% { transform: translateY(0) scale(1); }
+    45% { transform: translateY(-6px) scale(1.07); }
+  }
+}
+
+/* frosted glass for things that float (bars, panels over the background) */
+@utility glass {
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 1px 0 #fff, 0 10px 30px rgba(11, 37, 69, 0.08);
+}
+
+/* solid white surface for content (cards, lists, forms) */
+@utility surface {
+  background: #fff;
+  border: 1px solid var(--color-line);
+  box-shadow: 0 1px 2px rgba(11, 37, 69, .04), 0 8px 20px rgba(11, 37, 69, .05);
+}
+
+/* buttons: gloss on the things you press */
+@utility btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 15px;
+  border-radius: 14px;
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: transform .18s cubic-bezier(.34, 1.56, .64, 1), box-shadow .18s, background .3s;
+  &:hover { transform: translateY(-2px); }
+  &:active { transform: scale(.96); }
+  &:focus-visible { outline: 3px solid var(--color-brand); outline-offset: 3px; }
+  &:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+}
+@utility btn-ink {
+  color: #fff;
+  border: 1px solid #071A33;
+  background: linear-gradient(180deg, #1C3D68 0%, #0B2545 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 8px 20px rgba(11, 37, 69, .25);
+}
+@utility btn-teal {
+  color: #fff;
+  border: 1px solid #08605F;
+  background: linear-gradient(180deg, #2CC2C0, #0B7C7B);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 6px 16px rgba(11, 124, 123, .25);
+}
+@utility btn-glass {
+  color: var(--color-ink);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: inset 0 1px 0 #fff, 0 6px 16px rgba(11, 37, 69, .06);
+}
+
+/* text inputs */
+@utility field {
+  width: 100%;
+  background: #fff;
+  border: 1.5px solid var(--color-line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 15px;
+  color: var(--color-ink);
+  outline: none;
+  transition: border-color .18s, box-shadow .18s;
+  &::placeholder { color: #94A3B8; }
+  &:focus { border-color: var(--color-brand); box-shadow: 0 0 0 4px rgba(14, 165, 164, .12); }
+}
+
+/* the small teal heading above a title */
+@utility eyebrow {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--color-brand-ink);
+}
+
+/* numbers that tick (times, prices, counters) */
+@utility num {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-bob { animation: none; }
 }
 
 
@@ -141,7 +251,7 @@
 
 /* --- Global Body Styles --- */
 body {
-  @apply bg-clinic-bg text-slate-800 antialiased selection:bg-teal/10 selection:text-teal;
+  @apply bg-canvas text-slate-800 antialiased selection:bg-teal/10 selection:text-teal;
 }
 
 .font-serif {

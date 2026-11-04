@@ -4,9 +4,8 @@ import React, { useContext, useMemo, useState } from "react";
 import { useNavigate, useParams } from "@/lib/navigation";
 import { AppContext } from "../Context/AppContext";
 import type { AppContextType } from "../types/index";
-import { motion } from "framer-motion";
-import { RiSearchLine, RiFilter3Line } from "@remixicon/react";
-import DoctorsCardGrid from "../cards/DoctorsCardGrid";
+import { RiSearchLine, RiHospitalLine, RiVideoOnLine } from "@remixicon/react";
+import DoctorsCardGrid, { offersClinic, offersVideo } from "../cards/DoctorsCardGrid";
 
 const specialties = [
   "General physician",
@@ -17,129 +16,94 @@ const specialties = [
   "Gastroenterologist",
 ];
 
+type Visit = "any" | "clinic" | "video";
+
+const chip = (on: boolean) =>
+  `shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[14px] font-semibold border transition-colors ${
+    on ? "bg-ink text-white border-ink" : "bg-white/80 text-ink-2 border-line hover:border-brand hover:text-brand-ink"
+  }`;
+
 const Doctors: React.FC = () => {
   const { speciality } = useParams<{ speciality?: string }>();
-  const { doctors, loading } = useContext(AppContext) as AppContextType;
+  const { doctors } = useContext(AppContext) as AppContextType;
   const [searchTerm, setSearchTerm] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
+  const [visit, setVisit] = useState<Visit>("any");
   const navigate = useNavigate();
 
-  const filteredDoctors = useMemo(
-    () =>
-      doctors.filter((doc) => {
-        const matchesSpec = speciality ? doc.speciality === speciality : true;
-        const matchesSearch = doc.name
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase());
-        return matchesSpec && matchesSearch;
-      }),
-    [doctors, speciality, searchTerm],
-  );
+  const filteredDoctors = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    return doctors.filter((doc) => {
+      if (speciality && doc.speciality !== speciality) return false;
+      if (q && !doc.name.toLowerCase().includes(q) && !doc.speciality.toLowerCase().includes(q)) return false;
+      if (visit === "video" && !offersVideo(doc)) return false;
+      if (visit === "clinic" && !offersClinic(doc)) return false;
+      return true;
+    });
+  }, [doctors, speciality, searchTerm, visit]);
 
   const handleClearFilters = () => {
     setSearchTerm("");
+    setVisit("any");
     navigate("/doctors");
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-12 min-h-screen">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8 md:mb-12">
+    <div className="max-w-[1180px] mx-auto px-4 py-8 md:py-12">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-5 mb-6">
         <div className="max-w-xl">
-          <h1 className="text-2xl md:text-4xl font-black tracking-tight text-slate-900 mb-2 uppercase">
-            Expert{" "}
-            <span className="text-teal-600 font-serif normal-case italic">
-              Consultants
-            </span>
+          <p className="eyebrow mb-2">Your doctors</p>
+          <h1 className="text-[36px] md:text-[48px] leading-[1.02] font-extrabold tracking-[-0.035em] text-ink">
+            See a specialist your way.
           </h1>
-          <p className="text-slate-500 text-sm font-medium leading-relaxed hidden sm:block">
-            Find a certified specialist. Filter by department or search by name.
+          <p className="text-[16px] text-ink-2 mt-3">
+            Pick a doctor, then choose a clinic visit or a video call. You only see times they&apos;re really free.
           </p>
         </div>
-
-        {/* Search */}
-        <div className="relative w-full sm:w-80 group">
-          <RiSearchLine
-            size={18}
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-600 transition-colors"
-          />
+        <label className="relative w-full md:w-80">
+          <span className="sr-only">Search doctors</span>
+          <RiSearchLine size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-3" />
           <input
-            type="text"
-            placeholder="Search by name..."
+            type="search"
+            placeholder="Search by name or speciality"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-white border border-slate-200 rounded-2xl py-3.5 pl-12 pr-5 focus:ring-4 focus:ring-teal-500/5 focus:border-teal-500 transition-all outline-none text-slate-700 text-sm shadow-sm"
+            className="field !pl-11 !bg-white/90"
           />
+        </label>
+      </div>
+
+      {/* filters: one row, scrolls sideways on small screens */}
+      <div className="glass rounded-[20px] p-2.5 mb-8 flex flex-col lg:flex-row lg:items-start gap-2.5">
+        <div className="flex gap-2 overflow-x-auto sm:flex-wrap sm:overflow-visible [scrollbar-width:none] min-w-0 flex-1" role="group" aria-label="Speciality">
+          <button type="button" className={chip(!speciality)} aria-pressed={!speciality} onClick={() => navigate("/doctors")}>
+            All specialities
+          </button>
+          {specialties.map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              aria-pressed={speciality === cat}
+              className={chip(speciality === cat)}
+              onClick={() => navigate(speciality === cat ? "/doctors" : `/doctors/${cat}`)}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2 shrink-0 pt-2.5 border-t lg:pt-0 lg:border-t-0 lg:pl-3 lg:border-l border-line" role="group" aria-label="Type of visit">
+          <button type="button" className={chip(visit === "any")} aria-pressed={visit === "any"} onClick={() => setVisit("any")}>
+            Any visit
+          </button>
+          <button type="button" className={chip(visit === "clinic")} aria-pressed={visit === "clinic"} onClick={() => setVisit("clinic")}>
+            <RiHospitalLine size={15} /> Clinic
+          </button>
+          <button type="button" className={chip(visit === "video")} aria-pressed={visit === "video"} onClick={() => setVisit("video")}>
+            <RiVideoOnLine size={15} /> Video
+          </button>
         </div>
       </div>
 
-      {/* Mobile filter toggle */}
-      <button
-        onClick={() => setShowFilters((p) => !p)}
-        className="sm:hidden flex items-center gap-2 mb-4 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 shadow-sm w-full justify-center"
-      >
-        <RiFilter3Line size={14} className="text-teal-600" />
-        {speciality ? `Dept: ${speciality}` : "Filter by Department"}
-      </button>
-
-      <div className="flex flex-col lg:flex-row gap-6 md:gap-10">
-        {/* Sidebar — hidden on mobile unless toggled, always visible on lg */}
-        <aside
-          className={`w-full lg:w-60 shrink-0 ${showFilters ? "block" : "hidden"} lg:block`}
-        >
-          <div className="lg:sticky lg:top-28">
-            <div className="flex items-center gap-2 mb-3 md:mb-5 px-1">
-              <RiFilter3Line size={15} className="text-teal-600" />
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[3px]">
-                Department
-              </p>
-            </div>
-
-            {/* Mobile: horizontal scroll pills. Desktop: vertical list */}
-            <div className="flex lg:flex-col gap-2 overflow-x-auto pb-2 lg:pb-0 no-scrollbar">
-              <button
-                onClick={() => {
-                  navigate("/doctors");
-                  setShowFilters(false);
-                }}
-                className={`whitespace-nowrap text-left px-4 md:px-5 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl transition-all border text-[10px] font-bold uppercase tracking-wider shrink-0 ${
-                  !speciality
-                    ? "bg-slate-900 text-white border-slate-900 shadow-md"
-                    : "bg-white border-slate-100 text-slate-500 hover:border-teal-400 hover:text-teal-600"
-                }`}
-              >
-                All Specialists
-              </button>
-              {specialties.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => {
-                    speciality === cat
-                      ? navigate("/doctors")
-                      : navigate(`/doctors/${cat}`);
-                    setShowFilters(false);
-                  }}
-                  className={`whitespace-nowrap text-left px-4 md:px-5 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl transition-all border text-[10px] font-bold uppercase tracking-wider shrink-0 ${
-                    speciality === cat
-                      ? "bg-teal-600 text-white border-teal-600 shadow-md"
-                      : "bg-white border-slate-100 text-slate-500 hover:bg-slate-50 hover:text-teal-600"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-        </aside>
-
-        {/* Grid */}
-        <main className="flex-1 min-w-0">
-          <DoctorsCardGrid
-            filteredDoctors={filteredDoctors}
-            handleClearFilters={handleClearFilters}
-          />
-        </main>
-      </div>
+      <DoctorsCardGrid filteredDoctors={filteredDoctors} handleClearFilters={handleClearFilters} />
     </div>
   );
 };
