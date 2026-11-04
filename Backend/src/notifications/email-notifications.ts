@@ -831,6 +831,26 @@ export class EmailNotifications {
     });
   }
 
+  /** The admin added a doctor: their login, and a nudge to replace the starting password. */
+  doctorAdded(doctor: { name: string; email: string }, startingPassword: string) {
+    this.deliver('doctor added', {
+      to: doctor.email,
+      subject: 'Your doctor account at ADJ’s CODEs',
+      html: layout({
+        title: 'Welcome to the clinic',
+        body: `<p>Hi ${escapeHtml(doctor.name)}, the clinic has set up your doctor account.</p>
+               ${details([
+                 ['Log in with', doctor.email],
+                 ['Starting password', startingPassword],
+               ])}
+               <p>Choose the <strong>Doctor</strong> tab on the login page. You'll be asked to pick your own password the first time you log in.
+               Then check your profile, hours and fees in <strong>Settings</strong>.</p>`,
+        button: { label: 'Log in', url: adminUrl('/') },
+        footer: 'If you weren’t expecting this, ignore it and tell the clinic.',
+      }),
+    });
+  }
+
   /** An owner (or the admin) added someone to a pharmacy, with a starting password. */
   pharmacyStaffAdded(staff: Person & { role: string }, pharmacyName: string, tempPassword: string) {
     this.deliver('pharmacy staff added', {

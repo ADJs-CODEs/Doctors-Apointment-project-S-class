@@ -17,6 +17,17 @@ export interface Doctor {
   };
   date: number;
   slots_booked?: Record<string, string[]>;
+  email?: string;
+  /** added by the admin and hasn't chosen their own password yet */
+  mustChangePassword?: boolean;
+  /** unset = no video consultations */
+  videoFees?: number;
+  /** unset = the old 10am–9pm every day, clinic only */
+  availability?: {
+    slotMinutes: number;
+    weekly: { day: number; start: string; end: string; kinds: ("in-person" | "video")[] }[];
+    daysOff: string[];
+  };
 }
 
 // Added Health Data and Status to match your backend model

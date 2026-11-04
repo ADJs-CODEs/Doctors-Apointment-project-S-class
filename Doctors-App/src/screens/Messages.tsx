@@ -16,6 +16,7 @@ import {
 import { type FormEvent, type KeyboardEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import JoinCallButton, { callWindow } from "@/components/patient/JoinCallButton";
+import { CallButtons } from "@/components/calls/CallLayer";
 import { useMessages } from "@/Context/MessagesContext";
 import { useNavigate, useSearchParams } from "@/lib/navigation";
 import type { ChatMessage, ChatVisit } from "@/types";
@@ -349,6 +350,8 @@ export default function Messages() {
                       <p className="font-black text-slate-900 truncate">{thread.doctor.name}</p>
                       <p className="text-[12px] text-slate-400 truncate">{thread.doctor.speciality}</p>
                     </div>
+                    {/* rings the doctor during a booked video visit (the server says so otherwise) */}
+                    <CallButtons to={thread.doctor._id} compact />
                     <button
                       onClick={() => navigate(`/appointments/${doctorId}?type=video`)}
                       className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-violet-50 text-violet-700 border border-violet-100 text-[12px] font-bold hover:bg-violet-100"

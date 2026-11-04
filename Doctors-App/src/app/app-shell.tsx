@@ -4,7 +4,9 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import { type ReactNode, useContext, useEffect, useRef } from 'react';
 import LoadingBar, { type LoadingBarRef } from 'react-top-loading-bar';
 import { Toaster } from 'sonner';
+import { CallProvider } from '@/components/calls/CallLayer';
 import ChatBot from '@/components/ChatBot';
+import { API_PATHS } from '@/utils/apiPath';
 import Footer from '@/components/Footer';
 import Navbar from '@/components/Navbar';
 import AppContextProvider, { AppContext } from '@/Context/AppContext';
@@ -71,6 +73,7 @@ const PATIENT_ONLY = [
   '/wallet',
   '/shop',
   '/call/',
+  '/call-incoming/',
   '/my-profile',
   '/account-settings',
   '/watching-over',
@@ -115,10 +118,12 @@ function Shell({ children }: { children: ReactNode }) {
     return (
       <EmojiProvider userId={userData?._id}>
         <MessagesProvider token={token}>
-          {overlays}
-          <PatientShell>{children}</PatientShell>
-          <ChatBot aboveTabBar />
-          <GiftCelebration />
+          <CallProvider side="patient" apiBase={API_PATHS.CALLS}>
+            {overlays}
+            <PatientShell>{children}</PatientShell>
+            <ChatBot aboveTabBar />
+            <GiftCelebration />
+          </CallProvider>
         </MessagesProvider>
       </EmojiProvider>
     );

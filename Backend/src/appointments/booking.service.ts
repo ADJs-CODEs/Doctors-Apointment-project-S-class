@@ -59,7 +59,8 @@ export class BookingService {
 
     await this.expireHolds(docId); // free anything that lapsed, so it can be picked
     // this doctor document is also copied onto the appointment (docData): keep private fields out
-    const doctor = await this.doctors.findById(docId).select('-password -settings -googleCalendar');
+    // docData is copied onto the appointment, which the patient sees: no private fields
+    const doctor = await this.doctors.findById(docId).select('-password -settings -googleCalendar -payoutBank -mustChangePassword');
     if (!doctor) fail('Doctor not found', HttpStatus.NOT_FOUND);
     if (!doctor.available) fail('This doctor is not taking bookings right now');
     if (!offers(doctor, kind)) fail(kind === 'video' ? "This doctor doesn't offer video calls" : "This doctor isn't taking clinic visits");
@@ -112,8 +113,12 @@ export class BookingService {
     return { ...result, message: `${result.message}. Your booking is confirmed.` };
   }
 
-  /** Stripe Checkout for an unpaid appointment (a hold or an older unpaid booking). */
-  async createCheckout(userId: string, appointmentId?: string) {
+  /**
+   * Stripe Checkout for an unpaid appointment (a hold or an older unpaid booking). From the
+   * mobile app (`from: 'app'`) it returns to a public "go back to the app" page instead of the
+   * website's verify page (which needs a website login); the app then asks `checkPayment`.
+   */
+  async createCheckout(userId: string, appointmentId?: string, from?: string) {
     if (!appointmentId || !isValidObjectId(appointmentId)) fail('Invalid appointment');
     const appointment = await this.appointments.findById(appointmentId);
     if (!appointment || appointment.cancelled || appointment.missed) fail('Invalid appointment');
@@ -131,7 +136,7 @@ export class BookingService {
       await this.appointments.updateOne({ _id: appointment._id }, { $set: { holdExpiresAt: holdUntil } });
     }
 
-    const returnUrl = `${process.env.USER_URL}/verify?appointmentId=${appointmentId}`;
+    const returnUrl = from === 'app' ? `${process.env.USER_URL}/paid?appointmentId=${appointmentId}` : `${process.env.USER_URL}/verify?appointmentId=${appointmentId}`;
     const session = await this.stripe.checkout.sessions.create({
       mode: 'payment',
       success_url: `${returnUrl}&success=true&session_id={CHECKOUT_SESSION_ID}`,
@@ -174,6 +179,24 @@ export class BookingService {
     this.emails.paymentReceived(justPaid, session.id);
     await this.confirmIfHeld(justPaid);
     return justPaid;
+  }
+
+  /**
+   * "Did my card payment go through?" for the mobile app, which can't receive the return
+   * redirect. Asks Stripe about the checkout we saved on the appointment; marks it paid once.
+   */
+  async checkPayment(userId: string, appointmentId?: string) {
+    if (!appointmentId || !isValidObjectId(appointmentId)) fail('Invalid appointment');
+    const appointment = await this.appointments.findById(appointmentId);
+    if (!appointment || appointment.userId.toString() !== userId) fail('Appointment not found', HttpStatus.NOT_FOUND);
+    if (appointment.payment) return { success: true, paid: true, message: 'Paid. Your booking is confirmed.' };
+    if (!appointment.stripeSessionId) return { success: true, paid: false, message: 'Not paid yet' };
+    const session = await this.stripe.checkout.sessions.retrieve(appointment.stripeSessionId);
+    if (session.payment_status === 'paid') {
+      await this.markStripePaid(session);
+      return { success: true, paid: true, message: 'Paid. Your booking is confirmed.' };
+    }
+    return { success: true, paid: false, message: 'Not paid yet' };
   }
 
   // --- 3. confirm ---

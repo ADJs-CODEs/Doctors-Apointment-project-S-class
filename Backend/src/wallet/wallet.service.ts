@@ -6,6 +6,7 @@ import { fail } from '../common/http';
 import { MODEL } from '../database/models';
 import type { IAppointment, IRefund } from '../database/schemas/appointment.schema';
 import type { IWishWell } from '../database/schemas/social.schemas';
+import { LIVE_ON_WISH_WELL } from '../community/community.service';
 import type { IUser } from '../database/schemas/user.schema';
 import type { IGiftEvent, IPayout, IWallet, IWalletTransaction } from '../database/schemas/wallet.schemas';
 import { RealtimeGateway } from '../integrations/realtime.gateway';
@@ -198,8 +199,8 @@ export class WalletService {
     if (!gift) fail('Pick a gift');
     if (!body.entryId || !isValidObjectId(body.entryId)) fail('Patient not found', HttpStatus.NOT_FOUND);
 
-    const entry = await this.entries.findById(body.entryId);
-    if (!entry || !entry.consentGiven || entry.optedOut) fail('Patient not found', HttpStatus.NOT_FOUND);
+    const entry = await this.entries.findOne({ _id: body.entryId, ...LIVE_ON_WISH_WELL });
+    if (!entry) fail('Patient not found', HttpStatus.NOT_FOUND);
     if (entry.status === 'passed') fail('Gifts are closed for this patient. You can still send a free wish.');
     if (entry.patientId === userId) fail("You can't send a gift to yourself");
 

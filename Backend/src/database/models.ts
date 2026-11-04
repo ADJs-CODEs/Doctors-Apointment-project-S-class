@@ -22,4 +22,6 @@ export const MODEL = {
   pharmacyPayout: 'pharmacypayout',
   doctorPayout: 'doctorpayout',
   platformSetting: 'platformsetting',
+  call: 'call',
+  nudge: 'nudge',
 } as const;

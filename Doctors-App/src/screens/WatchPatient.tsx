@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useContext } from "react";
 import { useParams, useNavigate } from "@/lib/navigation";
+import NudgePanel from "@/components/NudgePanel";
 import { AppContext } from "../Context/AppContext";
 import type { AppContextType, Appointment } from "../types/index";
 import { motion } from "framer-motion";
@@ -142,6 +143,13 @@ const WatchPatient: React.FC = () => {
           read-only mode. You cannot make changes on their behalf.
         </p>
       </div>
+
+      {/* nudge them: lands on their phone even when the app is closed */}
+      {patientId && patient && (
+        <div className="mb-8">
+          <NudgePanel toUserId={patientId} name={patient.name || "them"} as="caregiver" />
+        </div>
+      )}
 
       {/* Vitals */}
       {latestVitals && (

@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { MissedAppointments } from '../appointments/missed-appointments';
 import { AdminAuthGuard } from '../common/auth';
-import { ImageUpload } from '../common/upload';
+import { ProductImageUpload } from '../pharmacy/product.service';
 import { DoctorService } from '../doctor/doctor.service';
 import { OkOnErrorFilter } from '../doctor/ok-on-error.filter';
 import { AdminService } from './admin.service';
@@ -35,7 +35,8 @@ export class AdminController {
 
   @Post('add-doctor')
   @UseGuards(AdminAuthGuard)
-  @UseInterceptors(ImageUpload())
+  // photos only, up to 3 MB (same rule as product photos)
+  @UseInterceptors(ProductImageUpload())
   addDoctor(@Body() body: any, @UploadedFile() image?: Express.Multer.File) {
     return this.admin.addDoctor(body, image?.path);
   }

@@ -1,227 +1,310 @@
 "use client";
 
-import React, { useContext, useEffect, useState } from 'react'
-import { AdminContext } from '../../context/AdminContext'
-import { AppContext } from '../../context/AppContext'
 import {
-  RiCalendarEventLine,
-  RiCloseCircleLine,
-  RiCheckboxCircleLine,
-  RiTimeLine,
-  RiMedicineBottleLine,
   RiArrowDownSLine,
-  RiInformationLine,
-  RiUserUnfollowLine
-} from '@remixicon/react'
-import type { AdminContextType, AppContextType, Appointment } from '../../types/index'
-import { motion, AnimatePresence } from 'framer-motion'
-import MissedAppointmentModal, { canMarkMissed, MissedBadge } from '../../Modal/MissedAppointmentModal'
+  RiCalendarEventLine,
+  RiCheckboxCircleLine,
+  RiCloseCircleLine,
+  RiErrorWarningFill,
+  RiHeartPulseLine,
+  RiMedicineBottleLine,
+  RiSearchLine,
+  RiUserUnfollowLine,
+} from "@remixicon/react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
+import {
+  Avatar,
+  criticalReason,
+  DateBlock,
+  dayHeading,
+  isCritical,
+  isOpen,
+  slotStart,
+  sortVisits,
+  VisitPills,
+  VisitTabs,
+  type VisitTab,
+} from "../../components/visits";
+import { AdminContext } from "../../context/AdminContext";
+import { AppContext } from "../../context/AppContext";
+import MissedAppointmentModal, { canMarkMissed, MissedBadge } from "../../Modal/MissedAppointmentModal";
+import type { AdminContextType, AppContextType, Appointment } from "../../types/index";
 
+/** Every visit at the clinic, laid out like the doctor's Schedule, with the doctor on each card. */
 const AllAppointments: React.FC = () => {
-  const { aToken, appointments, getAllAppointments, cancelAppointment } = useContext(AdminContext) as AdminContextType
-  const { calculateAge, slotDateFormat, currency, setProgress } = useContext(AppContext) as AppContextType
+  const { aToken, appointments, getAllAppointments, cancelAppointment } = useContext(AdminContext) as AdminContextType;
+  const { calculateAge, currency } = useContext(AppContext) as AppContextType;
 
+  const [tab, setTab] = useState<VisitTab>("upcoming");
+  const [query, setQuery] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [missedFor, setMissedFor] = useState<Appointment | null>(null);
+  const [cancelling, setCancelling] = useState<string | null>(null);
 
   useEffect(() => {
-    if (aToken) {
-      getAllAppointments()
-    }
-  }, [aToken, getAllAppointments])
+    if (aToken) getAllAppointments();
+  }, [aToken, getAllAppointments]);
 
-  // Progress bar wrapper for cancellation
-  const handleCancel = async (id: string) => {
-    await cancelAppointment(id)
-  }
+  // search by patient or doctor first, so the tab counts follow it
+  const lists = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const found = q
+      ? (appointments ?? []).filter((a) => `${a.userData?.name} ${a.docData?.name} ${a.docData?.speciality}`.toLowerCase().includes(q))
+      : (appointments ?? []);
+    return sortVisits(found);
+  }, [appointments, query]);
+
+  const shown = lists[tab];
+  const tabs = [
+    { id: "upcoming" as const, label: "Upcoming", count: lists.upcoming.length },
+    { id: "toClose" as const, label: "Not closed", count: lists.toClose.length, tone: "bg-orange-500 text-white" },
+    { id: "attention" as const, label: "Needs attention", count: lists.attention.length, tone: "bg-rose-500 text-white" },
+    { id: "completed" as const, label: "Completed", count: lists.completed.length },
+    { id: "closed" as const, label: "Cancelled & missed", count: lists.closed.length },
+  ];
+
+  const cancel = async (id: string) => {
+    setCancelling(id);
+    try {
+      await cancelAppointment(id);
+    } finally {
+      setCancelling(null);
+    }
+  };
+
+  let lastDay = "";
 
   return (
-    <div className='p-4 sm:p-6 md:p-10 bg-slate-50/50 min-h-screen animate-reveal'>
-      <div className='max-w-7xl mx-auto'>
-
-        {/* --- Header Section --- */}
-        <div className='mb-6 md:mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4'>
+    <div className="p-4 sm:p-6 md:p-10 bg-slate-50/50 min-h-screen animate-reveal">
+      <div className="max-w-5xl mx-auto">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
           <div>
-            <div className='flex items-center gap-3 mb-2'>
-              <div className='p-2.5 sm:p-3 bg-slate-900 rounded-xl sm:rounded-2xl text-teal-400 shadow-lg'>
-                <RiCalendarEventLine size={20} className='sm:w-6 sm:h-6' />
+            <div className="flex items-center gap-3 mb-1">
+              <div className="p-2.5 bg-slate-900 rounded-xl text-teal-400">
+                <RiCalendarEventLine size={20} />
               </div>
-              <h1 className='text-xl sm:text-3xl font-black text-slate-900 tracking-tight'>
-                Appointment <span className='text-teal-500 font-serif italic normal-case'>Registry</span>
+              <h1 className="text-xl sm:text-3xl font-black text-slate-900">
+                All <span className="text-teal-500 font-serif italic normal-case">Appointments</span>
               </h1>
             </div>
-            <p className='text-slate-500 text-xs sm:text-sm font-medium ml-12 sm:ml-14'>Accountability log: Track clinical notes.</p>
+            <p className="text-slate-500 text-sm ml-12">Every visit at the clinic, soonest first. {appointments.length} in total.</p>
           </div>
-
-          <div className='bg-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl shadow-portal border border-slate-100 flex items-center justify-between md:justify-start gap-4'>
-            <p className='text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400'>Total Logs</p>
-            <span className='text-lg sm:text-xl font-black text-slate-900'>{appointments.length}</span>
-          </div>
+          <label className="relative sm:w-72">
+            <RiSearchLine size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search patient or doctor"
+              className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-sm outline-none focus:border-teal-400"
+            />
+          </label>
         </div>
 
-        {/* --- Table Container --- */}
-        <div className='bg-white rounded-[32px] sm:rounded-[40px] shadow-portal border border-slate-100 overflow-hidden'>
-          <div className='max-h-[75vh] overflow-y-auto hide-scrollbar'>
+        <VisitTabs tabs={tabs} current={tab} onChange={setTab} />
 
-            {/* Desktop Table Header - Stays hidden on small screens */}
-            <div className='hidden lg:grid grid-cols-[0.5fr_2.5fr_0.8fr_2fr_2fr_1fr_1fr] items-center py-6 px-10 bg-slate-900 text-white sticky top-0 z-10'>
-              <p className='text-[10px] font-black uppercase tracking-widest opacity-50'>#</p>
-              <p className='text-[10px] font-black uppercase tracking-widest opacity-50'>Patient Profile</p>
-              <p className='text-[10px] font-black uppercase tracking-widest opacity-50'>Age</p>
-              <p className='text-[10px] font-black uppercase tracking-widest opacity-50'>Schedule</p>
-              <p className='text-[10px] font-black uppercase tracking-widest opacity-50'>Practitioner</p>
-              <p className='text-[10px] font-black uppercase tracking-widest opacity-50'>Billing</p>
-              <p className='text-[10px] font-black uppercase tracking-widest opacity-50 text-center'>Status</p>
+        {shown.length === 0 ? (
+          <div className="bg-white rounded-[28px] border border-slate-100 py-16 text-center">
+            <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-4 mx-auto">
+              <RiCalendarEventLine size={24} />
             </div>
+            <p className="font-black text-slate-900">
+              {query
+                ? "No visits match your search"
+                : tab === "upcoming"
+                  ? "No upcoming visits"
+                  : tab === "toClose"
+                    ? "Every past visit is closed"
+                    : tab === "attention"
+                      ? "Nobody needs attention"
+                      : "Nothing here"}
+            </p>
+            <p className="text-slate-400 text-sm mt-1">
+              {query
+                ? ""
+                : tab === "upcoming"
+                  ? "New bookings appear here as soon as they're paid."
+                  : tab === "toClose"
+                    ? "Visits whose time passed without the doctor closing them show up here."
+                    : tab === "attention"
+                      ? "Patients flagged critical show up here."
+                      : ""}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {tab === "toClose" && (
+              <p className="text-[13px] text-orange-800 bg-orange-50 border border-orange-100 rounded-2xl px-4 py-3">
+                The doctor hasn&apos;t closed these visits. Mark who missed it if you know. A visit still open 24 hours after its time is marked as missed by
+                the doctor automatically, and the patient is refunded in full.
+              </p>
+            )}
+            {shown.map((item) => {
+              const heading = tab === "upcoming" ? dayHeading(slotStart(item)) : "";
+              const showHeading = tab === "upcoming" && heading !== lastDay;
+              lastDay = heading;
+              const critical = isCritical(item);
+              const age = calculateAge(item.userData.dob);
+              const expanded = expandedId === item._id;
 
-            {/* Table Body */}
-            <div className='divide-y divide-slate-50'>
-              {appointments.map((item: Appointment, index: number) => (
-                <div key={item._id} className='flex flex-col'>
-                  <div
-                    className={`flex flex-col lg:grid lg:grid-cols-[0.5fr_2.5fr_0.8fr_2fr_2fr_1fr_1fr] items-start lg:items-center py-6 px-5 sm:px-6 lg:px-10 hover:bg-slate-50/80 transition-all duration-300 group ${expandedId === item._id ? 'bg-slate-50' : ''}`}
-                  >
-                    <p className='hidden lg:block text-xs font-black text-slate-300'>{(index + 1).toString().padStart(2, '0')}</p>
+              return (
+                <React.Fragment key={item._id}>
+                  {showHeading && <p className="text-[11px] font-black uppercase tracking-[2px] text-slate-400 pt-3 px-1">{heading}</p>}
 
-                    {/* Patient Profile */}
-                    <div className='flex items-center gap-4 w-full lg:w-auto mb-4 lg:mb-0'>
-                      <img className='w-12 h-12 rounded-2xl object-cover border-2 border-white shadow-md' src={item.userData.image.replace('/upload/', '/upload/f_jpg,q_auto:best,w_200,h_200,c_fill/')} alt="" />
-                      <div>
-                        <p className='text-sm font-black text-slate-900'>{item.userData.name}</p>
-                        <p className='lg:hidden text-[10px] font-bold text-slate-500'>{calculateAge(item.userData.dob)} yrs</p>
+                  <div className={`bg-white rounded-[24px] border overflow-hidden ${critical ? "border-rose-200" : "border-slate-200"}`}>
+                    {critical && (
+                      <div className="flex items-center gap-2 bg-rose-50 px-4 sm:px-5 py-2.5 border-b border-rose-100">
+                        <RiErrorWarningFill size={16} className="text-rose-600" />
+                        <p className="text-[12px] font-bold text-rose-800">Needs attention: {criticalReason(item)}. The doctor marks it resolved.</p>
                       </div>
-                    </div>
-
-                    <p className='hidden lg:block text-sm font-bold text-slate-600'>{calculateAge(item.userData.dob)} yrs</p>
-
-                    {/* Schedule */}
-                    <div className='flex flex-col gap-1 w-full lg:w-auto mb-4 lg:mb-0'>
-                      <div className='flex items-center gap-2 text-slate-900 font-black text-xs'>
-                        <RiTimeLine size={14} className='text-teal-500' />
-                        {slotDateFormat(item.slotDate)}
-                      </div>
-                      <p className='text-[10px] font-bold text-slate-400 ml-5 uppercase tracking-wider'>{item.slotTime}</p>
-                    </div>
-
-                    {/* Practitioner */}
-                    <div className='flex items-center gap-3 w-full lg:w-auto mb-4 lg:mb-0'>
-                      <img className='w-8 h-8 rounded-full bg-slate-100 object-cover border border-slate-200' src={item.docData.image} alt="" />
-                      <div>
-                        <p className='text-xs font-black text-slate-700'>{item.docData.name}</p>
-                        <p className='text-[9px] text-teal-600 font-bold uppercase tracking-tighter'>{item.docData.speciality}</p>
-                      </div>
-                    </div>
-
-                    {/* Billing */}
-                    <div className='flex items-center justify-between w-full lg:w-auto mb-4 lg:mb-0'>
-                      <span className='lg:hidden text-[10px] font-black text-slate-400 uppercase tracking-widest'>Billing:</span>
-                      <p className='text-sm font-black text-slate-900'>{currency}{item.amount}</p>
-                    </div>
-
-                    {/* Status Action */}
-                    <div className='flex items-center justify-center lg:justify-center gap-3 w-full lg:w-auto pt-4 lg:pt-0 border-t border-slate-50 lg:border-none'>
-                      {item.missed ? (
-                        <MissedBadge item={item} currency={currency} />
-                      ) : canMarkMissed(item) ? (
-                        <div className='flex items-center gap-2 w-full lg:w-auto'>
-                          <button
-                            onClick={() => setMissedFor(item)}
-                            title='Mark as missed'
-                            className='flex-1 lg:flex-none flex items-center justify-center gap-1.5 px-3 py-2 bg-orange-50 text-orange-600 border border-orange-100 rounded-xl hover:bg-orange-100 transition-all active:scale-95'
-                          >
-                            <RiUserUnfollowLine size={16} />
-                            <span className='text-[10px] font-black uppercase tracking-widest'>Missed</span>
-                          </button>
-                          <button
-                            onClick={() => handleCancel(item._id)}
-                            title='Cancel appointment'
-                            className='p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all active:scale-95'
-                          >
-                            <RiCloseCircleLine size={20} />
-                          </button>
-                        </div>
-                      ) : item.cancelled ? (
-                        <div className='flex items-center gap-1.5 px-4 py-1.5 bg-red-50 text-red-500 rounded-full border border-red-100 w-full lg:w-auto justify-center'>
-                          <RiCloseCircleLine size={14} />
-                          <span className='text-[10px] font-black uppercase tracking-widest'>Cancelled</span>
-                        </div>
-                      ) : item.isCompleted ? (
-                        <div
-                          onClick={() => setExpandedId(expandedId === item._id ? null : item._id)}
-                          className='flex items-center gap-1.5 px-4 py-2 bg-teal-50 text-teal-600 rounded-xl sm:rounded-full border border-teal-100 cursor-pointer hover:bg-teal-500 hover:text-white transition-all group w-full lg:w-auto justify-center active:scale-95'
-                        >
-                          <RiCheckboxCircleLine size={14} />
-                          <span className='text-[10px] font-black uppercase tracking-widest'>View Rx</span>
-                          <RiArrowDownSLine size={14} className={`transition-transform duration-300 ${expandedId === item._id ? 'rotate-180' : ''}`} />
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => handleCancel(item._id)}
-                          className='flex items-center justify-center gap-2 lg:p-3 w-full lg:w-auto py-2 bg-slate-50 lg:bg-transparent text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl lg:rounded-2xl transition-all active:scale-95'
-                        >
-                          <RiCloseCircleLine size={24} />
-                          <span className='lg:hidden text-[10px] font-black uppercase tracking-widest'>Cancel Appointment</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* --- Accountable Prescription Dropdown --- */}
-                  <AnimatePresence>
-                    {expandedId === item._id && item.healthData && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className='bg-slate-900 border-t border-white/5 overflow-hidden'
-                      >
-                        <div className='p-6 sm:p-8'>
-                          <div className='flex items-center gap-2 mb-6'>
-                            <RiInformationLine size={18} className='text-teal-400' />
-                            <p className='text-[10px] font-black text-teal-400 uppercase tracking-[3px]'>Practitioner Clinical Notes</p>
-                          </div>
-
-                          <div className='space-y-4'>
-                            {item.healthData.prescribedMedicines?.map((med, idx) => (
-                              <div key={idx} className='bg-white/5 border border-white/10 rounded-[20px] sm:rounded-[24px] p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6 hover:border-teal-500/30 transition-all'>
-                                <div className='flex items-center gap-4 shrink-0'>
-                                  <div className='p-2.5 bg-teal-500/10 rounded-xl'>
-                                    <RiMedicineBottleLine size={20} className='text-teal-400' />
-                                  </div>
-                                  <div>
-                                    <p className='text-sm font-black text-white'>{med.name}</p>
-                                    <p className='text-[10px] text-slate-500 font-bold uppercase'>{med.dosagePerDay} Doses Daily • {med.totalQuantity} Units</p>
-                                  </div>
-                                </div>
-
-                                <div className='flex-1 bg-black/40 p-3 sm:p-4 rounded-xl border border-white/5'>
-                                  <p className='text-[9px] font-black text-slate-500 uppercase mb-1'>Rationale & Instructions</p>
-                                  <p className='text-xs text-slate-300 italic leading-relaxed'>
-                                    "{med.note || "No specific clinical note provided."}"
-                                  </p>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </motion.div>
                     )}
-                  </AnimatePresence>
-                </div>
-              ))}
-            </div>
+
+                    <div className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center gap-4">
+                      <DateBlock item={item} />
+
+                      {/* the patient */}
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <Avatar src={item.userData.image} name={item.userData.name} />
+                        <div className="min-w-0">
+                          <p className="font-black text-slate-900 truncate">{item.userData.name}</p>
+                          <p className="text-[12px] text-slate-500">{Number.isFinite(age) && age > 0 ? `${age} years old` : "Age not given"}</p>
+                          <VisitPills item={item} currency={currency} />
+                        </div>
+                      </div>
+
+                      {/* the doctor */}
+                      <div className="flex items-center gap-2.5 md:w-48 shrink-0 rounded-2xl bg-slate-50 md:bg-transparent px-3 py-2 md:p-0">
+                        <Avatar src={item.docData.image} name={item.docData.name} size="sm" />
+                        <div className="min-w-0">
+                          <p className="text-[13px] font-black text-slate-700 truncate">{item.docData.name}</p>
+                          <p className="text-[11px] font-bold text-teal-700 truncate">{item.docData.speciality}</p>
+                        </div>
+                      </div>
+
+                      {/* what the admin can do */}
+                      <div className="flex flex-wrap items-center gap-2 md:justify-end md:w-56 shrink-0">
+                        {item.missed ? (
+                          <MissedBadge item={item} currency={currency} />
+                        ) : item.cancelled ? (
+                          <span className="text-[12px] font-bold text-slate-500 bg-slate-100 px-3 py-2 rounded-xl">Cancelled</span>
+                        ) : item.isCompleted ? (
+                          <button
+                            onClick={() => setExpandedId(expanded ? null : item._id)}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-teal-50 border border-teal-100 text-[13px] font-bold text-teal-800 hover:bg-teal-100"
+                          >
+                            <RiCheckboxCircleLine size={16} /> {expanded ? "Hide report" : "Visit report"}
+                            <RiArrowDownSLine size={16} className={`transition-transform ${expanded ? "rotate-180" : ""}`} />
+                          </button>
+                        ) : (
+                          isOpen(item) && (
+                            <>
+                              {canMarkMissed(item) && (
+                                <button
+                                  onClick={() => setMissedFor(item)}
+                                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-orange-200 text-[13px] font-bold text-orange-700 hover:bg-orange-50"
+                                >
+                                  <RiUserUnfollowLine size={16} /> Missed
+                                </button>
+                              )}
+                              <button
+                                onClick={() => cancel(item._id)}
+                                disabled={cancelling === item._id}
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-[13px] font-bold text-slate-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 disabled:opacity-50"
+                              >
+                                <RiCloseCircleLine size={16} /> {cancelling === item._id ? "Cancelling…" : "Cancel"}
+                              </button>
+                            </>
+                          )
+                        )}
+                      </div>
+                    </div>
+
+                    {expanded && <VisitReport item={item} />}
+                  </div>
+                </React.Fragment>
+              );
+            })}
           </div>
-        </div>
+        )}
       </div>
+
       <MissedAppointmentModal
         appointment={missedFor}
-        role='admin'
+        role="admin"
         currency={currency}
         onClose={() => setMissedFor(null)}
         onDone={getAllAppointments}
       />
     </div>
-  )
+  );
+};
+
+/** What the doctor recorded at the visit: vitals, notes, and each medicine with how much is left. */
+function VisitReport({ item }: { item: Appointment }) {
+  const h = item.healthData;
+  const vitals = [
+    ["Blood pressure", h?.bloodPressure],
+    ["Heart rate", h?.heartRate],
+    ["Temperature", h?.temperature],
+  ].filter(([, v]) => v);
+  const meds = h?.prescribedMedicines ?? [];
+  return (
+    <div className="border-t border-slate-100 bg-slate-50/60 p-4 sm:p-5 space-y-4">
+      {vitals.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {vitals.map(([name, value]) => (
+            <span key={name} className="inline-flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-[12px]">
+              <RiHeartPulseLine size={14} className="text-rose-500" />
+              <span className="text-slate-400 font-bold">{name}</span>
+              <span className="font-black text-slate-800">{value}</span>
+            </span>
+          ))}
+        </div>
+      )}
+      {h?.doctorNotes && (
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Doctor&apos;s notes</p>
+          <p className="text-sm text-slate-700 whitespace-pre-line">{h.doctorNotes}</p>
+        </div>
+      )}
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">Prescribed</p>
+        {meds.length === 0 ? (
+          <p className="text-sm text-slate-400">No medicines prescribed.</p>
+        ) : (
+          <ul className="grid sm:grid-cols-2 gap-2">
+            {meds.map((m, i) => {
+              const total = Number(m.totalQuantity) || 0;
+              const left = Number(m.remainingQuantity ?? total);
+              const pct = total ? Math.round(((total - left) / total) * 100) : 0;
+              const every = m.frequencyType === "interval" ? `every ${m.dosagePerDay}h` : `${m.dosagePerDay}× a day`;
+              return (
+                <li key={i} className="bg-white border border-slate-200 rounded-2xl p-3">
+                  <div className="flex items-start gap-2.5">
+                    <div className="p-2 bg-teal-50 rounded-xl text-teal-600">
+                      <RiMedicineBottleLine size={16} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-black text-slate-900 text-sm truncate">
+                        {m.name}
+                        {m.overdoseAlert && <span className="ml-2 text-[10px] font-black text-rose-600">EARLY DOSE</span>}
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        {every} · {left} of {total} left
+                      </p>
+                      {m.note && <p className="text-[11px] text-slate-500 italic mt-0.5">{m.note}</p>}
+                    </div>
+                  </div>
+                  <div className="h-1.5 bg-slate-100 rounded-full mt-2.5 overflow-hidden">
+                    <div className="h-full bg-teal-500 rounded-full" style={{ width: `${pct}%` }} />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
 }
 
-export default AllAppointments
+export default AllAppointments;

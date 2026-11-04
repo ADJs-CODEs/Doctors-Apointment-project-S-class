@@ -16,7 +16,7 @@ const clean = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().sli
 const ROLES: StaffRole[] = ['owner', 'pharmacist', 'staff'];
 const hash = async (password: string) => bcrypt.hash(password, await bcrypt.genSalt(10));
 /** A readable starting password, e.g. "kx7m-9qpd-2wfa" (the person changes it on first login). */
-const tempPassword = () =>
+export const tempPassword = () =>
   Array.from({ length: 3 }, () => crypto.randomBytes(3).toString('base64url').toLowerCase().replace(/[^a-z0-9]/g, 'x').slice(0, 4)).join('-');
 
 type PharmacyDetails = {

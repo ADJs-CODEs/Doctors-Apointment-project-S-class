@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { RiHeart3Fill, RiLoader4Line, RiCloseLine, RiGiftLine } from "@remixicon/react";
 import GiftSheet from "../components/wishwell/GiftSheet";
 import RecentGiftsBanner from "../components/wishwell/RecentGiftsBanner";
+import WishWellInvite from "../components/wishwell/WishWellInvite";
 import axiosInstance from "../utils/axiosInstance";
 import { API_PATHS } from "../utils/apiPath";
 import { useEmoji } from "../Context/EmojiContext";
@@ -112,6 +113,10 @@ const WishWell: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-10 md:py-16 min-h-screen">
+      {/* a doctor asked to add this patient: they decide first */}
+      <div className="mb-6 empty:hidden">
+        <WishWellInvite onAnswered={fetchEntries} />
+      </div>
       {/* Header */}
       <div className="mb-10 pb-8 border-b border-slate-100">
         <div className="flex items-center gap-3 mb-2">

@@ -27,6 +27,8 @@ export interface IDoctor extends Document {
   googleCalendar?: { email?: string; refreshToken?: string; connectedAt?: Date; lastError?: string };
   /** where withdrawals go (the account name comes from the bank when Paystack is on) */
   payoutBank?: { bankName: string; bankCode?: string; accountNumber: string; accountName: string; verified: boolean };
+  /** set when the admin adds them with a starting password; cleared when they choose their own */
+  mustChangePassword?: boolean;
 }
 
 export type DoctorEmail = 'bookings' | 'cancellations' | 'visitStarting';
@@ -75,6 +77,7 @@ export const DoctorSchema = new Schema<IDoctor>(
       lastError: { type: String },
     },
     payoutBank: { type: Object },
+    mustChangePassword: { type: Boolean },
   },
   // keep empty slots_booked objects instead of letting mongoose strip them
   { minimize: false },

@@ -73,8 +73,16 @@ export class UserController {
   @Post('payment-stripe')
   @HttpCode(200)
   @UseGuards(UserAuthGuard)
-  paymentStripe(@UserId() userId: string, @Body('appointmentId') appointmentId?: string) {
-    return this.users.startStripePayment(userId, appointmentId);
+  paymentStripe(@UserId() userId: string, @Body('appointmentId') appointmentId?: string, @Body('from') from?: string) {
+    return this.users.startStripePayment(userId, appointmentId, from);
+  }
+
+  /** the mobile app asks this after the payment browser closes */
+  @Post('payment-status')
+  @HttpCode(200)
+  @UseGuards(UserAuthGuard)
+  paymentStatus(@UserId() userId: string, @Body('appointmentId') appointmentId?: string) {
+    return this.users.checkPayment(userId, appointmentId);
   }
 
   @Post('verify-stripe')

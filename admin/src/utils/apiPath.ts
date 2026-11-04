@@ -17,6 +17,7 @@ export const API_PATHS = {
     COMPLETE_APPOINTMENT: "/api/doctor/complete-appointment",
     MARK_NO_SHOW: "/api/doctor/mark-no-show",
     RESOLVE_CRITICAL: "/api/doctor/resolve-critical",
+    CALLS: "/api/doctor/calls",
     WALLET: "/api/doctor/wallet",
     WALLET_BANKS: "/api/doctor/wallet/banks",
     WALLET_BANK: "/api/doctor/wallet/bank",
@@ -52,6 +53,10 @@ export const API_PATHS = {
     DOCTOR_PAYOUTS: "/api/admin/doctor-payouts",
     DOCTOR_PAYOUT: (id: string, action: "send" | "paid" | "reject" | "refresh") => `/api/admin/doctor-payouts/${id}/${action}`,
     DOCTOR_COMMISSION: "/api/admin/doctor-commission",
+    WISH_WELL: "/api/admin/wish-well",
+    WISH_WELL_CANDIDATES: "/api/admin/wish-well/candidates",
+    WISH_WELL_NOMINATE: "/api/admin/wish-well/nominate",
+    WISH_WELL_ENTRY: (id: string, action?: "hide" | "status" | "remove") => `/api/admin/wish-well/${id}${action ? `/${action}` : ""}`,
     SHOP_ORDERS: "/api/admin/shop-orders",
   },
   PHARMACY: {
@@ -77,6 +82,7 @@ export const API_PATHS = {
   },
   WISH_WELL: {
     ALL: "/api/wish-well/all",
+    MINE: "/api/wish-well/mine",
     NOMINATE: "/api/wish-well/nominate",
     UPDATE_STATUS: "/api/wish-well/update-status",
     REMOVE: "/api/wish-well/remove",

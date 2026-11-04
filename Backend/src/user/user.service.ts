@@ -206,8 +206,12 @@ export class UserService {
 
   // --- payments ---
 
-  startStripePayment(userId: string, appointmentId?: string) {
-    return this.booking.createCheckout(userId, appointmentId);
+  startStripePayment(userId: string, appointmentId?: string, from?: string) {
+    return this.booking.createCheckout(userId, appointmentId, from);
+  }
+
+  checkPayment(userId: string, appointmentId?: string) {
+    return this.booking.checkPayment(userId, appointmentId);
   }
 
   async verifyStripePayment(
