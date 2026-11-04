@@ -98,7 +98,7 @@ export default function AdminWishWell() {
                 <RiHeart3Fill size={20} />
               </div>
               <h1 className="text-xl sm:text-3xl font-black text-slate-900">
-                Wish <span className="text-rose-500 font-serif italic normal-case">Well</span>
+                Wish Well
               </h1>
             </div>
             <p className="text-slate-500 text-sm ml-12">Every patient on the Wish Well. Patients must say yes before anything about them is public.</p>

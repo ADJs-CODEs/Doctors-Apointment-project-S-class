@@ -50,7 +50,7 @@ export default function Pharmacies() {
                 <RiStore2Line size={20} />
               </div>
               <h1 className="text-xl sm:text-3xl font-black text-slate-900">
-                Partner <span className="text-teal-500 font-serif italic">pharmacies</span>
+                Pharmacies
               </h1>
             </div>
             <p className="text-slate-500 text-sm ml-12">Check each licence with the Pharmacy Council before approving.</p>

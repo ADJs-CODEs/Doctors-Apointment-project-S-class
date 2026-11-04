@@ -111,7 +111,7 @@ export default function PharmacyOrders() {
             <RiTruckLine size={20} />
           </div>
           <h1 className="text-xl sm:text-3xl font-black text-slate-900">
-            Patient <span className="text-teal-500 font-serif italic">orders</span>
+            Orders
           </h1>
         </div>
         <p className="text-slate-500 text-sm ml-12 mb-6">

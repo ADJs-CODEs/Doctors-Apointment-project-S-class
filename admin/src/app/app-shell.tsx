@@ -99,7 +99,8 @@ function Shell({ children }: { children: ReactNode }) {
     }
     const pharmacyPage = /^\/pharmacy(-staff|-settings|-products|-orders|-earnings)?$/.test(pathname) ? children : <PharmacyHome />;
     return (
-      <div className="bg-[#F8F9FD] min-h-screen flex flex-col">
+      <div className="relative isolate bg-canvas min-h-screen flex flex-col overflow-x-clip">
+        <Glow />
         {loadingBar}
         <Toaster richColors position="top-right" />
         <Navbar />
@@ -123,7 +124,8 @@ function Shell({ children }: { children: ReactNode }) {
   }
 
   const page = (
-    <div className="bg-[#F8F9FD] min-h-screen flex flex-col">
+    <div className="relative isolate bg-canvas min-h-screen flex flex-col overflow-x-clip">
+      <Glow />
       {loadingBar}
       <Toaster richColors position="top-right" />
       <Navbar />
@@ -145,6 +147,16 @@ function Shell({ children }: { children: ReactNode }) {
     </DoctorMessagesProvider>
   ) : (
     page
+  );
+}
+
+/** The brand's soft teal and blue glow behind the panel (same as the patient site). */
+function Glow() {
+  return (
+    <>
+      <div aria-hidden="true" className="fixed -z-10 rounded-full blur-[60px] opacity-45 pointer-events-none w-[46vw] h-[46vw] bg-[#CDEFED] -right-[12vw] -top-[10vw]" />
+      <div aria-hidden="true" className="fixed -z-10 rounded-full blur-[60px] opacity-45 pointer-events-none w-[40vw] h-[40vw] bg-[#DCE3FA] -left-[14vw] top-[40vh]" />
+    </>
   );
 }
 

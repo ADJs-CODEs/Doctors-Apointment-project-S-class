@@ -75,7 +75,7 @@ export default function ShopOrders() {
             <RiShoppingBag3Line size={20} />
           </div>
           <h1 className="text-xl sm:text-3xl font-black text-slate-900">
-            Shop <span className="text-teal-500 font-serif italic">orders</span>
+            Shop orders
           </h1>
         </div>
         <p className="text-slate-500 text-sm ml-12 mb-6">Every pharmacy order. Pharmacies handle them; refunds that failed need you.</p>

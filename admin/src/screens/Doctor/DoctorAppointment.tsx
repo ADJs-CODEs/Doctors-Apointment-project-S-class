@@ -113,7 +113,7 @@ const DoctorAppointment: React.FC = () => {
             <RiCalendarCheckLine size={20} />
           </div>
           <h1 className="text-xl sm:text-3xl font-black text-slate-900">
-            Patient <span className="text-teal-500 font-serif italic normal-case">Schedule</span>
+            Schedule
           </h1>
         </div>
         <p className="text-slate-500 text-sm ml-12 mb-6">Your visits, soonest first. Complete each one with vitals and prescriptions.</p>

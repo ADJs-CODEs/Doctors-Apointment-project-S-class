@@ -7,7 +7,6 @@ import { DoctorContext } from "../context/DoctorContext"
 import { AppContext } from "../context/AppContext" // Added AppContext for progress bar
 import type { AdminContextType, DoctorContextType, AppContextType } from "../types/index"
 import { useNavigate } from "@/lib/navigation"
-import { motion } from "framer-motion"
 import { API_PATHS } from "../utils/apiPath"
 import axiosInstance from "../utils/axiosInstance"
 import { usePharmacy } from "../context/PharmacyContext"
@@ -28,8 +27,12 @@ const Login: React.FC = () => {
   const { setDToken } = useContext(DoctorContext) as DoctorContextType;
   const { setProgress } = useContext(AppContext) as AppContextType; // Progress Bar Logic
 
+  const [busy, setBusy] = useState(false)
+
   const onSubmitHandler = async (event: React.FormEvent) => {
     event.preventDefault()
+    if (busy) return
+    setBusy(true)
     try {
       if (state === 'Admin') {
         const { data } = await axiosInstance.post(API_PATHS.AUTH.A_LOGIN, { email, password })
@@ -64,119 +67,105 @@ const Login: React.FC = () => {
     } catch (error: any) {
       toast.error(error.response?.data?.message || error.message)
     } finally {
+      setBusy(false)
     }
   }
 
+  const copy = {
+    Admin: { title: 'For the clinic team', text: 'Doctors, bookings, the Wish Well, pharmacies, payouts and finance, all in one place.' },
+    Doctor: { title: 'For doctors', text: 'Your schedule, your patients and their doses, messages, calls and your earnings.' },
+    Pharmacy: { title: 'For pharmacies', text: 'Your products and stock, the orders patients send you, your staff and your earnings.' },
+  }[state]
+
   return (
-    <div className='min-h-screen flex items-center justify-center bg-[#F8F9FD] p-4 sm:p-6 font-outfit'>
-      <div className='w-full max-w-275 grid grid-cols-1 md:grid-cols-2 bg-white rounded-4xl md:rounded-[40px] shadow-portal overflow-hidden animate-reveal'>
-
-        {/* --- Branding Section --- */}
-        <div className='hidden md:flex flex-col justify-center p-12 lg:p-16 bg-teal-50/30 border-r border-slate-50'>
-
-          {/* REBRANDED LOGO: Code-Based & Scaled Up */}
-          <div className='flex items-center gap-4 mb-12'>
-            <div className='w-14 h-14 bg-white rounded-full border-2 border-dotted border-teal-300 flex items-center justify-center shadow-sm shrink-0'>
-              <div className='text-teal-600 font-black text-4xl leading-none'>+</div>
-            </div>
-            <div className='flex flex-col leading-tight'>
-              <span className='text-2xl font-black text-slate-900 tracking-tighter uppercase'>
-                ADJ's <span className='text-teal-600'>CODEs</span>
-              </span>
-              <span className='text-[11px] font-bold text-slate-400 uppercase tracking-[3px] -mt-1'>
-                Pharmaceutical
-              </span>
-            </div>
+    <div className='relative isolate min-h-screen flex items-center justify-center bg-canvas p-4 sm:p-6 overflow-hidden'>
+      <div aria-hidden='true' className='absolute -z-10 rounded-full blur-[60px] opacity-50 w-[46vw] h-[46vw] bg-[#CDEFED] -right-[12vw] -top-[10vw]' />
+      <div aria-hidden='true' className='absolute -z-10 rounded-full blur-[60px] opacity-50 w-[40vw] h-[40vw] bg-[#DCE3FA] -left-[14vw] top-[40vh]' />
+      <div className='w-full max-w-[1040px] grid gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,440px)] items-center animate-reveal'>
+        {/* who it's for (wide screens) */}
+        <div className='hidden md:flex flex-col gap-5 pr-6'>
+          <div className='flex items-baseline gap-2'>
+            <b className='text-[22px] font-extrabold tracking-[-0.5px] text-ink'>Clarity</b>
+            <span className='text-[13px] font-semibold text-ink-3'>clinic panel</span>
           </div>
-
-          <h2 className='text-4xl lg:text-5xl font-black text-slate-900 leading-[1.1]'>
-            Welcome to the <br />
-            <span className='text-teal-600'>{state} Portal</span>
-          </h2>
-          <p className='text-slate-500 mt-6 font-medium text-lg max-w-sm'>
-            {state === 'Pharmacy'
-              ? 'Manage your pharmacy, your staff and the orders patients send you through ADJ’s CODEs.'
-              : "Secure access to ADJ's CODEs patient registries, appointment scheduling, and clinical analytics."}
-          </p>
+          <p className='eyebrow'>{copy.title}</p>
+          <h1 className='text-[46px] leading-[1.03] font-extrabold tracking-[-0.035em] text-ink text-balance'>
+            Everything behind the care, in one place.
+          </h1>
+          <p className='text-[17px] text-ink-2 max-w-[42ch]'>{copy.text}</p>
         </div>
 
-        {/* --- Form Section --- */}
-        <div className='p-6 sm:p-10 md:p-16 flex flex-col justify-center'>
-          {/* Mobile Branding (Visible only on small screens) */}
-          <div className='md:hidden flex items-center gap-3 mb-8'>
-            <div className='w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center'>
-              <div className='text-teal-600 font-black text-xl'>+</div>
-            </div>
-            <p className='text-sm font-black text-slate-900 uppercase tracking-tighter'>ADJ'S <span className='text-teal-600'>CODEs</span></p>
+        {/* the form */}
+        <div className='glass !bg-white/85 rounded-[26px] p-6 sm:p-8'>
+          <div className='md:hidden flex items-baseline gap-2 mb-6'>
+            <b className='text-[20px] font-extrabold tracking-[-0.5px] text-ink'>Clarity</b>
+            <span className='text-[12px] font-semibold text-ink-3'>clinic panel</span>
           </div>
 
           {applying ? (
             <PharmacyApply onDone={() => setApplying(false)} />
           ) : (
-          <form onSubmit={onSubmitHandler} className='space-y-6'>
-            {/* which portal */}
-            <div className='grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-2xl'>
-              {PORTALS.map((p) => (
-                <button
-                  key={p}
-                  type='button'
-                  onClick={() => setState(p)}
-                  className={`py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all ${state === p ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-            <div className='mb-6 sm:mb-8'>
-              <p className='text-2xl sm:text-3xl font-black text-slate-900'>{state} Login</p>
-              <div className='h-1.5 w-12 bg-teal-600 rounded-full mt-2'></div>
-            </div>
+            <form onSubmit={onSubmitHandler} className='flex flex-col gap-5'>
+              {/* which portal */}
+              <div role='tablist' aria-label='Log in as' className='grid grid-cols-3 gap-1 p-1 bg-canvas border border-line rounded-[14px]'>
+                {PORTALS.map((p) => (
+                  <button
+                    key={p}
+                    type='button'
+                    role='tab'
+                    aria-selected={state === p}
+                    onClick={() => setState(p)}
+                    className={`py-2 rounded-[11px] text-[14px] font-bold transition-colors ${state === p ? 'btn-ink' : 'text-ink-3 hover:text-ink'}`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
 
-            <div className='space-y-4'>
-              <div className='space-y-1'>
-                <p className='text-[10px] sm:text-xs font-black text-slate-400 uppercase ml-2 tracking-widest'>Official Email</p>
+              <div>
+                <h2 className='text-[26px] leading-tight font-extrabold tracking-[-0.03em] text-ink'>
+                  {state === 'Admin' ? 'Clinic team log in' : `${state} log in`}
+                </h2>
+                <p className='text-[14px] text-ink-3 mt-1'>Use the email and password you were given.</p>
+              </div>
+
+              <label className='flex flex-col gap-1.5'>
+                <span className='text-[14px] font-bold text-ink'>Email</span>
                 <input
                   onChange={(e) => setEmail(e.target.value)}
                   value={email}
-                  className='admin-input focus:border-teal-600 transition-all text-base' // text-base prevents iOS zoom
-                  type="email"
-                  placeholder='admin@adjscodes.com'
+                  className='field'
+                  type='email'
+                  autoComplete='email'
                   required
                 />
-              </div>
+              </label>
 
-              <div className='space-y-1'>
-                <p className='text-[10px] sm:text-xs font-black text-slate-400 uppercase ml-2 tracking-widest'>Security Password</p>
+              <label className='flex flex-col gap-1.5'>
+                <span className='text-[14px] font-bold text-ink'>Password</span>
                 <input
                   onChange={(e) => setPassword(e.target.value)}
                   value={password}
-                  className='admin-input focus:border-teal-600 transition-all text-base'
-                  type="password"
-                  placeholder='••••••••'
+                  className='field'
+                  type='password'
+                  autoComplete='current-password'
                   required
                 />
-              </div>
-            </div>
+              </label>
 
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              type="submit"
-              className='w-full bg-slate-900 text-white py-4 sm:py-5 rounded-2xl font-black uppercase text-[10px] sm:text-xs tracking-[2px] shadow-lg shadow-slate-900/10 hover:bg-teal-600 transition-all cursor-pointer touch-manipulation'
-            >
-              Authorize {state} Access
-            </motion.button>
+              <button type='submit' disabled={busy} className='btn btn-ink w-full mt-1'>
+                {busy ? 'One moment…' : 'Log in'}
+              </button>
 
-            {state === 'Pharmacy' && (
-              <div className='text-center py-2'>
-                <p className='text-sm font-bold text-slate-400'>
+              {state === 'Pharmacy' && (
+                <p className='text-center text-[14px] text-ink-3'>
                   New pharmacy?{' '}
-                  <button type='button' onClick={() => setApplying(true)} className='text-teal-600 font-black hover:underline p-2'>
+                  <button type='button' onClick={() => setApplying(true)} className='font-bold text-brand-ink hover:underline'>
                     Apply to sell
                   </button>
                 </p>
-              </div>
-            )}
-          </form>
+              )}
+            </form>
           )}
         </div>
       </div>
