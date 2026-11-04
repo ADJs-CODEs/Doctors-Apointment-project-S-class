@@ -62,7 +62,7 @@ export default function JoinCallButton({
         e.stopPropagation();
         navigate(`/doctor-call/${appointment._id}`);
       }}
-      className={`relative inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-violet-600 text-white text-[11px] font-black hover:bg-violet-700 ${className}`}
+      className={`relative inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-video text-white text-[13px] font-bold hover:brightness-110 ${className}`}
     >
       <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-400 border-2 border-white animate-pulse" />
       <RiVideoOnLine size={15} /> Join call

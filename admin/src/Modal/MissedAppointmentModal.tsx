@@ -29,19 +29,19 @@ export function MissedBadge({ item, currency }: { item: Appointment; currency: s
   const byPatient = item.missed?.by === "patient";
   const r = item.refund;
   return (
-    <div className="flex flex-col items-center gap-1 w-full lg:w-auto">
+    <div className="flex flex-col items-center lg:items-end gap-1 w-full lg:w-auto">
       <span
-        className={`text-[9px] font-black uppercase px-3 py-1.5 rounded-full border ${
-          byPatient ? "bg-orange-50 text-orange-600 border-orange-100" : "bg-red-50 text-red-600 border-red-100"
+        className={`text-[12px] font-bold px-2.5 py-1 rounded-full border whitespace-nowrap ${
+          byPatient ? "bg-orange-50 text-orange-700 border-orange-100" : "bg-rose-50 text-rose-600 border-rose-100"
         }`}
       >
-        {byPatient ? "No-show" : "Doctor missed"}
-        {item.missed?.markedBy === "system" ? " · auto" : ""}
+        {byPatient ? "Patient didn't come" : "Doctor missed it"}
+        {item.missed?.markedBy === "system" ? " · automatic" : ""}
       </span>
       {r && (
         <span
           title={r.error}
-          className={`text-[10px] font-bold ${r.status === "refunded" ? "text-teal-600" : "text-red-500"}`}
+          className={`num text-[11px] ${r.status === "refunded" ? "text-brand-ink" : "text-rose-600"}`}
         >
           {r.percent}% · {currency}
           {r.amount} {r.status === "refunded" ? "refunded" : "to refund by hand"}
@@ -111,7 +111,7 @@ export default function MissedAppointmentModal({
     <AnimatePresence>
       {appointment && (
         <motion.div
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-ink/40 backdrop-blur-sm"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -120,25 +120,25 @@ export default function MissedAppointmentModal({
           <motion.div
             role="dialog"
             aria-modal="true"
-            className="w-full max-w-md bg-white rounded-[28px] shadow-2xl p-6 sm:p-7"
+            className="w-full max-w-md bg-white rounded-[24px] shadow-2xl p-6 sm:p-7"
             initial={{ y: 24, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 24, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-100 text-orange-600 flex items-center justify-center">
                 <RiCalendarCloseLine size={24} />
               </div>
-              <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100" aria-label="Close">
+              <button onClick={onClose} className="p-1.5 rounded-lg text-ink-3 hover:bg-canvas" aria-label="Close">
                 <RiCloseLine size={20} />
               </button>
             </div>
 
-            <h2 className="text-xl font-black text-slate-900">
+            <h2 className="text-[20px] font-extrabold tracking-[-0.02em] text-ink">
               {role === "doctor" ? "Patient didn't show?" : "Mark as missed"}
             </h2>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="text-[14px] text-ink-2 mt-1">
               {appointment.userData.name} · {appointment.slotDate.replace(/_/g, "/")} at {appointment.slotTime}
             </p>
 
@@ -149,11 +149,11 @@ export default function MissedAppointmentModal({
                     key={who}
                     onClick={() => setBy(who)}
                     className={`rounded-2xl border px-3 py-3 text-left transition-colors ${
-                      by === who ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 hover:border-slate-300"
+                      by === who ? "btn-ink border-transparent" : "border-line hover:border-ink-3/40"
                     }`}
                   >
-                    <p className="text-sm font-black">{who === "patient" ? "Patient missed it" : "Doctor missed it"}</p>
-                    <p className={`text-[11px] ${by === who ? "text-slate-300" : "text-slate-400"}`}>
+                    <p className="text-[14px] font-bold">{who === "patient" ? "Patient missed it" : "Doctor missed it"}</p>
+                    <p className={`text-[12px] ${by === who ? "text-white/70" : "text-ink-3"}`}>
                       {who === "patient" ? "50% refund" : "100% refund"}
                     </p>
                   </button>
@@ -161,20 +161,20 @@ export default function MissedAppointmentModal({
               </div>
             )}
 
-            <div className="mt-5 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600 space-y-1">
+            <div className="mt-5 rounded-2xl bg-canvas border border-line px-4 py-3 text-[14px] text-ink-2 space-y-1">
               {appointment.payment ? (
                 <p>
-                  <span className="font-bold text-slate-900">
+                  <span className="num text-ink">
                     {percent}% ({currency}
                     {refund})
                   </span>{" "}
-                  goes back to the patient&apos;s card
+                  goes back to the patient{appointment.paymentMethod === "wallet" ? "'s wallet" : "'s card"}
                   {by === "patient" ? `; ${currency}${appointment.amount - refund} is kept for the reserved time.` : "."}
                 </p>
               ) : (
                 <p>This visit wasn&apos;t paid online, so there&apos;s nothing to refund.</p>
               )}
-              <p className="text-[12px] text-slate-400">
+              <p className="text-[13px] text-ink-3">
                 The patient {role === "doctor" ? "and you are" : "and doctor are"} emailed and notified. This can&apos;t
                 be undone.
               </p>
@@ -183,14 +183,14 @@ export default function MissedAppointmentModal({
             <div className="flex flex-col-reverse sm:flex-row gap-2 mt-6">
               <button
                 onClick={onClose}
-                className="flex-1 px-5 py-3 rounded-2xl border border-slate-200 text-slate-600 text-sm font-bold hover:bg-slate-50"
+                className="flex-1 px-5 py-3 rounded-xl border border-line bg-white text-ink-2 text-[15px] font-bold hover:bg-canvas"
               >
                 Go back
               </button>
               <button
                 onClick={confirm}
                 disabled={saving}
-                className="flex-1 px-5 py-3 rounded-2xl bg-orange-600 text-white text-sm font-bold hover:bg-orange-700 disabled:opacity-60"
+                className="flex-1 px-5 py-3 rounded-xl bg-orange-600 text-white text-[15px] font-bold hover:bg-orange-700 disabled:opacity-60"
               >
                 {saving ? "Saving…" : role === "doctor" ? "Yes, mark no-show" : "Mark as missed"}
               </button>

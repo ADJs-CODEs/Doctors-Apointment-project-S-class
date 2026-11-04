@@ -1,104 +1,172 @@
 "use client";
 
-import type { Dispatch, SetStateAction } from 'react'
-import { RiCloseLine, RiHeartPulseLine, RiTimeLine, RiTempHotLine, RiAddLine, RiDeleteBin6Line } from '@remixicon/react';
-import type { DoctorsPrescribeModalProps } from "../types/index"
+import { useState } from 'react'
+import { RiAddLine, RiCloseLine, RiDeleteBin6Line, RiHeartPulseLine, RiTempHotLine, RiTimeLine } from '@remixicon/react';
+import type { DoctorsPrescribeModalProps, Medicine } from "../types/index"
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 
-const DoctorsPrescribeModal = ({ showModal, resetForm, vitals, setVitals, setMedicines, medicines, completeAppointment, getAppointments, setProgress, selectedApptId }: DoctorsPrescribeModalProps) => {
+const VITALS = [
+  { label: 'Blood pressure', key: 'bloodPressure', icon: <RiHeartPulseLine size={15} />, placeholder: '120/80' },
+  { label: 'Pulse', key: 'heartRate', icon: <RiTimeLine size={15} />, placeholder: '72 bpm' },
+  { label: 'Temperature', key: 'temperature', icon: <RiTempHotLine size={15} />, placeholder: '36.5' },
+] as const
+
+const NEW_MEDICINE: Medicine = { name: '', frequencyType: 'daily', frequencyValue: 1, dosagePerDay: 1, totalQuantity: 7, status: 'Active', remainingQuantity: 7, lastTaken: '' }
+
+// the server reads dosagePerDay (doses a day, or hours between doses); older form state only had frequencyValue
+const doseValue = (m: Medicine) => Number(m.dosagePerDay ?? m.frequencyValue ?? 1) || 1
+
+/** Closing a visit: vitals, what was prescribed, notes. Used from the Schedule and the Dashboard. */
+const DoctorsPrescribeModal = ({ showModal, resetForm, vitals, setVitals, setMedicines, medicines, completeAppointment, getAppointments, selectedApptId }: DoctorsPrescribeModalProps) => {
+  const [saving, setSaving] = useState(false)
+
+  const update = (index: number, patch: Partial<Medicine>) => setMedicines(medicines.map((m, i) => (i === index ? { ...m, ...patch } : m)))
+
+  const submit = async () => {
+    setSaving(true)
+    try {
+      const prescribedMedicines = medicines
+        .filter((m) => m.name.trim())
+        .map((m) => ({ ...m, dosagePerDay: doseValue(m) }))
+      const success = await completeAppointment(selectedApptId, { ...vitals, prescribedMedicines })
+      if (success) {
+        toast.success("Visit completed")
+        resetForm()
+        await getAppointments()
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <AnimatePresence>
       {showModal && (
-        <div className="fixed inset-0 z-1000 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4">
-          <motion.div initial={{ y: "100%", opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: "100%", opacity: 0 }} className="bg-white w-full max-w-3xl rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden max-h-[95vh] flex flex-col">
-
-            <div className="p-6 sm:p-8 border-b flex justify-between items-center bg-white sticky top-0 z-10">
+        <div className="fixed inset-0 z-1000 flex items-end sm:items-center justify-center bg-ink/40 backdrop-blur-sm p-0 sm:p-4" onClick={resetForm}>
+          <motion.div
+            initial={{ y: "100%", opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: "100%", opacity: 0 }}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            className="bg-white w-full max-w-3xl rounded-t-[24px] sm:rounded-[24px] shadow-2xl overflow-hidden max-h-[95vh] flex flex-col"
+          >
+            <div className="px-5 sm:px-7 py-5 border-b border-line flex justify-between items-start gap-3 bg-white">
               <div>
-                <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">Consultation</h2>
-                <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Add Vitals & Prescription</p>
+                <h2 className="text-[22px] font-extrabold tracking-[-0.02em] text-ink leading-tight">Complete the visit</h2>
+                <p className="text-[14px] text-ink-2 mt-0.5">Vitals, what you prescribed, and any notes. The patient sees these in their app.</p>
               </div>
-              <button onClick={resetForm} className="p-2 hover:bg-slate-100 rounded-full active:scale-90 transition-all">
-                <RiCloseLine size={24} className="text-slate-400" />
+              <button onClick={resetForm} aria-label="Close" className="p-2 rounded-xl text-ink-3 hover:bg-canvas">
+                <RiCloseLine size={22} />
               </button>
             </div>
 
-            <div className="p-6 sm:p-8 overflow-y-auto space-y-8 sm:space-y-10 custom-scrollbar">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-                {[
-                  { label: 'BP', key: 'bloodPressure', icon: <RiHeartPulseLine size={16} />, placeholder: '120/80' },
-                  { label: 'Pulse', key: 'heartRate', icon: <RiTimeLine size={16} />, placeholder: '72 bpm' },
-                  { label: 'Temp', key: 'temperature', icon: <RiTempHotLine size={16} />, placeholder: '36.5' }
-                ].map((v) => (
-                  <div key={v.key} className="space-y-2">
-                    <label className="flex items-center gap-2 text-[9px] sm:text-[10px] font-black text-slate-400 uppercase ml-2">{v.icon} {v.label}</label>
-                    <input
-                      type="text" className="w-full p-3 sm:p-4 bg-slate-50 rounded-2xl border-none focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold text-slate-700"
-                      placeholder={v.placeholder} value={(vitals as any)[v.key]} onChange={(e) => setVitals({ ...vitals, [v.key]: e.target.value })}
-                    />
-                  </div>
-                ))}
-              </div>
+            <div className="px-5 sm:px-7 py-6 overflow-y-auto space-y-7 custom-scrollbar">
+              <section>
+                <h3 className="text-[16px] font-bold text-ink mb-3">Vitals</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {VITALS.map((v) => (
+                    <label key={v.key} className="block">
+                      <span className="flex items-center gap-1.5 caption mb-1.5">
+                        <span className="text-brand-ink">{v.icon}</span> {v.label}
+                      </span>
+                      <input
+                        type="text"
+                        className="field num"
+                        placeholder={v.placeholder}
+                        value={vitals[v.key]}
+                        onChange={(e) => setVitals({ ...vitals, [v.key]: e.target.value })}
+                      />
+                    </label>
+                  ))}
+                </div>
+              </section>
 
-              <div className="space-y-4 sm:space-y-6">
-                <div className="flex justify-between items-center">
-                  <p className="text-[10px] sm:text-[11px] font-black text-slate-500 uppercase tracking-[1px]">Medication Plan</p>
-                  <button onClick={() => setMedicines([...medicines, { name: '', frequencyType: 'daily', frequencyValue: 0, dosagePerDay: 1, totalQuantity: 7, status: 'Active', remainingQuantity: 7, lastTaken: '' }])} className="text-blue-600 font-bold text-[10px] sm:text-xs flex items-center gap-1 hover:bg-blue-50 px-3 py-1.5 rounded-lg active:scale-95 transition-all">
-                    <RiAddLine size={16} /> Add Drug
+              <section>
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-[16px] font-bold text-ink">Prescription</h3>
+                  <button
+                    type="button"
+                    onClick={() => setMedicines([...medicines, { ...NEW_MEDICINE }])}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-[14px] font-bold text-brand-ink hover:bg-brand-soft"
+                  >
+                    <RiAddLine size={16} /> Add a medicine
                   </button>
                 </div>
 
-                <div className="space-y-4">
-                  {medicines.map((med: any, index: any) => (
-                    <div key={index} className="p-4 sm:p-5 bg-slate-50 rounded-[24px] border border-slate-100 grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4 items-end">
-                      <div className="md:col-span-4 space-y-1">
-                        <label className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase ml-1">Drug Name</label>
-                        <input className="w-full p-2.5 sm:p-3 bg-white rounded-xl text-sm border-none shadow-sm outline-none font-bold" placeholder="Name" value={med.name} onChange={(e) => { const n = [...medicines]; if (n[index]) { n[index].name = e.target.value; setMedicines(n); } }} />
+                {medicines.length === 0 ? (
+                  <p className="text-[14px] text-ink-3 rounded-2xl border border-dashed border-line px-4 py-5 text-center">Nothing prescribed.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {medicines.map((med, index) => (
+                      <div key={index} className="p-4 rounded-[18px] bg-canvas border border-line grid grid-cols-2 md:grid-cols-12 gap-3 items-end">
+                        <label className="col-span-2 md:col-span-4 block">
+                          <span className="block caption mb-1.5">Medicine</span>
+                          <input className="field" placeholder="e.g. Amoxicillin 500mg" value={med.name} onChange={(e) => update(index, { name: e.target.value })} />
+                        </label>
+                        <label className="col-span-2 md:col-span-3 block">
+                          <span className="block caption mb-1.5">How often</span>
+                          <select className="field" value={med.frequencyType} onChange={(e) => update(index, { frequencyType: e.target.value as Medicine["frequencyType"] })}>
+                            <option value="daily">Times a day</option>
+                            <option value="interval">Every few hours</option>
+                          </select>
+                        </label>
+                        <label className="md:col-span-2 block">
+                          <span className="block caption mb-1.5">{med.frequencyType === 'interval' ? 'Every (hours)' : 'Doses a day'}</span>
+                          <input
+                            type="number"
+                            min={1}
+                            className="field num"
+                            value={doseValue(med)}
+                            onChange={(e) => update(index, { dosagePerDay: Number(e.target.value), frequencyValue: Number(e.target.value) })}
+                          />
+                        </label>
+                        <label className="md:col-span-2 block">
+                          <span className="block caption mb-1.5">Total doses</span>
+                          <input
+                            type="number"
+                            min={1}
+                            className="field num"
+                            value={med.totalQuantity}
+                            onChange={(e) => update(index, { totalQuantity: Number(e.target.value), remainingQuantity: Number(e.target.value) })}
+                          />
+                        </label>
+                        <div className="col-span-2 md:col-span-1 flex justify-end md:justify-center md:pb-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setMedicines(medicines.filter((_, i) => i !== index))}
+                            aria-label={`Remove ${med.name || 'this medicine'}`}
+                            className="p-2 rounded-xl text-ink-3 hover:bg-rose-50 hover:text-rose-600"
+                          >
+                            <RiDeleteBin6Line size={19} />
+                          </button>
+                        </div>
                       </div>
-                      <div className="md:col-span-3 space-y-1">
-                        <label className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase ml-1">Frequency</label>
-                        <select className="w-full p-2.5 sm:p-3 bg-white rounded-xl text-sm border-none shadow-sm outline-none font-bold appearance-none" value={med.frequencyType} onChange={(e) => { const n = [...medicines]; if (n[index]) { n[index].frequencyType = e.target.value; setMedicines(n); } }}>
-                          <option value="daily">Daily (Days)</option>
-                          <option value="interval">Hourly (Interval)</option>
-                        </select>
-                      </div>
-                      <div className="md:col-span-2 space-y-1">
-                        <label className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase ml-1">{med.frequencyType === 'daily' ? 'X Days' : 'X Hours'}</label>
-                        <input type="number" className="w-full p-2.5 sm:p-3 bg-white rounded-xl text-sm border-none shadow-sm outline-none font-bold" value={med.dosagePerDay} onChange={(e) => { const n = [...medicines]; if (n[index]) { n[index].dosagePerDay = Number(e.target.value); setMedicines(n); } }} />
-                      </div>
-                      <div className="md:col-span-2 space-y-1">
-                        <label className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase ml-1">Total Qty</label>
-                        <input type="number" className="w-full p-2.5 sm:p-3 bg-white rounded-xl text-sm border-none shadow-sm outline-none font-bold" value={med.totalQuantity} onChange={(e) => { const val = Number(e.target.value); const n = [...medicines]; if (n[index]) { n[index].totalQuantity = val; n[index].remainingQuantity = val; setMedicines(n); } }} />
-                      </div>
-                      <div className="md:col-span-1 flex justify-center md:pb-1">
-                        <button onClick={() => setMedicines(medicines.filter((_: any, i: any) => i !== index))} className="p-2 text-red-300 hover:text-red-500 active:scale-90 transition-all"><RiDeleteBin6Line size={20} /></button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                    ))}
+                  </div>
+                )}
+              </section>
 
-              <div className="space-y-2">
-                <label className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase ml-2">Clinical Notes</label>
-                <textarea rows={3} className="w-full p-4 sm:p-5 bg-slate-50 rounded-[20px] sm:rounded-[24px] border-none outline-none text-sm font-medium" placeholder="Additional instructions..." value={vitals.notes} onChange={(e) => setVitals({ ...vitals, notes: e.target.value })} />
-              </div>
+              <label className="block">
+                <span className="block text-[16px] font-bold text-ink mb-3">Notes for the patient</span>
+                <textarea
+                  rows={3}
+                  className="field resize-y"
+                  placeholder="Instructions, what to watch for, when to come back…"
+                  value={vitals.notes}
+                  onChange={(e) => setVitals({ ...vitals, notes: e.target.value })}
+                />
+              </label>
             </div>
 
-            <div className="p-6 sm:p-8 border-t bg-slate-50/50 flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <button onClick={resetForm} className="order-2 sm:order-1 flex-1 py-3 sm:py-4 text-[10px] sm:text-xs font-black uppercase text-slate-400 active:scale-95 transition-all">Discard</button>
-              <button
-                onClick={async () => {
-                  const success = await completeAppointment(selectedApptId, { ...vitals, prescribedMedicines: medicines });
-                  if (success) {
-                    toast.success("Consultation Completed");
-                    resetForm();
-                    await getAppointments();
-                  } else {
-                  }
-                }}
-                className="order-1 sm:order-2 flex-[2] py-4 bg-emerald-500 text-white rounded-xl sm:rounded-[20px] text-[10px] sm:text-xs font-black uppercase shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
-              >
-                Complete & Prescribe
+            <div className="px-5 sm:px-7 py-4 border-t border-line bg-canvas/60 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+              <button onClick={resetForm} className="px-5 py-3 rounded-xl border border-line bg-white text-ink-2 text-[15px] font-bold hover:bg-canvas">
+                Not now
+              </button>
+              <button onClick={submit} disabled={saving} className="btn btn-teal !rounded-xl !px-6 disabled:opacity-50">
+                {saving ? "Saving…" : "Complete visit"}
               </button>
             </div>
           </motion.div>

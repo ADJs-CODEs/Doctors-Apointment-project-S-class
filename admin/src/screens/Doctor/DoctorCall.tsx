@@ -52,12 +52,12 @@ export default function DoctorCall() {
       </div>
       {error ? (
         <>
-          <h1 className="text-2xl font-black text-slate-900">Can&apos;t join yet</h1>
+          <h1 className="text-[24px] font-extrabold tracking-[-0.02em] text-ink">Can&apos;t join yet</h1>
           <p className="text-slate-500 mt-2">{error}</p>
         </>
       ) : join ? (
         <>
-          <h1 className="text-2xl font-black text-slate-900">The call is ready</h1>
+          <h1 className="text-[24px] font-extrabold tracking-[-0.02em] text-ink">The call is ready</h1>
           <p className="text-slate-500 mt-2">It opens in a new tab. Allow your camera and microphone when asked.</p>
           <a
             href={join.url}

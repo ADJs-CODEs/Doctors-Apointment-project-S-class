@@ -1,15 +1,15 @@
 "use client";
 
-import { RiSettings3Line } from "@remixicon/react";
 import { type FormEvent, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { PageHeader } from "../../components/panel";
 import { usePharmacy } from "../../context/PharmacyContext";
 import { API_PATHS } from "../../utils/apiPath";
 import axiosInstance from "../../utils/axiosInstance";
 import { ChangePasswordForm } from "./ChangePassword";
 
-const label = "text-[11px] font-bold uppercase tracking-wider text-slate-400";
-const input = "w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-teal-400 mt-1";
+const label = "caption";
+const input = "field mt-1";
 
 /** Delivery area, fee and contact details (owner), and your own password (everyone). */
 export default function PharmacySettings() {
@@ -51,22 +51,15 @@ export default function PharmacySettings() {
   };
 
   return (
-    <div className="p-4 sm:p-6 md:p-10 bg-slate-50/50 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-8 animate-reveal">
       <div className="max-w-3xl mx-auto space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-slate-900 rounded-xl text-teal-400">
-            <RiSettings3Line size={20} />
-          </div>
-          <h1 className="text-xl sm:text-3xl font-black text-slate-900">
-            Settings
-          </h1>
-        </div>
+        <PageHeader eyebrow="Your pharmacy" title="Settings" subtitle={owner ? "Delivery, contact details and your password." : "Your password."} />
 
         {owner && pharmacy && (
-          <form onSubmit={save} className="bg-white rounded-[28px] border border-slate-200 p-5 sm:p-6 space-y-4">
+          <form onSubmit={save} className="surface rounded-[22px] p-5 sm:p-6 space-y-4">
             <div>
-              <p className="font-black text-slate-900">Delivery and contact</p>
-              <p className="text-[12px] text-slate-400">Patients only see you if they&apos;re within your delivery distance.</p>
+              <p className="text-[16px] font-bold text-ink">Delivery and contact</p>
+              <p className="text-[13px] text-ink-3">Patients only see you if they&apos;re within your delivery distance.</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
@@ -91,18 +84,18 @@ export default function PharmacySettings() {
               <input value={form.line2} onChange={(e) => setForm({ ...form, line2: e.target.value })} className={input} />
             </label>
             {!pharmacy.located && (
-              <p className="text-[12px] font-bold text-orange-700 bg-orange-50 rounded-xl px-3 py-2">
+              <p className="text-[13px] font-bold text-orange-700 bg-orange-50 border border-orange-100 rounded-xl px-3 py-2">
                 We can&apos;t find this address on the map yet. Add the area and city so patients can be matched to you.
               </p>
             )}
-            <button type="submit" disabled={saving} className="px-4 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-bold hover:bg-teal-700 disabled:opacity-50">
+            <button type="submit" disabled={saving} className="btn btn-teal !py-2.5 !px-5 !text-[14px] !rounded-xl disabled:opacity-50">
               {saving ? "Saving…" : "Save"}
             </button>
           </form>
         )}
 
-        <section className="bg-white rounded-[28px] border border-slate-200 p-5 sm:p-6">
-          <p className="font-black text-slate-900 mb-3">Your password</p>
+        <section className="surface rounded-[22px] p-5 sm:p-6">
+          <p className="text-[16px] font-bold text-ink mb-3">Your password</p>
           <ChangePasswordForm />
         </section>
       </div>

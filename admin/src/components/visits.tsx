@@ -20,7 +20,7 @@ export function Avatar({ src, name, size = "md" }: { src?: string; name: string;
     .map((w) => w[0]?.toUpperCase())
     .join("");
   if (!src || broken) {
-    return <div className={`${box} bg-teal-50 text-teal-700 font-black flex items-center justify-center shrink-0`}>{initials || "?"}</div>;
+    return <div className={`${box} bg-brand-soft text-brand-ink font-bold flex items-center justify-center shrink-0`}>{initials || "?"}</div>;
   }
   return <img className={`${box} object-cover object-top bg-slate-100 shrink-0`} src={src} alt="" onError={() => setBroken(true)} />;
 }
@@ -94,14 +94,14 @@ export function VisitTabs({
         <button
           key={t.id}
           onClick={() => onChange(t.id)}
-          className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors ${
-            current === t.id ? "bg-slate-900 text-white" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+          className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl text-[15px] font-bold transition-colors ${
+            current === t.id ? "btn-ink" : "bg-white border border-line text-ink-2 hover:border-ink-3/40"
           }`}
         >
           {t.label}
           {t.count > 0 && (
             <span
-              className={`min-w-5 h-5 px-1.5 rounded-full text-[11px] font-black flex items-center justify-center ${
+              className={`num min-w-5 h-5 px-1.5 rounded-full text-[11px] flex items-center justify-center ${
                 t.tone ?? (current === t.id ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600")
               }`}
             >
@@ -119,16 +119,16 @@ export function VisitPills({ item, currency }: { item: Appointment; currency: st
   return (
     <div className="flex flex-wrap gap-1.5 mt-1.5">
       {item.kind === "video" ? (
-        <span className="inline-flex items-center gap-1 text-[11px] font-black text-white bg-violet-600 px-2 py-0.5 rounded-full">
-          <RiVideoOnLine size={12} /> Video call
+        <span className="inline-flex items-center gap-1 text-[12px] font-bold text-video bg-video-soft border border-violet-100 px-2 py-0.5 rounded-full">
+          <RiVideoOnLine size={13} /> Video call
         </span>
       ) : (
-        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-800 bg-teal-50 border border-teal-100 px-2 py-0.5 rounded-full">
+        <span className="inline-flex items-center gap-1 text-[12px] font-bold text-brand-ink bg-brand-soft border border-teal-100 px-2 py-0.5 rounded-full">
           <RiHospitalLine size={12} /> At the clinic
         </span>
       )}
       <span
-        className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+        className={`text-[12px] font-bold px-2 py-0.5 rounded-full border ${
           !item.payment ? "bg-amber-50 text-amber-700 border-amber-100" : "bg-slate-50 text-slate-600 border-slate-200"
         }`}
       >
@@ -145,11 +145,11 @@ export function DateBlock({ item }: { item: Appointment }) {
   const start = slotStart(item);
   return (
     <div className="flex md:flex-col items-center gap-3 md:gap-0 md:w-20 shrink-0">
-      <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-slate-900 text-white flex flex-col items-center justify-center">
-        <span className="text-xl font-black leading-none">{start.getDate()}</span>
-        <span className="text-[10px] font-bold uppercase tracking-wider text-teal-300">{MONTH[start.getMonth()]}</span>
+      <div className="btn-ink w-14 h-14 md:w-16 md:h-16 rounded-[16px] flex flex-col items-center justify-center">
+        <span className="num text-[22px] leading-none">{start.getDate()}</span>
+        <span className="text-[12px] font-semibold text-[#8FE3E1]">{MONTH[start.getMonth()]}</span>
       </div>
-      <p className="text-sm font-black text-slate-800 md:mt-1.5">{item.slotTime}</p>
+      <p className="num text-[14px] text-ink md:mt-1.5">{item.slotTime}</p>
     </div>
   );
 }

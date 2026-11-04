@@ -38,9 +38,8 @@ const years = (text: string) => {
 /** video needs both a fee and some hours marked for video (same rule as booking) */
 const offersVideo = (d: Doctor) => !!d.videoFees && !!d.availability?.weekly.some((w) => w.kinds.includes("video"));
 
-const field =
-  "w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all";
-const label = "text-[10px] font-black uppercase text-slate-400 tracking-wider";
+const field = "field";
+const label = "caption";
 
 type Draft = Pick<Doctor, "about" | "experience" | "degree" | "fees" | "address">;
 
@@ -83,21 +82,21 @@ const DoctorProfile: React.FC = () => {
   const photo = d.image?.replace("/upload/", "/upload/f_jpg,q_auto:best/");
 
   return (
-    <div className="p-4 sm:p-6 md:p-10 bg-slate-50/50 min-h-screen animate-reveal">
+    <div className="p-4 sm:p-6 lg:p-8 animate-reveal">
       <div className="max-w-5xl mx-auto space-y-6">
         {/* --- who you are --- */}
-        <section className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden">
-          <div className="h-24 sm:h-28 bg-gradient-to-r from-slate-900 via-slate-800 to-teal-800" />
+        <section className="surface rounded-[24px] overflow-hidden">
+          <div className="h-24 sm:h-28 bg-[radial-gradient(120%_140%_at_85%_0%,#0EA5A4_0%,#0B7C7B_30%,#0B2545_75%)]" />
           {/* only the photo overlaps the banner; the text starts below it */}
           <div className="px-5 sm:px-8 pb-6 -mt-14 sm:-mt-16 flex flex-col sm:flex-row gap-5 sm:items-start">
             <img
               src={photo}
               alt={d.name}
-              className="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl object-cover object-top bg-teal-50 border-4 border-white shadow-md shrink-0"
+              className="w-28 h-28 sm:w-36 sm:h-36 rounded-[22px] object-cover object-top bg-brand-soft border-4 border-white shadow-md shrink-0"
             />
             <div className="flex-1 min-w-0 sm:pt-20">
-              <h1 className="text-2xl sm:text-3xl font-black text-slate-900">{d.name}</h1>
-              <p className="text-slate-500 font-bold text-sm">
+              <h1 className="text-[28px] sm:text-[34px] leading-[1.05] font-extrabold tracking-[-0.035em] text-ink">{d.name}</h1>
+              <p className="text-ink-2 font-semibold text-[15px] mt-1">
                 {d.speciality} · {d.degree}
               </p>
               <div className="flex flex-wrap gap-2 mt-3">
@@ -106,25 +105,22 @@ const DoctorProfile: React.FC = () => {
                 {offersVideo(d) ? <Chip icon={<RiVideoChatLine size={14} />}>Video calls</Chip> : null}
                 <Link
                   to="/doctor-settings"
-                  className={`inline-flex items-center gap-1.5 text-[11px] font-black px-3 py-1.5 rounded-full ${
-                    d.available ? "bg-teal-50 text-teal-700" : "bg-orange-50 text-orange-700"
+                  className={`inline-flex items-center gap-1.5 text-[13px] font-bold px-3 py-1.5 rounded-full border ${
+                    d.available ? "bg-brand-soft text-brand-ink border-teal-100" : "bg-orange-50 text-orange-700 border-orange-100"
                   }`}
                 >
-                  <span className={`w-1.5 h-1.5 rounded-full ${d.available ? "bg-teal-500" : "bg-orange-500"}`} />
+                  <span className={`w-1.5 h-1.5 rounded-full ${d.available ? "bg-brand" : "bg-orange-500"}`} />
                   {d.available ? "Taking bookings" : "Not taking bookings"}
                 </Link>
               </div>
             </div>
             {!editing && (
-              <button
-                onClick={startEdit}
-                className="self-start sm:mt-20 flex items-center gap-2 bg-slate-900 text-white px-5 py-3 rounded-2xl font-black text-[11px] uppercase tracking-[1.5px] active:scale-95 transition-all"
-              >
+              <button onClick={startEdit} className="btn btn-ink self-start sm:mt-20 !rounded-xl">
                 <RiEdit2Line size={16} /> Edit profile
               </button>
             )}
           </div>
-          <div className="grid grid-cols-3 border-t border-slate-100 divide-x divide-slate-100">
+          <div className="grid grid-cols-3 border-t border-line divide-x divide-line">
             <Stat value={dashData ? dashData.patients : "–"} label="Patients" />
             <Stat value={dashData ? dashData.appointments : "–"} label="Bookings" />
             <Stat value={`${currency}${d.fees}`} label="Clinic fee" />
@@ -144,10 +140,10 @@ const DoctorProfile: React.FC = () => {
                     onChange={(e) => setDraft({ ...draft, about: e.target.value })}
                     className={`${field} resize-y leading-relaxed`}
                   />
-                  <p className="text-[11px] text-slate-400 text-right mt-1">{draft.about.length}/2000</p>
+                  <p className="num text-[12px] text-ink-3 text-right mt-1">{draft.about.length}/2000</p>
                 </>
               ) : (
-                <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{d.about}</p>
+                <p className="text-[15px] text-ink-2 leading-relaxed whitespace-pre-line">{d.about}</p>
               )}
             </Card>
 
@@ -176,12 +172,12 @@ const DoctorProfile: React.FC = () => {
                 </Detail>
                 <Detail name="Speciality">
                   {d.speciality}
-                  {editing && <span className="block text-[11px] font-medium text-slate-400 mt-1">Ask the clinic admin to change this.</span>}
+                  {editing && <span className="block text-[12px] font-medium text-ink-3 mt-1">Ask the clinic admin to change this.</span>}
                 </Detail>
                 <Detail name="Clinic visit fee">
                   {editing ? (
                     <div className="flex items-center gap-2">
-                      <span className="font-black text-slate-500">{currency}</span>
+                      <span className="num text-ink-2">{currency}</span>
                       <input
                         type="number"
                         min={1}
@@ -195,11 +191,11 @@ const DoctorProfile: React.FC = () => {
                   )}
                 </Detail>
                 <Detail name="Video call fee">
-                  {d.videoFees ? `${currency}${d.videoFees}` : <span className="text-slate-400">No video calls</span>}
+                  {d.videoFees ? `${currency}${d.videoFees}` : <span className="text-ink-3">No video calls</span>}
                   {d.videoFees && !offersVideo(d) ? (
-                    <span className="block text-[11px] font-medium text-orange-600 mt-1">No video hours set, so patients can&apos;t book a video call yet.</span>
+                    <span className="block text-[12px] font-medium text-orange-700 mt-1">No video hours set, so patients can&apos;t book a video call yet.</span>
                   ) : null}
-                  <Link to="/doctor-settings" className="block text-[11px] font-bold text-teal-700 hover:underline mt-1">
+                  <Link to="/doctor-settings" className="block text-[13px] font-bold text-brand-ink hover:underline mt-1">
                     Change in Settings
                   </Link>
                 </Detail>
@@ -230,11 +226,11 @@ const DoctorProfile: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  <p className="text-sm font-bold text-slate-800">{address || "No address yet"}</p>
+                  <p className="text-[15px] font-bold text-ink">{address || "No address yet"}</p>
                   {address && (
                     <iframe
                       title="Clinic on the map"
-                      className="w-full h-56 rounded-2xl border border-slate-100 mt-3"
+                      className="w-full h-56 rounded-2xl border border-line mt-3"
                       loading="lazy"
                       src={`https://maps.google.com/maps?q=${encodeURIComponent(address)}&output=embed`}
                     />
@@ -251,19 +247,15 @@ const DoctorProfile: React.FC = () => {
         </div>
 
         {editing && (
-          <div className="sticky bottom-4 z-30 flex flex-col sm:flex-row gap-2 justify-end bg-white/90 backdrop-blur border border-slate-200 rounded-2xl p-3 shadow-lg">
-            <p className="text-sm text-slate-500 sm:mr-auto self-center">Editing your profile</p>
+          <div className="sticky bottom-4 z-30 flex flex-col sm:flex-row gap-2 justify-end glass rounded-[20px] p-3">
+            <p className="text-[14px] text-ink-2 sm:mr-auto self-center px-1">Editing your profile</p>
             <button
               onClick={() => setDraft(null)}
-              className="bg-slate-100 text-slate-600 px-6 py-3 rounded-xl font-black uppercase text-[10px] tracking-[2px]"
+              className="px-5 py-3 rounded-xl border border-line bg-white text-ink-2 text-[15px] font-bold hover:bg-canvas"
             >
               Cancel
             </button>
-            <button
-              onClick={save}
-              disabled={saving}
-              className="bg-teal-600 text-white px-6 py-3 rounded-xl font-black uppercase text-[10px] tracking-[2px] disabled:opacity-50"
-            >
+            <button onClick={save} disabled={saving} className="btn btn-teal !rounded-xl !px-6 disabled:opacity-50">
               {saving ? "Saving…" : "Save changes"}
             </button>
           </div>
@@ -281,24 +273,24 @@ function Hours({ doctor }: { doctor: Doctor }) {
   return (
     <Card title="Your hours" icon={<RiCalendarScheduleLine size={18} />}>
       {!a ? (
-        <p className="text-sm text-slate-500">Every day, 10 am to 9 pm, at the clinic (the default until you set your own hours).</p>
+        <p className="text-[14px] text-ink-2">Every day, 10 am to 9 pm, at the clinic (the default until you set your own hours).</p>
       ) : (
-        <ul className="space-y-2 text-sm">
+        <ul className="space-y-2 text-[14px]">
           {WEEK_ORDER.map((day) => {
             const ranges = a.weekly.filter((w) => w.day === day);
             return (
               <li key={day} className="flex justify-between gap-3">
-                <span className={`font-bold ${ranges.length ? "text-slate-700" : "text-slate-300"}`}>{DAYS[day].slice(0, 3)}</span>
+                <span className={`font-bold ${ranges.length ? "text-ink" : "text-ink-3/60"}`}>{DAYS[day].slice(0, 3)}</span>
                 <span className="text-right">
                   {ranges.length ? (
                     ranges.map((r, i) => (
-                      <span key={i} className="block text-slate-600 tabular-nums">
+                      <span key={i} className="block num text-ink-2">
                         {clock(r.start)} – {clock(r.end)}
-                        {r.kinds.includes("video") && <RiVideoChatLine size={13} className="inline ml-1 text-teal-600" aria-label="video" />}
+                        {r.kinds.includes("video") && <RiVideoChatLine size={13} className="inline ml-1 text-video" aria-label="video" />}
                       </span>
                     ))
                   ) : (
-                    <span className="text-slate-300">Closed</span>
+                    <span className="text-ink-3/60">Closed</span>
                   )}
                 </span>
               </li>
@@ -307,12 +299,12 @@ function Hours({ doctor }: { doctor: Doctor }) {
         </ul>
       )}
       {a && (
-        <p className="text-[11px] text-slate-400 mt-3">
+        <p className="text-[13px] text-ink-3 mt-3">
           {a.slotMinutes}-minute visits
           {daysOff.length ? ` · next days off: ${daysOff.map((x) => new Date(`${x}T12:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" })).join(", ")}` : ""}
         </p>
       )}
-      <Link to="/doctor-settings" className="inline-block text-[12px] font-bold text-teal-700 hover:underline mt-3">
+      <Link to="/doctor-settings" className="inline-block text-[13px] font-bold text-brand-ink hover:underline mt-3">
         Change hours and days off
       </Link>
     </Card>
@@ -322,20 +314,20 @@ function Hours({ doctor }: { doctor: Doctor }) {
 /** Roughly the card patients see in the doctor list. */
 function PatientPreview({ doctor, currency }: { doctor: Doctor; currency: string }) {
   return (
-    <section className="bg-slate-900 rounded-[28px] p-5 text-white">
-      <p className="text-[10px] font-black uppercase tracking-[2px] text-teal-300 mb-3">How patients see you</p>
-      <div className="bg-white rounded-2xl overflow-hidden text-slate-900">
-        <img src={doctor.image} alt="" className="w-full h-40 object-cover object-top bg-teal-50" />
+    <section className="btn-ink rounded-[22px] p-5">
+      <p className="text-[14px] font-bold text-[#8FE3E1] mb-3">How patients see you</p>
+      <div className="bg-white rounded-2xl overflow-hidden text-ink">
+        <img src={doctor.image} alt="" className="w-full h-40 object-cover object-top bg-brand-soft" />
         <div className="p-4">
-          <p className={`text-[11px] font-bold flex items-center gap-1.5 ${doctor.available ? "text-teal-600" : "text-slate-400"}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${doctor.available ? "bg-teal-500" : "bg-slate-300"}`} />
+          <p className={`text-[12px] font-bold flex items-center gap-1.5 ${doctor.available ? "text-brand-ink" : "text-ink-3"}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${doctor.available ? "bg-brand" : "bg-ink-3/50"}`} />
             {doctor.available ? "Available" : "Not available"}
           </p>
-          <p className="font-black mt-1">{doctor.name}</p>
-          <p className="text-[12px] text-slate-500">
+          <p className="text-[16px] font-bold mt-1">{doctor.name}</p>
+          <p className="text-[13px] text-ink-3">
             {doctor.speciality} · {years(doctor.experience)}
           </p>
-          <p className="text-[12px] text-slate-600 mt-2">
+          <p className="text-[13px] text-ink-2 mt-2">
             Clinic {currency}
             {doctor.fees}
             {offersVideo(doctor) ? ` · Video ${currency}${doctor.videoFees}` : ""}
@@ -348,12 +340,12 @@ function PatientPreview({ doctor, currency }: { doctor: Doctor; currency: string
 
 function Card({ title, icon, hint, children }: { title: string; icon: React.ReactNode; hint?: string; children: React.ReactNode }) {
   return (
-    <section className="bg-white rounded-[28px] border border-slate-100 shadow-sm p-5 sm:p-6">
+    <section className="surface rounded-[22px] p-5 sm:p-6">
       <div className="mb-4">
-        <p className="font-black text-slate-900 flex items-center gap-2">
-          <span className="text-teal-600">{icon}</span> {title}
+        <p className="font-bold text-[16px] text-ink flex items-center gap-2.5">
+          <span className="w-8 h-8 rounded-[10px] grid place-items-center border border-teal-100 bg-brand-soft text-brand-ink">{icon}</span> {title}
         </p>
-        {hint && <p className="text-[12px] text-slate-400 mt-0.5">{hint}</p>}
+        {hint && <p className="text-[13px] text-ink-3 mt-1">{hint}</p>}
       </div>
       {children}
     </section>
@@ -364,14 +356,14 @@ function Detail({ name, children }: { name: string; children: React.ReactNode })
   return (
     <div>
       <p className={`${label} mb-1.5`}>{name}</p>
-      <div className="text-sm font-bold text-slate-800">{children}</div>
+      <div className="text-[15px] font-bold text-ink">{children}</div>
     </div>
   );
 }
 
 function Chip({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-full bg-slate-100 text-slate-600">
+    <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold px-3 py-1.5 rounded-full bg-canvas border border-line text-ink-2">
       {icon}
       {children}
     </span>
@@ -381,8 +373,8 @@ function Chip({ icon, children }: { icon: React.ReactNode; children: React.React
 function Stat({ value, label: text }: { value: React.ReactNode; label: string }) {
   return (
     <div className="py-4 text-center">
-      <p className="text-xl font-black text-slate-900 tabular-nums">{value}</p>
-      <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">{text}</p>
+      <p className="num text-[20px] text-ink">{value}</p>
+      <p className="text-[13px] font-semibold text-ink-3 mt-0.5">{text}</p>
     </div>
   );
 }

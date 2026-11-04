@@ -13,13 +13,15 @@ import {
   RiMoneyDollarCircleLine,
   RiCalendarCheckLine,
   RiGroupLine,
-  RiCloseCircleFill,
-  RiCheckboxCircleFill,
+  RiCloseCircleLine,
+  RiCheckboxCircleLine,
   RiErrorWarningFill,
-  RiArrowRightLine,
 } from "@remixicon/react";
 import { useNavigate } from "@/lib/navigation";
 import DoctorsDashboardModal from "../../Modal/DoctorsDashboardModal";
+import ConfirmDialog from "../../components/ConfirmDialog";
+import { Avatar } from "../../components/visits";
+import { PageHeader, Panel, Pill, Skeleton, StatCard } from "../../components/panel";
 
 const DoctorDashboard: React.FC = () => {
   const {
@@ -35,6 +37,9 @@ const DoctorDashboard: React.FC = () => {
   const navigate = useNavigate();
 
   const [showModal, setShowModal] = useState(false);
+  // cancelling refunds the patient, so it asks first
+  const [cancelFor, setCancelFor] = useState<Appointment | null>(null);
+  const [cancelling, setCancelling] = useState(false);
   const [selectedApptId, setSelectedApptId] = useState("");
   const [vitals, setVitals] = useState({
     bloodPressure: "",
@@ -77,14 +82,14 @@ const DoctorDashboard: React.FC = () => {
 
   if (!dashData)
     return (
-      <div className="p-6 md:p-10 animate-pulse space-y-6">
-        <div className="h-8 w-56 bg-slate-200 rounded-full" />
+      <div className="p-4 sm:p-6 lg:p-8 space-y-5 max-w-5xl mx-auto">
+        <Skeleton className="h-10 w-56" />
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-28 bg-slate-100 rounded-[32px]" />
+            <Skeleton key={i} className="h-24" />
           ))}
         </div>
-        <div className="h-64 bg-slate-100 rounded-[40px]" />
+        <Skeleton className="h-72" />
       </div>
     );
 
@@ -106,99 +111,19 @@ const DoctorDashboard: React.FC = () => {
     return b.date - a.date;
   });
 
-  const statCards = [
-    {
-      icon: <RiMoneyDollarCircleLine size={24} />,
-      value: `${currency}${dashData.earnings}`,
-      label: "Total Earnings",
-      color: "bg-teal-50 text-teal-600",
-      hover: "group-hover:bg-teal-500 group-hover:text-white",
-      path: null,
-    },
-    {
-      icon: <RiCalendarCheckLine size={24} />,
-      value: dashData.appointments,
-      label: "Total Bookings",
-      color: "bg-blue-50 text-blue-600",
-      hover: "group-hover:bg-blue-500 group-hover:text-white",
-      path: "/doctor-appointments",
-    },
-    {
-      icon: <RiGroupLine size={24} />,
-      value: dashData.patients,
-      label: "Unique Patients",
-      color: "bg-purple-50 text-purple-600",
-      hover: "group-hover:bg-purple-500 group-hover:text-white",
-      path: null,
-    },
-  ];
-
   return (
-    <div className="p-4 sm:p-6 md:p-10 bg-slate-50/50 min-h-screen animate-reveal">
-      <div className="max-w-5xl mx-auto space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900">
-            Dashboard
-          </h1>
-          <p className="text-slate-400 text-xs font-medium mt-1">
-            Your earnings, bookings and latest appointments.
-          </p>
-        </div>
+    <div className="p-4 sm:p-6 lg:p-8 animate-reveal">
+      <div className="max-w-5xl mx-auto space-y-5">
+        <PageHeader eyebrow="Your practice" title="Dashboard" subtitle="Your earnings, bookings and latest appointments." />
 
-        {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {statCards.map((s, i) => (
-            <div
-              key={i}
-              onClick={() => s.path && navigate(s.path)}
-              className={`bg-white border border-slate-100 rounded-[32px] p-6 shadow-sm flex items-center gap-5 group transition-all duration-300 ${s.path ? "cursor-pointer hover:bg-slate-900 hover:border-slate-900 hover:shadow-xl" : ""}`}
-            >
-              <div
-                className={`p-3.5 rounded-2xl transition-all duration-300 ${s.color} ${s.path ? s.hover : ""}`}
-              >
-                {s.icon}
-              </div>
-              <div>
-                <p className="text-xl sm:text-2xl font-black text-slate-900 group-hover:text-white transition-colors leading-none">
-                  {s.value}
-                </p>
-                <p className="text-[9px] font-black uppercase tracking-[2px] text-slate-400 mt-1.5 group-hover:text-slate-400 transition-colors">
-                  {s.label}
-                </p>
-              </div>
-              {s.path && (
-                <RiArrowRightLine
-                  size={16}
-                  className="ml-auto text-slate-200 group-hover:text-teal-400 transition-colors"
-                />
-              )}
-            </div>
-          ))}
+          <StatCard icon={<RiMoneyDollarCircleLine size={22} />} value={`${currency}${dashData.earnings}`} label="Earned from visits" onClick={() => navigate("/doctor-wallet")} />
+          <StatCard icon={<RiCalendarCheckLine size={22} />} value={dashData.appointments} label="Bookings" tone="blue" onClick={() => navigate("/doctor-appointments")} />
+          <StatCard icon={<RiGroupLine size={22} />} value={dashData.patients} label="Patients" tone="violet" />
         </div>
 
-        {/* Latest bookings */}
-        <div className="bg-white rounded-[32px] sm:rounded-[40px] border border-slate-100 shadow-sm overflow-hidden">
-          <div className="px-6 sm:px-8 py-5 sm:py-6 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
-            <div className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
-              <p className="text-[10px] font-black uppercase tracking-[3px] text-slate-900">
-                Latest Bookings
-              </p>
-            </div>
-            <button
-              onClick={() => navigate("/doctor-appointments")}
-              className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-teal-600 transition-colors flex items-center gap-1 group"
-            >
-              View all{" "}
-              <RiArrowRightLine
-                size={12}
-                className="group-hover:translate-x-0.5 transition-transform"
-              />
-            </button>
-          </div>
-
-          <div className="divide-y divide-slate-50">
+        <Panel title="Latest bookings" icon={<RiCalendarCheckLine size={17} />} action="Full schedule" onAction={() => navigate("/doctor-appointments")}>
+          <div className="divide-y divide-line">
             {latestBookings.length > 0 ? (
               latestBookings.map((item: Appointment, index: number) => {
                 const isUrgent =
@@ -210,61 +135,51 @@ const DoctorDashboard: React.FC = () => {
                 return (
                   <div
                     key={index}
-                    className={`flex items-center gap-4 px-6 sm:px-8 py-4 sm:py-5 hover:bg-slate-50/80 transition-all ${isUrgent ? "bg-red-50/30" : ""}`}
+                    className={`flex flex-wrap sm:flex-nowrap items-center gap-4 px-5 sm:px-6 py-4 hover:bg-canvas/70 transition-colors ${isUrgent ? "bg-rose-50/40" : ""}`}
                   >
                     <div className="relative shrink-0">
-                      <img
-                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl object-cover border-2 border-white shadow-sm bg-slate-100"
-                        src={item.userData.image}
-                        alt=""
-                      />
+                      <Avatar src={item.userData?.image} name={item.userData?.name ?? "Patient"} />
                       {isUrgent && (
-                        <div className="absolute -top-1 -right-1 text-red-500 bg-white rounded-full">
+                        <div className="absolute -top-1 -right-1 text-rose-500 bg-white rounded-full">
                           <RiErrorWarningFill size={14} />
                         </div>
                       )}
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <p
-                        className={`text-sm font-black truncate ${isUrgent ? "text-red-700" : "text-slate-900"}`}
-                      >
-                        {item.userData.name}
-                      </p>
-                      <p className="text-[10px] font-bold text-slate-400 mt-0.5">
-                        {slotDateFormat(item.slotDate)} · {item.slotTime}
+                      <p className={`text-[15px] font-bold truncate ${isUrgent ? "text-rose-700" : "text-ink"}`}>{item.userData.name}</p>
+                      <p className="text-[13px] text-ink-3 mt-0.5">
+                        {slotDateFormat(item.slotDate)} · <span className="num">{item.slotTime}</span>
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-2 shrink-0 ml-auto">
                       {item.cancelled ? (
-                        <span className="text-[9px] font-black uppercase bg-red-50 text-red-400 border border-red-100 px-3 py-1.5 rounded-full">
-                          Cancelled
-                        </span>
+                        <Pill tone="rose">Cancelled</Pill>
                       ) : item.isCompleted ? (
-                        <span className="text-[9px] font-black uppercase bg-teal-50 text-teal-600 border border-teal-100 px-3 py-1.5 rounded-full">
-                          Completed
-                        </span>
+                        <Pill tone="brand">Completed</Pill>
                       ) : (
                         <>
                           <button
-                            onClick={async (e) => {
+                            type="button"
+                            onClick={(e) => {
                               e.stopPropagation();
-                              await cancelAppointment(item._id);
+                              setCancelFor(item);
                             }}
-                            className="p-2 bg-red-50 hover:bg-red-100 border border-red-100 rounded-xl active:scale-90 transition-all group"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-line bg-white text-[13px] font-bold text-ink-2 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200"
                           >
-                            <RiCloseCircleFill className="text-red-400 group-hover:text-red-600 size-5" />
+                            <RiCloseCircleLine size={15} /> Cancel
                           </button>
                           <button
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedApptId(item._id);
                               setShowModal(true);
                             }}
-                            className="p-2 bg-teal-50 hover:bg-teal-100 border border-teal-100 rounded-xl active:scale-90 transition-all group"
+                            className="btn btn-teal !py-1.5 !px-3 !text-[13px] !rounded-xl"
                           >
-                            <RiCheckboxCircleFill className="text-teal-500 group-hover:text-teal-700 size-5" />
+                            <RiCheckboxCircleLine size={15} /> Complete
                           </button>
                         </>
                       )}
@@ -273,22 +188,36 @@ const DoctorDashboard: React.FC = () => {
                 );
               })
             ) : (
-              <div className="py-16 text-center text-slate-400 font-medium text-sm">
-                No recent bookings.
-              </div>
+              <div className="py-14 text-center text-ink-3 text-[15px]">No recent bookings.</div>
             )}
           </div>
-
-          <div className="px-8 py-5 bg-slate-50/50 border-t border-slate-50">
-            <button
-              onClick={() => navigate("/doctor-appointments")}
-              className="text-[10px] font-black uppercase tracking-[2px] text-slate-400 hover:text-slate-900 transition-colors"
-            >
-              View full schedule →
-            </button>
-          </div>
-        </div>
+        </Panel>
       </div>
+
+      <ConfirmDialog
+        open={!!cancelFor}
+        title="Cancel this visit?"
+        body={
+          cancelFor
+            ? `${cancelFor.userData?.name}'s visit on ${slotDateFormat(cancelFor.slotDate)} at ${cancelFor.slotTime} is cancelled and they get the full fee back.`
+            : undefined
+        }
+        confirmLabel="Cancel visit"
+        cancelLabel="Keep it"
+        tone="rose"
+        busy={cancelling}
+        onCancel={() => setCancelFor(null)}
+        onConfirm={async () => {
+          if (!cancelFor) return;
+          setCancelling(true);
+          try {
+            await cancelAppointment(cancelFor._id);
+          } finally {
+            setCancelling(false);
+            setCancelFor(null);
+          }
+        }}
+      />
 
       <DoctorsDashboardModal
         showModal={showModal}

@@ -44,12 +44,12 @@ export default function ConfirmLogout({
         <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center">
           <RiLogoutCircleRLine size={24} />
         </div>
-        <p id="logout-title" className="text-xl font-black text-slate-900 mt-4">
+        <p id="logout-title" className="text-[20px] font-extrabold tracking-[-0.02em] text-ink mt-4">
           Log out{who ? ` of ${who}` : ""}?
         </p>
         <p className="text-sm text-slate-500 mt-1">You&apos;ll need your email and password to get back in.</p>
         <div className="flex flex-col-reverse sm:flex-row gap-2 mt-6">
-          <button ref={stay} onClick={onCancel} className="flex-1 px-4 py-3 rounded-xl bg-slate-100 text-slate-700 text-sm font-bold hover:bg-slate-200">
+          <button ref={stay} onClick={onCancel} className="flex-1 px-4 py-3 rounded-xl border border-line bg-white text-ink-2 text-[15px] font-bold hover:bg-canvas">
             Stay logged in
           </button>
           <button onClick={onConfirm} className="flex-1 px-4 py-3 rounded-xl bg-rose-600 text-white text-sm font-bold hover:bg-rose-700">

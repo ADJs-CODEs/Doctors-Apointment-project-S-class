@@ -1,8 +1,9 @@
 "use client";
 
-import { RiAddLine, RiKey2Line, RiTeamLine, RiUserForbidLine, RiUserFollowLine } from "@remixicon/react";
+import { RiAddLine, RiKey2Line, RiUserForbidLine, RiUserFollowLine } from "@remixicon/react";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { PageHeader, Pill, Skeleton } from "../../components/panel";
 import { type PharmacyStaff as Person, type StaffRole, usePharmacy } from "../../context/PharmacyContext";
 import { API_PATHS } from "../../utils/apiPath";
 import axiosInstance from "../../utils/axiosInstance";
@@ -13,7 +14,8 @@ const ROLE_INFO: Record<StaffRole, string> = {
   staff: "Products, stock, packing and deliveries",
 };
 
-const input = "w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-teal-400";
+const input = "field";
+const iconBtn = "p-2 rounded-xl border border-line bg-white text-ink-3 hover:bg-canvas disabled:opacity-40";
 
 /** The owner's view of everyone who works for the pharmacy. */
 export default function PharmacyStaff() {
@@ -82,33 +84,26 @@ export default function PharmacyStaff() {
   };
 
   return (
-    <div className="p-4 sm:p-6 md:p-10 bg-slate-50/50 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-8 animate-reveal">
       <div className="max-w-4xl mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2.5 bg-slate-900 rounded-xl text-teal-400">
-                <RiTeamLine size={20} />
-              </div>
-              <h1 className="text-xl sm:text-3xl font-black text-slate-900">
-                Staff
-              </h1>
-            </div>
-            <p className="text-slate-500 text-sm ml-12">Everyone who can log in for your pharmacy, and what they&apos;re allowed to do.</p>
-          </div>
-          {!adding && (
-            <button
-              onClick={() => setAdding(true)}
-              className="self-start sm:self-auto flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-bold hover:bg-teal-700"
-            >
-              <RiAddLine size={16} /> Add someone
-            </button>
-          )}
+        <div className="mb-8">
+          <PageHeader
+            eyebrow="Your pharmacy"
+            title="Staff"
+            subtitle="Everyone who can log in for your pharmacy, and what they're allowed to do."
+            action={
+              !adding && (
+                <button onClick={() => setAdding(true)} className="btn btn-teal !rounded-xl">
+                  <RiAddLine size={16} /> Add someone
+                </button>
+              )
+            }
+          />
         </div>
 
         {adding && (
-          <form onSubmit={add} className="bg-white rounded-[28px] border border-slate-200 p-5 sm:p-6 mb-6 space-y-3">
-            <p className="font-black text-slate-900">Add someone</p>
+          <form onSubmit={add} className="surface rounded-[22px] p-5 sm:p-6 mb-6 space-y-3">
+            <p className="text-[16px] font-bold text-ink">Add someone</p>
             <div className="grid sm:grid-cols-2 gap-3">
               <input required placeholder="Full name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={input} />
               <input required type="email" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={input} />
@@ -117,23 +112,23 @@ export default function PharmacyStaff() {
               {(Object.keys(ROLE_INFO) as StaffRole[]).map((r) => (
                 <label
                   key={r}
-                  className={`rounded-2xl border p-3 cursor-pointer ${form.role === r ? "border-teal-500 bg-teal-50/60" : "border-slate-200 hover:bg-slate-50"}`}
+                  className={`rounded-2xl border-[1.5px] p-3 cursor-pointer ${form.role === r ? "border-brand bg-brand-soft/60" : "border-line hover:bg-canvas"}`}
                 >
                   <input type="radio" name="role" className="sr-only" checked={form.role === r} onChange={() => setForm({ ...form, role: r })} />
-                  <p className="text-sm font-black text-slate-900 capitalize">{r}</p>
-                  <p className="text-[11px] text-slate-500 leading-snug mt-0.5">{ROLE_INFO[r]}</p>
+                  <p className="text-[15px] font-bold text-ink capitalize">{r}</p>
+                  <p className="text-[12px] text-ink-3 leading-snug mt-0.5">{ROLE_INFO[r]}</p>
                 </label>
               ))}
             </div>
             {form.role === "pharmacist" && (
               <input required placeholder="Pharmacist licence number" value={form.pharmacistLicense} onChange={(e) => setForm({ ...form, pharmacistLicense: e.target.value })} className={input} />
             )}
-            <p className="text-[12px] text-slate-500">We&apos;ll email them a starting password; they change it the first time they log in.</p>
+            <p className="text-[13px] text-ink-3">We&apos;ll email them a starting password; they change it the first time they log in.</p>
             <div className="flex gap-2">
-              <button type="submit" disabled={busy === "add"} className="px-4 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-bold disabled:opacity-50">
+              <button type="submit" disabled={busy === "add"} className="btn btn-teal !py-2.5 !px-4 !text-[14px] !rounded-xl disabled:opacity-50">
                 {busy === "add" ? "Adding…" : "Add and email login"}
               </button>
-              <button type="button" onClick={() => setAdding(false)} className="px-4 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100">
+              <button type="button" onClick={() => setAdding(false)} className="px-4 py-2.5 rounded-xl text-[14px] font-bold text-ink-3 hover:bg-canvas">
                 Cancel
               </button>
             </div>
@@ -141,7 +136,7 @@ export default function PharmacyStaff() {
         )}
 
         {people === null ? (
-          <div className="h-48 rounded-[28px] bg-slate-200/60 animate-pulse" />
+          <Skeleton className="h-48" />
         ) : (
           <ul className="space-y-3">
             {people.map((p) => {
@@ -149,14 +144,14 @@ export default function PharmacyStaff() {
               return (
                 <li
                   key={p._id}
-                  className={`bg-white rounded-[24px] border p-4 sm:p-5 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 ${p.active ? "border-slate-200" : "border-slate-100 opacity-60"}`}
+                  className={`surface rounded-[20px] p-4 sm:p-5 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 ${p.active ? "" : "opacity-60"}`}
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="font-black text-slate-900">
-                      {p.name} {isMe && <span className="text-[11px] font-bold text-slate-400">(you)</span>}
-                      {!p.active && <span className="ml-2 text-[10px] font-black uppercase text-slate-400">Deactivated</span>}
+                    <p className="text-[16px] font-bold text-ink flex flex-wrap items-center gap-2">
+                      {p.name} {isMe && <span className="text-[13px] font-semibold text-ink-3">(you)</span>}
+                      {!p.active && <Pill>Deactivated</Pill>}
                     </p>
-                    <p className="text-[12px] text-slate-500 [overflow-wrap:anywhere]">
+                    <p className="text-[13px] text-ink-3 [overflow-wrap:anywhere]">
                       {p.email}
                       {p.pharmacistLicense ? ` · Licence ${p.pharmacistLicense}` : ""}
                       {p.mustChangePassword ? " · hasn't logged in yet" : ""}
@@ -168,7 +163,7 @@ export default function PharmacyStaff() {
                       disabled={isMe || busy === p._id}
                       onChange={(e) => changeRole(p, e.target.value as StaffRole)}
                       aria-label={`${p.name}'s role`}
-                      className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold capitalize bg-white disabled:opacity-60"
+                      className="rounded-xl border-[1.5px] border-line px-3 py-2 text-[14px] font-bold text-ink capitalize bg-white disabled:opacity-60"
                     >
                       {(Object.keys(ROLE_INFO) as StaffRole[]).map((r) => (
                         <option key={r} value={r}>
@@ -182,7 +177,8 @@ export default function PharmacyStaff() {
                           onClick={() => run(p._id, axiosInstance.post(API_PATHS.PHARMACY.STAFF_RESET(p._id)))}
                           disabled={busy === p._id || !p.active}
                           title="Email a new starting password"
-                          className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40"
+                          aria-label={`Email ${p.name} a new starting password`}
+                          className={iconBtn}
                         >
                           <RiKey2Line size={17} />
                         </button>
@@ -190,7 +186,8 @@ export default function PharmacyStaff() {
                           onClick={() => run(p._id, axiosInstance.patch(API_PATHS.PHARMACY.STAFF_ONE(p._id), { active: !p.active }))}
                           disabled={busy === p._id}
                           title={p.active ? "Deactivate (they can't log in)" : "Reactivate"}
-                          className={`p-2 rounded-xl border ${p.active ? "border-slate-200 text-slate-500 hover:bg-rose-50 hover:text-rose-600" : "border-teal-200 text-teal-600 hover:bg-teal-50"}`}
+                          aria-label={p.active ? `Deactivate ${p.name}` : `Reactivate ${p.name}`}
+                          className={`p-2 rounded-xl border bg-white ${p.active ? "border-line text-ink-3 hover:bg-rose-50 hover:text-rose-600" : "border-teal-200 text-brand-ink hover:bg-brand-soft"}`}
                         >
                           {p.active ? <RiUserForbidLine size={17} /> : <RiUserFollowLine size={17} />}
                         </button>
@@ -198,8 +195,8 @@ export default function PharmacyStaff() {
                     )}
                   </div>
                   {licenceFor?.id === p._id && (
-                    <form onSubmit={saveLicence} className="sm:basis-full flex flex-wrap items-center gap-2 rounded-2xl bg-teal-50/60 border border-teal-100 p-3">
-                      <p className="text-[12px] font-bold text-teal-900 w-full">
+                    <form onSubmit={saveLicence} className="sm:basis-full flex flex-wrap items-center gap-2 rounded-2xl bg-brand-soft/60 border border-teal-100 p-3">
+                      <p className="text-[13px] font-bold text-brand-ink w-full">
                         To make {p.name.split(" ")[0]} a pharmacist, enter their licence number:
                       </p>
                       <input
@@ -208,12 +205,12 @@ export default function PharmacyStaff() {
                         value={licenceFor.value}
                         onChange={(e) => setLicenceFor({ ...licenceFor, value: e.target.value })}
                         placeholder="Pharmacist licence number"
-                        className="flex-1 min-w-48 rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-teal-400 bg-white"
+                        className="field !w-auto flex-1 min-w-48"
                       />
-                      <button type="submit" disabled={busy === p._id} className="px-4 py-2 rounded-xl bg-teal-600 text-white text-sm font-bold disabled:opacity-50">
+                      <button type="submit" disabled={busy === p._id} className="btn btn-teal !py-2.5 !px-4 !text-[14px] !rounded-xl disabled:opacity-50">
                         Save
                       </button>
-                      <button type="button" onClick={() => setLicenceFor(null)} className="px-3 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-white">
+                      <button type="button" onClick={() => setLicenceFor(null)} className="px-3 py-2 rounded-xl text-[14px] font-bold text-ink-3 hover:bg-white">
                         Cancel
                       </button>
                     </form>

@@ -1,8 +1,9 @@
 "use client";
 
-import { RiBankLine, RiCheckboxCircleLine, RiMoneyDollarCircleLine, RiTimeLine } from "@remixicon/react";
+import { RiBankLine, RiCheckboxCircleLine, RiTimeLine, RiWallet3Line } from "@remixicon/react";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { PageHeader, Pill, Skeleton } from "../../components/panel";
 import { API_PATHS } from "../../utils/apiPath";
 import axiosInstance from "../../utils/axiosInstance";
 
@@ -33,14 +34,14 @@ type Earnings = {
 
 const money = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 const when = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-const STATUS: Record<Payout["status"], { label: string; tone: string }> = {
-  pending: { label: "Waiting for the clinic", tone: "bg-orange-50 text-orange-700" },
-  processing: { label: "Being sent", tone: "bg-sky-50 text-sky-700" },
-  paid: { label: "Paid", tone: "bg-teal-50 text-teal-700" },
-  rejected: { label: "Not approved", tone: "bg-slate-100 text-slate-500" },
-  failed: { label: "Transfer failed", tone: "bg-red-50 text-red-700" },
+const STATUS: Record<Payout["status"], { label: string; tone: "amber" | "violet" | "brand" | "neutral" | "rose" }> = {
+  pending: { label: "Waiting for the clinic", tone: "amber" },
+  processing: { label: "Being sent", tone: "violet" },
+  paid: { label: "Paid", tone: "brand" },
+  rejected: { label: "Not approved", tone: "neutral" },
+  failed: { label: "Transfer failed", tone: "rose" },
 };
-const input = "w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-teal-400";
+const input = "field";
 
 /** The owner's money page: what the pharmacy has earned, and withdrawing it. */
 export default function PharmacyEarnings() {
@@ -83,8 +84,9 @@ export default function PharmacyEarnings() {
 
   if (!data) {
     return (
-      <div className="p-6 md:p-10">
-        <div className="h-48 rounded-[28px] bg-slate-200/60 animate-pulse max-w-4xl mx-auto" />
+      <div className="p-4 sm:p-6 lg:p-8 space-y-5 max-w-4xl mx-auto">
+        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-56" />
       </div>
     );
   }
@@ -93,40 +95,34 @@ export default function PharmacyEarnings() {
   const canWithdraw = !open && !!data.bank && data.availableCents >= data.minPayoutCents;
 
   return (
-    <div className="p-4 sm:p-6 md:p-10 bg-slate-50/50 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-8 animate-reveal">
       <div className="max-w-4xl mx-auto space-y-6">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2.5 bg-slate-900 rounded-xl text-teal-400">
-              <RiMoneyDollarCircleLine size={20} />
-            </div>
-            <h1 className="text-xl sm:text-3xl font-black text-slate-900">
-              Earnings
-            </h1>
-          </div>
-          <p className="text-slate-500 text-sm ml-12">
-            Delivered orders minus the clinic&apos;s commission. Money becomes available {data.holdHours} hours after delivery.
-          </p>
-        </div>
+        <PageHeader
+          eyebrow="Your pharmacy"
+          title="Earnings"
+          subtitle={<>Delivered orders minus the clinic&apos;s commission. Money becomes available {data.holdHours} hours after delivery.</>}
+        />
 
-        <section className="bg-slate-900 text-white rounded-[28px] p-6 sm:p-8">
-          <p className="text-[11px] font-black uppercase tracking-[2px] text-teal-300">Available to withdraw</p>
-          <p className="text-5xl font-black mt-2 tabular-nums">{money(data.availableCents)}</p>
-          <div className="grid grid-cols-3 gap-3 mt-5 text-sm">
+        <section className="btn-ink rounded-[24px] p-6 sm:p-8">
+          <p className="text-[14px] font-bold text-[#8FE3E1] flex items-center gap-2">
+            <RiWallet3Line size={17} /> Available to withdraw
+          </p>
+          <p className="num text-[48px] leading-none mt-3">{money(data.availableCents)}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6 text-[14px]">
             {[
-              ["Waiting (last 24h)", data.waitingCents],
+              [`Waiting (last ${data.holdHours}h)`, data.waitingCents],
               ["Being withdrawn", data.inWithdrawalCents],
               ["Paid out so far", data.paidOutCents],
             ].map(([label, cents]) => (
-              <div key={label as string} className="rounded-2xl bg-white/5 px-3 py-2.5">
-                <p className="text-[11px] text-slate-400">{label}</p>
-                <p className="font-black tabular-nums">{money(cents as number)}</p>
+              <div key={label as string} className="rounded-2xl bg-white/[.06] border border-white/10 px-3 py-2.5">
+                <p className="text-[13px] text-white/60">{label}</p>
+                <p className="num mt-0.5">{money(cents as number)}</p>
               </div>
             ))}
           </div>
 
           {open ? (
-            <p className="mt-5 flex items-center gap-2 text-sm font-bold text-sky-200 bg-white/5 rounded-2xl px-4 py-3">
+            <p className="mt-5 flex items-center gap-2 text-[14px] font-bold text-white/85 bg-white/[.06] border border-white/10 rounded-2xl px-4 py-3">
               <RiTimeLine size={18} /> {money(open.cents)} withdrawal {open.status === "processing" ? "is being sent" : "is waiting for the clinic"}
             </p>
           ) : (
@@ -140,38 +136,41 @@ export default function PharmacyEarnings() {
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder={`All of it (${money(data.availableCents)})`}
                 disabled={!canWithdraw}
-                className="flex-1 rounded-2xl bg-white/10 border border-white/10 px-4 py-3 text-white placeholder:text-slate-400 outline-none focus:border-teal-400 disabled:opacity-40"
+                className="num flex-1 rounded-xl bg-white/10 border border-white/15 px-4 py-3 text-white placeholder:text-white/45 outline-none focus:border-[#8FE3E1] disabled:opacity-40"
               />
-              <button type="submit" disabled={!canWithdraw || busy} className="px-6 py-3 rounded-2xl bg-teal-500 text-slate-900 font-black hover:bg-teal-400 disabled:opacity-40">
+              <button type="submit" disabled={!canWithdraw || busy} className="btn btn-teal !rounded-xl !px-6 disabled:opacity-40">
                 {busy ? "Requesting…" : "Withdraw"}
               </button>
             </form>
           )}
           {!open && !canWithdraw && (
-            <p className="text-[12px] text-slate-400 mt-2">
+            <p className="text-[13px] text-white/55 mt-2">
               {!data.bank ? "Add your bank account below first." : `You can withdraw from ${money(data.minPayoutCents)}.`}
             </p>
           )}
         </section>
 
-        <section className="bg-white rounded-[28px] border border-slate-200 p-5 sm:p-6">
+        <section className="surface rounded-[22px] p-5 sm:p-6">
           <div className="flex items-center justify-between gap-3">
-            <p className="font-black text-slate-900 flex items-center gap-2">
-              <RiBankLine size={18} className="text-teal-600" /> Bank account
+            <p className="text-[16px] font-bold text-ink flex items-center gap-2.5">
+              <span className="w-8 h-8 rounded-[10px] grid place-items-center border border-teal-100 bg-brand-soft text-brand-ink">
+                <RiBankLine size={17} />
+              </span>
+              Bank account
             </p>
             {data.bank && !editingBank && (
-              <button onClick={() => setEditingBank(true)} className="text-[12px] font-bold text-teal-700 hover:underline">
+              <button onClick={() => setEditingBank(true)} className="text-[13px] font-bold text-brand-ink hover:underline">
                 Change
               </button>
             )}
           </div>
           {data.bank && !editingBank ? (
-            <div className="mt-3 text-sm">
-              <p className="font-bold text-slate-900">{data.bank.accountName}</p>
-              <p className="text-slate-500">
-                {data.bank.bankName} · {data.bank.accountNumber}
+            <div className="mt-3 text-[14px]">
+              <p className="font-bold text-ink">{data.bank.accountName}</p>
+              <p className="text-ink-2">
+                {data.bank.bankName} · <span className="num">{data.bank.accountNumber}</span>
               </p>
-              <p className={`mt-1 text-[12px] flex items-center gap-1 ${data.bank.verified ? "text-teal-700" : "text-slate-400"}`}>
+              <p className={`mt-1 text-[13px] flex items-center gap-1 ${data.bank.verified ? "text-brand-ink" : "text-ink-3"}`}>
                 {data.bank.verified ? (
                   <>
                     <RiCheckboxCircleLine size={14} /> Confirmed by the bank: withdrawals can be sent automatically
@@ -192,17 +191,17 @@ export default function PharmacyEarnings() {
           )}
         </section>
 
-        <section className="bg-white rounded-[28px] border border-slate-200 p-5 sm:p-6">
-          <p className="font-black text-slate-900 mb-3">Withdrawals</p>
+        <section className="surface rounded-[22px] p-5 sm:p-6">
+          <p className="text-[16px] font-bold text-ink mb-3">Withdrawals</p>
           {data.payouts.length === 0 ? (
-            <p className="text-sm text-slate-400">None yet.</p>
+            <p className="text-[14px] text-ink-3">None yet.</p>
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-line">
               {data.payouts.map((p) => (
                 <li key={p._id} className="py-3 flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <p className="font-black text-slate-900 tabular-nums">{money(p.cents)}</p>
-                    <p className="text-[12px] text-slate-500">
+                    <p className="num text-[16px] text-ink">{money(p.cents)}</p>
+                    <p className="text-[13px] text-ink-3">
                       {when(p.createdAt)}
                       {p.requestedBy ? ` · by ${p.requestedBy}` : ""}
                       {p.status === "paid" && p.reference ? ` · ref ${p.reference}` : ""}
@@ -210,41 +209,41 @@ export default function PharmacyEarnings() {
                       {p.status === "rejected" && p.adminNote ? ` · ${p.adminNote}` : ""}
                     </p>
                   </div>
-                  <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${STATUS[p.status].tone}`}>{STATUS[p.status].label}</span>
+                  <Pill tone={STATUS[p.status].tone}>{STATUS[p.status].label}</Pill>
                 </li>
               ))}
             </ul>
           )}
         </section>
 
-        <section className="bg-white rounded-[28px] border border-slate-200 p-5 sm:p-6">
-          <p className="font-black text-slate-900 mb-3">Delivered orders</p>
+        <section className="surface rounded-[22px] p-5 sm:p-6">
+          <p className="text-[16px] font-bold text-ink mb-3">Delivered orders</p>
           {data.orders.length === 0 ? (
-            <p className="text-sm text-slate-400">Your earnings appear here once orders are delivered.</p>
+            <p className="text-[14px] text-ink-3">Your earnings appear here once orders are delivered.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="text-[10px] uppercase tracking-wider text-slate-400">
+              <table className="w-full text-[14px]">
+                <thead className="text-[13px] text-ink-3">
                   <tr>
-                    <th className="text-left font-bold py-2">Delivered</th>
-                    <th className="text-left font-bold py-2">Patient</th>
-                    <th className="text-right font-bold py-2">Order</th>
-                    <th className="text-right font-bold py-2 hidden sm:table-cell">Commission</th>
-                    <th className="text-right font-bold py-2">You earn</th>
+                    <th className="text-left font-semibold py-2">Delivered</th>
+                    <th className="text-left font-semibold py-2">Patient</th>
+                    <th className="text-right font-semibold py-2">Order</th>
+                    <th className="text-right font-semibold py-2 hidden sm:table-cell">Commission</th>
+                    <th className="text-right font-semibold py-2">You earn</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.orders.map((o) => (
-                    <tr key={o._id} className="border-t border-slate-100">
-                      <td className="py-2.5 text-slate-600">{when(o.deliveredAt)}</td>
-                      <td className="py-2.5 text-slate-800">{o.patientName}</td>
-                      <td className="py-2.5 text-right tabular-nums text-slate-600">{money(o.totalCents)}</td>
-                      <td className="py-2.5 text-right tabular-nums text-slate-500 hidden sm:table-cell">
+                    <tr key={o._id} className="border-t border-line">
+                      <td className="py-2.5 text-ink-2">{when(o.deliveredAt)}</td>
+                      <td className="py-2.5 text-ink">{o.patientName}</td>
+                      <td className="py-2.5 text-right num text-ink-2">{money(o.totalCents)}</td>
+                      <td className="py-2.5 text-right num text-ink-3 hidden sm:table-cell">
                         {o.commissionCents ? `−${money(o.commissionCents)} (${o.commissionPercent}%)` : "None"}
                       </td>
-                      <td className="py-2.5 text-right tabular-nums font-black text-slate-900">
+                      <td className="py-2.5 text-right num text-ink">
                         {money(o.earningCents)}
-                        {!o.ready && <span className="block text-[10px] font-bold text-slate-400">available soon</span>}
+                        {!o.ready && <span className="block text-[11px] font-sans font-semibold text-ink-3">available soon</span>}
                       </td>
                     </tr>
                   ))}
@@ -300,13 +299,13 @@ export function BankForm({
     }
   };
 
-  if (!options) return <div className="h-24 mt-3 rounded-2xl bg-slate-100 animate-pulse" />;
+  if (!options) return <Skeleton className="h-24 mt-3 !rounded-2xl" />;
 
   return (
     <form onSubmit={save} className="mt-3 space-y-3">
       {options.paystack ? (
         <>
-          <select required value={form.bankCode} onChange={(e) => setForm({ ...form, bankCode: e.target.value })} className={`${input} bg-white`}>
+          <select required value={form.bankCode} onChange={(e) => setForm({ ...form, bankCode: e.target.value })} className={input}>
             <option value="">Choose the bank</option>
             {options.banks.map((b) => (
               <option key={`${b.code}-${b.name}`} value={b.code}>
@@ -321,23 +320,23 @@ export function BankForm({
             placeholder="10-digit account number"
             value={form.accountNumber}
             onChange={(e) => setForm({ ...form, accountNumber: e.target.value.replace(/\D/g, "") })}
-            className={input}
+            className={`${input} num`}
           />
-          <p className="text-[12px] text-slate-500">We check the account with the bank and save the name it gives us.</p>
+          <p className="text-[13px] text-ink-3">We check the account with the bank and save the name it gives us.</p>
         </>
       ) : (
         <>
           <input required placeholder="Bank name" value={form.bankName} onChange={(e) => setForm({ ...form, bankName: e.target.value })} className={input} />
           <input required placeholder="Account name" value={form.accountName} onChange={(e) => setForm({ ...form, accountName: e.target.value })} className={input} />
-          <input required placeholder="Account number" value={form.accountNumber} onChange={(e) => setForm({ ...form, accountNumber: e.target.value })} className={input} />
+          <input required placeholder="Account number" value={form.accountNumber} onChange={(e) => setForm({ ...form, accountNumber: e.target.value })} className={`${input} num`} />
         </>
       )}
       <div className="flex gap-2">
-        <button type="submit" disabled={saving} className="px-4 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-bold disabled:opacity-50">
+        <button type="submit" disabled={saving} className="btn btn-teal !py-2.5 !px-4 !text-[14px] !rounded-xl disabled:opacity-50">
           {saving ? "Checking…" : "Save account"}
         </button>
         {onCancel && (
-          <button type="button" onClick={onCancel} className="px-4 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100">
+          <button type="button" onClick={onCancel} className="px-4 py-2.5 rounded-xl text-[14px] font-bold text-ink-3 hover:bg-canvas">
             Cancel
           </button>
         )}

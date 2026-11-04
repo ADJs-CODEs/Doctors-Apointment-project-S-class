@@ -1,6 +1,6 @@
 "use client";
 
-import { RiAddLine, RiCalendarCloseLine, RiDeleteBinLine, RiFileCopyLine, RiHospitalLine, RiTimeLine, RiVideoOnLine } from "@remixicon/react";
+import { RiAddLine, RiCalendarCloseLine, RiCloseLine, RiDeleteBinLine, RiFileCopyLine, RiHospitalLine, RiTimeLine, RiVideoOnLine } from "@remixicon/react";
 import { useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AppContext } from "../../context/AppContext";
@@ -47,7 +47,7 @@ export default function DoctorSchedule() {
       .catch(() => toast.error("Couldn't load your hours"));
   }, []);
 
-  if (!availability) return <div className="h-64 rounded-[32px] bg-slate-100 animate-pulse mt-8" />;
+  if (!availability) return <div className="h-64 rounded-[22px] bg-line/70 animate-pulse mt-8" />;
 
   const offersVideo = availability.weekly.some((r) => r.kinds.includes("video"));
 
@@ -74,28 +74,24 @@ export default function DoctorSchedule() {
   };
 
   return (
-    <div className="mt-8 bg-white p-6 sm:p-8 rounded-[32px] border border-slate-100 shadow-sm">
+    <div className="mt-8 surface p-5 sm:p-7 rounded-[22px]">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
         <div>
-          <h2 className="text-xl font-black text-slate-900">My hours &amp; fees</h2>
-          <p className="text-sm text-slate-500">Patients can only book (and pay for) times inside these hours.</p>
+          <h2 className="text-[20px] font-extrabold tracking-[-0.02em] text-ink">My hours &amp; fees</h2>
+          <p className="text-[14px] text-ink-2">Patients can only book (and pay for) times inside these hours.</p>
           {isDefault && (
-            <p className="text-[12px] text-amber-700 bg-amber-50 rounded-xl px-3 py-1.5 mt-2 inline-block">
+            <p className="text-[13px] text-amber-800 bg-amber-50 border border-amber-100 rounded-xl px-3 py-1.5 mt-2 inline-block">
               You haven&apos;t set your hours yet. These are the defaults (10am–9pm daily, clinic only).
             </p>
           )}
         </div>
-        <button
-          onClick={save}
-          disabled={saving}
-          className="px-6 py-3 rounded-2xl bg-teal-600 text-white text-sm font-bold hover:bg-teal-700 disabled:opacity-60"
-        >
+        <button onClick={save} disabled={saving} className="btn btn-teal !rounded-xl !px-6 disabled:opacity-60">
           {saving ? "Saving…" : "Save hours"}
         </button>
       </div>
 
       <HoursEditor availability={availability} onChange={setAvailability} videoFees={videoFees} onVideoFees={setVideoFees} currency={currency} />
-      <p className="text-[12px] text-slate-400 mt-4">
+      <p className="text-[13px] text-ink-3 mt-4">
         Changing hours doesn&apos;t affect appointments already booked. Times are the clinic&apos;s local time.
       </p>
     </div>
@@ -131,18 +127,18 @@ export function HoursEditor({
       return a;
     });
 
-  const input = "rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-sm outline-none focus:border-teal-400";
+  const input = "num rounded-xl border-[1.5px] border-line bg-white px-2.5 py-2 text-[14px] text-ink outline-none focus:border-brand";
 
   return (
     <div>
       {/* fees + length */}
       <div className="grid sm:grid-cols-2 gap-4 mb-6">
-        <label className="rounded-2xl bg-violet-50/60 border border-violet-100 p-4">
-          <span className="flex items-center gap-1.5 text-[12px] font-black text-violet-800">
+        <label className="rounded-2xl bg-video-soft border border-violet-100 p-4">
+          <span className="flex items-center gap-1.5 text-[14px] font-bold text-video">
             <RiVideoOnLine size={15} /> Video call fee
           </span>
           <span className="flex items-center gap-2 mt-2">
-            <span className="font-black text-slate-700">{currency}</span>
+            <span className="num text-ink-2">{currency}</span>
             <input
               type="number"
               min={0}
@@ -152,10 +148,10 @@ export function HoursEditor({
               className={`${input} w-32`}
             />
           </span>
-          <span className="block text-[11px] text-slate-500 mt-1">Leave empty if you don&apos;t do video calls.</span>
+          <span className="block text-[12px] text-ink-3 mt-1">Leave empty if you don&apos;t do video calls.</span>
         </label>
-        <label className="rounded-2xl bg-slate-50 border border-slate-100 p-4">
-          <span className="flex items-center gap-1.5 text-[12px] font-black text-slate-700">
+        <label className="rounded-2xl bg-canvas border border-line p-4">
+          <span className="flex items-center gap-1.5 text-[14px] font-bold text-ink">
             <RiTimeLine size={15} /> Each appointment lasts
           </span>
           <select
@@ -174,28 +170,28 @@ export function HoursEditor({
 
       {/* weekly hours */}
       <div className="flex items-center justify-between mb-2">
-        <p className="text-[11px] font-black uppercase tracking-[2px] text-slate-400">Weekly hours</p>
-        <button type="button" onClick={copyMondayToWeekdays} className="flex items-center gap-1 text-[12px] font-bold text-teal-600 hover:text-teal-700">
+        <p className="text-[16px] font-bold text-ink">Weekly hours</p>
+        <button type="button" onClick={copyMondayToWeekdays} className="flex items-center gap-1 text-[13px] font-bold text-brand-ink hover:underline">
           <RiFileCopyLine size={14} /> Copy Monday to all weekdays
         </button>
       </div>
-      <div className="divide-y divide-slate-100 rounded-2xl border border-slate-100">
+      <div className="divide-y divide-line rounded-2xl border border-line bg-white">
         {ORDER.map((day) => {
           const ranges = rangesFor(day);
           return (
             <div key={day} className="flex flex-col sm:flex-row gap-3 p-3 sm:p-4">
-              <p className={`w-28 shrink-0 text-sm font-black ${ranges.length ? "text-slate-900" : "text-slate-300"}`}>{DAYS[day]}</p>
+              <p className={`w-28 shrink-0 text-[15px] font-bold ${ranges.length ? "text-ink" : "text-ink-3/60"}`}>{DAYS[day]}</p>
               <div className="flex-1 space-y-2">
-                {ranges.length === 0 && <p className="text-sm text-slate-400">Not working</p>}
+                {ranges.length === 0 && <p className="text-[14px] text-ink-3">Not working</p>}
                 {ranges.map(({ r, i }) => (
                   <div key={i} className="flex flex-wrap items-center gap-2">
                     <input type="time" value={r.start} onChange={(e) => set((a) => ((a.weekly[i].start = e.target.value), a))} className={input} />
-                    <span className="text-slate-400 text-sm">to</span>
+                    <span className="text-ink-3 text-[14px]">to</span>
                     <input type="time" value={r.end} onChange={(e) => set((a) => ((a.weekly[i].end = e.target.value), a))} className={input} />
                     {(
                       [
-                        { kind: "in-person" as const, label: "Clinic", icon: RiHospitalLine, on: "bg-teal-600 text-white border-teal-600" },
-                        { kind: "video" as const, label: "Video", icon: RiVideoOnLine, on: "bg-violet-600 text-white border-violet-600" },
+                        { kind: "in-person" as const, label: "Clinic", icon: RiHospitalLine, on: "bg-brand-ink text-white border-brand-ink" },
+                        { kind: "video" as const, label: "Video", icon: RiVideoOnLine, on: "bg-video text-white border-video" },
                       ]
                     ).map(({ kind, label, icon: Icon, on }) => {
                       const active = r.kinds.includes(kind);
@@ -210,23 +206,23 @@ export function HoursEditor({
                               return a;
                             })
                           }
-                          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold border ${active ? on : "bg-white text-slate-400 border-slate-200"}`}
+                          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[12px] font-bold border ${active ? on : "bg-white text-ink-3 border-line"}`}
                         >
                           <Icon size={13} /> {label}
                         </button>
                       );
                     })}
-                    <button type="button" onClick={() => set((a) => (a.weekly.splice(i, 1), a))} className="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50" aria-label="Remove these hours">
+                    <button type="button" onClick={() => set((a) => (a.weekly.splice(i, 1), a))} className="p-1.5 rounded-lg text-ink-3 hover:text-rose-600 hover:bg-rose-50" aria-label="Remove these hours">
                       <RiDeleteBinLine size={16} />
                     </button>
-                    {r.start >= r.end && <span className="text-[11px] font-bold text-red-500">End must be after start</span>}
-                    {r.kinds.length === 0 && <span className="text-[11px] font-bold text-red-500">Pick clinic and/or video</span>}
+                    {r.start >= r.end && <span className="text-[12px] font-bold text-rose-600">End must be after start</span>}
+                    {r.kinds.length === 0 && <span className="text-[12px] font-bold text-rose-600">Pick clinic and/or video</span>}
                   </div>
                 ))}
                 <button
                   type="button"
                   onClick={() => set((a) => (a.weekly.push({ day, start: "09:00", end: "17:00", kinds: ["in-person"] }), a))}
-                  className="flex items-center gap-1 text-[12px] font-bold text-slate-500 hover:text-teal-600"
+                  className="flex items-center gap-1 text-[13px] font-bold text-ink-3 hover:text-brand-ink"
                 >
                   <RiAddLine size={15} /> Add hours
                 </button>
@@ -237,7 +233,7 @@ export function HoursEditor({
       </div>
 
       {/* days off */}
-      <p className="text-[11px] font-black uppercase tracking-[2px] text-slate-400 mt-6 mb-2">Days off</p>
+      <p className="text-[16px] font-bold text-ink mt-6 mb-2">Days off</p>
       <div className="flex flex-wrap items-center gap-2">
         <input type="date" value={dayOff} min={new Date().toISOString().slice(0, 10)} onChange={(e) => setDayOff(e.target.value)} className={input} />
         <button
@@ -247,17 +243,17 @@ export function HoursEditor({
             set((a) => ((a.daysOff = [...new Set([...a.daysOff, dayOff])].sort()), a));
             setDayOff("");
           }}
-          className="flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-900 text-white text-[12px] font-bold hover:bg-slate-700"
+          className="btn btn-ink !py-2 !px-3 !text-[13px] !rounded-xl"
         >
           <RiCalendarCloseLine size={14} /> Add day off
         </button>
         {availability.daysOff
           .filter((d) => d >= new Date().toISOString().slice(0, 10))
           .map((d) => (
-            <span key={d} className="flex items-center gap-1 pl-3 pr-1 py-1 rounded-full bg-slate-100 text-[12px] font-bold text-slate-600">
+            <span key={d} className="flex items-center gap-1 pl-3 pr-1 py-1 rounded-full bg-canvas border border-line text-[13px] font-semibold text-ink-2">
               {new Date(`${d}T12:00:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
-              <button type="button" onClick={() => set((a) => ((a.daysOff = a.daysOff.filter((x) => x !== d)), a))} className="p-0.5 rounded-full hover:bg-slate-200" aria-label="Remove day off">
-                ✕
+              <button type="button" onClick={() => set((a) => ((a.daysOff = a.daysOff.filter((x) => x !== d)), a))} className="p-0.5 rounded-full text-ink-3 hover:bg-line" aria-label="Remove day off">
+                <RiCloseLine size={14} />
               </button>
             </span>
           ))}

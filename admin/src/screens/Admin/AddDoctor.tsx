@@ -8,11 +8,11 @@ import {
   RiLockPasswordLine,
   RiMapPin2Line,
   RiStethoscopeLine,
-  RiUserAddLine,
 } from "@remixicon/react";
 import React, { type FormEvent, useContext, useState } from "react";
 import { toast } from "sonner";
 import { Link } from "@/lib/navigation";
+import { PageHeader } from "../../components/panel";
 import { AppContext } from "../../context/AppContext";
 import type { AppContextType } from "../../types/index";
 import { API_PATHS } from "../../utils/apiPath";
@@ -23,8 +23,8 @@ import { type Availability, HoursEditor, STARTING_HOURS } from "../Doctor/Doctor
 const SPECIALITIES = ["General physician", "Gynecologist", "Dermatologist", "Pediatricians", "Neurologist", "Gastroenterologist"];
 const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
-const field = "w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all";
-const label = "block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5";
+const field = "field";
+const label = "block caption mb-1.5";
 
 const EMPTY = { name: "", email: "", password: "", speciality: SPECIALITIES[0], degree: "", years: "1", fee: "", about: "", line1: "", line2: "" };
 
@@ -95,19 +95,13 @@ const AddDoctor: React.FC = () => {
   };
 
   return (
-    <div className="p-4 sm:p-6 md:p-10 bg-slate-50/50 min-h-screen animate-reveal">
+    <div className="p-4 sm:p-6 lg:p-8 animate-reveal">
       <div className="max-w-5xl mx-auto space-y-6">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <div className="p-2.5 bg-slate-900 rounded-xl text-teal-400">
-              <RiUserAddLine size={20} />
-            </div>
-            <h1 className="text-xl sm:text-3xl font-black text-slate-900">
-              Add a doctor
-            </h1>
-          </div>
-          <p className="text-slate-500 text-sm ml-12">Their profile, fees and hours. They get their login by email and choose their own password at first sign-in.</p>
-        </div>
+        <PageHeader
+          eyebrow="The clinic"
+          title="Add a doctor"
+          subtitle="Their profile, fees and hours. They get their login by email and choose their own password at first sign-in."
+        />
 
         {added && <Added login={added} onClose={() => setAdded(null)} />}
 
@@ -117,34 +111,34 @@ const AddDoctor: React.FC = () => {
             <div className="space-y-6">
               <Card title="Photo" icon={<RiImageAddLine size={18} />} hint="JPG, PNG or WebP, up to 3 MB. Patients see it on the doctor list.">
                 <label className="block cursor-pointer group">
-                  <div className="aspect-square rounded-3xl bg-slate-50 border-2 border-dashed border-slate-200 group-hover:border-teal-400 overflow-hidden flex items-center justify-center">
+                  <div className="aspect-square rounded-[20px] bg-canvas border-2 border-dashed border-line group-hover:border-brand overflow-hidden flex items-center justify-center">
                     {photo ? (
                       <img src={URL.createObjectURL(photo)} alt="" className="w-full h-full object-cover object-top" />
                     ) : (
-                      <div className="text-center text-slate-400">
+                      <div className="text-center text-ink-3">
                         <RiImageAddLine size={32} className="mx-auto" />
-                        <p className="text-[12px] font-bold mt-2">Choose a photo</p>
+                        <p className="text-[14px] font-bold mt-2">Choose a photo</p>
                       </div>
                     )}
                   </div>
                   <input type="file" accept={PHOTO_TYPES.join(",")} hidden onChange={(e) => pickPhoto(e.target.files?.[0])} />
                 </label>
-                {photo && <p className="text-[11px] text-slate-400 mt-2 truncate">{photo.name}</p>}
+                {photo && <p className="text-[13px] text-ink-3 mt-2 truncate">{photo.name}</p>}
               </Card>
 
-              <div className="bg-white rounded-[28px] border border-slate-100 shadow-sm p-5 flex items-start gap-3">
+              <div className="surface rounded-[22px] p-5 flex items-start gap-3">
                 <button
                   type="button"
                   role="switch"
                   aria-checked={available}
                   onClick={() => setAvailable(!available)}
-                  className={`mt-0.5 w-11 h-6 rounded-full shrink-0 transition-colors relative ${available ? "bg-teal-500" : "bg-slate-300"}`}
+                  className={`mt-0.5 w-11 h-6 rounded-full shrink-0 transition-colors relative ${available ? "bg-brand" : "bg-line"}`}
                 >
                   <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${available ? "left-[22px]" : "left-0.5"}`} />
                 </button>
                 <div>
-                  <p className="font-black text-slate-900 text-sm">Taking bookings straight away</p>
-                  <p className="text-[12px] text-slate-500">Turn off to add them hidden from booking until they&apos;re ready. They can switch it on in Settings.</p>
+                  <p className="font-bold text-ink text-[15px]">Taking bookings straight away</p>
+                  <p className="text-[13px] text-ink-3">Turn off to add them hidden from booking until they&apos;re ready. They can switch it on in Settings.</p>
                 </div>
               </div>
             </div>
@@ -185,7 +179,7 @@ const AddDoctor: React.FC = () => {
                       className={`${field} resize-y leading-relaxed`}
                       placeholder="What they treat, their approach, languages they speak… Patients read this before they book."
                     />
-                    <p className="text-[11px] text-slate-400 text-right mt-1">{form.about.length}/2000</p>
+                    <p className="num text-[12px] text-ink-3 text-right mt-1">{form.about.length}/2000</p>
                   </div>
                 </div>
               </Card>
@@ -198,7 +192,7 @@ const AddDoctor: React.FC = () => {
                 <div>
                   <span className={label}>Clinic visit fee</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-black text-slate-500">{currency}</span>
+                    <span className="num text-ink-2">{currency}</span>
                     <input required type="number" min={1} step="0.01" value={form.fee} onChange={change("fee")} className={field} placeholder="50" />
                   </div>
                 </div>
@@ -234,7 +228,7 @@ const AddDoctor: React.FC = () => {
           </div>
 
           <Card title="Hours and video calls" icon={<RiCalendarScheduleLine size={18} />} hint="Patients can only book inside these hours. The doctor can change them later in Settings.">
-            <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-4 cursor-pointer">
+            <label className="flex items-center gap-2 text-[15px] font-bold text-ink-2 mb-4 cursor-pointer">
               <input type="checkbox" checked={setHours} onChange={(e) => setSetHours(e.target.checked)} className="w-4 h-4 accent-teal-600" />
               Set their hours now
             </label>
@@ -247,11 +241,11 @@ const AddDoctor: React.FC = () => {
             )}
           </Card>
 
-          <div className="sticky bottom-4 z-30 flex flex-col sm:flex-row gap-3 sm:items-center bg-white/90 backdrop-blur border border-slate-200 rounded-2xl p-3 shadow-lg">
-            <p className="text-sm text-slate-500 sm:mr-auto">
+          <div className="sticky bottom-4 z-30 flex flex-col sm:flex-row gap-3 sm:items-center glass rounded-[20px] p-3">
+            <p className="text-[14px] text-ink-2 sm:mr-auto px-1">
               {form.name ? `Adding ${form.name}` : "Fill in the doctor's details"} · their login is emailed when you add them
             </p>
-            <button type="submit" disabled={saving} className="bg-teal-600 text-white px-8 py-3 rounded-xl font-black uppercase text-[11px] tracking-[2px] disabled:opacity-50">
+            <button type="submit" disabled={saving} className="btn btn-teal !rounded-xl !px-7 disabled:opacity-50">
               {saving ? "Adding…" : "Add doctor"}
             </button>
           </div>
@@ -270,29 +264,29 @@ function Added({ login, onClose }: { login: { name: string; email: string; start
       .catch(() => toast.error("Couldn't copy"));
   };
   return (
-    <section className="bg-teal-50 border border-teal-200 rounded-[28px] p-5 sm:p-6">
-      <p className="font-black text-teal-900 flex items-center gap-2">
+    <section className="bg-brand-soft border border-teal-200 rounded-[22px] p-5 sm:p-6">
+      <p className="font-bold text-[16px] text-brand-ink flex items-center gap-2">
         <RiCheckboxCircleLine size={20} /> {login.name} has been added
       </p>
-      <p className="text-sm text-teal-800 mt-1">
+      <p className="text-[14px] text-ink-2 mt-1">
         We emailed their login. If it doesn&apos;t arrive, give them these. This is the only time the password is shown.
       </p>
-      <div className="mt-3 bg-white rounded-2xl border border-teal-100 px-4 py-3 text-sm grid sm:grid-cols-2 gap-2">
+      <div className="mt-3 bg-white rounded-2xl border border-teal-100 px-4 py-3 text-[14px] grid sm:grid-cols-2 gap-2">
         <p>
-          <span className="text-slate-400 font-bold">Email</span> <span className="font-black text-slate-900 break-all">{login.email}</span>
+          <span className="caption">Email</span> <span className="font-bold text-ink break-all">{login.email}</span>
         </p>
         <p>
-          <span className="text-slate-400 font-bold">Starting password</span> <span className="font-mono font-black text-slate-900">{login.startingPassword}</span>
+          <span className="caption">Starting password</span> <span className="num text-ink">{login.startingPassword}</span>
         </p>
       </div>
       <div className="flex flex-wrap gap-2 mt-3">
-        <button type="button" onClick={copy} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 text-white text-sm font-bold">
+        <button type="button" onClick={copy} className="btn btn-teal !py-2 !px-4 !text-[14px] !rounded-xl">
           <RiFileCopyLine size={15} /> Copy login
         </button>
-        <Link to="/doctor-list" className="px-4 py-2 rounded-xl border border-teal-200 text-teal-800 text-sm font-bold hover:bg-teal-100">
+        <Link to="/doctor-list" className="px-4 py-2 rounded-xl border border-teal-200 bg-white text-brand-ink text-[14px] font-bold hover:bg-teal-50">
           See all doctors
         </Link>
-        <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-bold text-teal-700 hover:bg-teal-100">
+        <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl text-[14px] font-bold text-brand-ink hover:bg-teal-100">
           Add another
         </button>
       </div>
@@ -302,12 +296,12 @@ function Added({ login, onClose }: { login: { name: string; email: string; start
 
 function Card({ title, icon, hint, children }: { title: string; icon: React.ReactNode; hint?: string; children: React.ReactNode }) {
   return (
-    <section className="bg-white rounded-[28px] border border-slate-100 shadow-sm p-5 sm:p-6">
+    <section className="surface rounded-[22px] p-5 sm:p-6">
       <div className="mb-4">
-        <p className="font-black text-slate-900 flex items-center gap-2">
-          <span className="text-teal-600">{icon}</span> {title}
+        <p className="font-bold text-[16px] text-ink flex items-center gap-2.5">
+          <span className="w-8 h-8 rounded-[10px] grid place-items-center border border-teal-100 bg-brand-soft text-brand-ink">{icon}</span> {title}
         </p>
-        {hint && <p className="text-[12px] text-slate-400 mt-0.5">{hint}</p>}
+        {hint && <p className="text-[13px] text-ink-3 mt-1">{hint}</p>}
       </div>
       {children}
     </section>

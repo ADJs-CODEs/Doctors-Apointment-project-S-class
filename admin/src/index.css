@@ -143,6 +143,13 @@ body {
   color: var(--color-brand-ink);
 }
 
+/* small labels above a value or a field ("Contact", "Condition"); sentence case, not caps */
+@utility caption {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink-3);
+}
+
 /* numbers that tick (times, prices, counters) */
 @utility num {
   font-family: var(--font-num);

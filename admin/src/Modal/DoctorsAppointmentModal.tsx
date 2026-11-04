@@ -4,8 +4,6 @@ import type React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { RiErrorWarningLine } from '@remixicon/react'
 
-
-
 interface DoctorsAppointmentModalProps {
   showAlertModal: boolean
   alertForm: {
@@ -22,40 +20,47 @@ const DoctorsAppointmentModal = ({ showAlertModal, alertForm, setAlertForm, isSe
   return (
     <AnimatePresence>
       {showAlertModal && (
-        <div className="fixed inset-0 z-1000 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4">
-          <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-white w-full max-w-md rounded-t-[32px] sm:rounded-[32px] shadow-2xl p-6 sm:p-8">
-            <div className='flex items-center gap-3 mb-6'>
-              <div className='p-3 bg-red-100 text-red-600 rounded-2xl'><RiErrorWarningLine size={24} /></div>
+        <div className="fixed inset-0 z-1000 flex items-end sm:items-center justify-center bg-ink/40 backdrop-blur-sm p-0 sm:p-4" onClick={() => setShowAlertModal(false)}>
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            className="bg-white w-full max-w-md rounded-t-[24px] sm:rounded-[24px] shadow-2xl p-6 sm:p-7"
+          >
+            <div className='flex items-center gap-3 mb-5'>
+              <div className='w-12 h-12 rounded-2xl grid place-items-center bg-rose-50 border border-rose-100 text-rose-600'><RiErrorWarningLine size={22} /></div>
               <div>
-                <h2 className='text-lg sm:text-xl font-black text-slate-900'>Send Alert</h2>
-                <p className='text-[10px] font-bold text-slate-400 uppercase'>Direct Notification & Email</p>
+                <h2 className='text-[20px] font-extrabold tracking-[-0.02em] text-ink'>Send an alert</h2>
+                <p className='text-[14px] text-ink-2'>The patient gets it in the app and by email.</p>
               </div>
             </div>
             <textarea
-              className='w-full p-4 bg-slate-50 rounded-2xl text-sm border-none focus:ring-2 focus:ring-red-500 outline-none mb-4 font-medium'
+              className='field resize-none mb-4'
               rows={4}
-              placeholder="Type your medical warning here..."
+              placeholder="What should the patient know or do?"
               value={alertForm.message}
               onChange={(e) => setAlertForm({ ...alertForm, message: e.target.value })}
             />
-            <div className='flex items-center justify-between mb-8 px-2'>
-              <label className='text-xs font-bold text-slate-600'>Mark as Critical Risk?</label>
-              <input type="checkbox" className='w-6 h-6 sm:w-5 sm:h-5 accent-red-500 rounded-lg cursor-pointer' checked={alertForm.isCritical} onChange={(e) => setAlertForm({ ...alertForm, isCritical: e.target.checked })} />
-            </div>
-            <div className='flex flex-col sm:flex-row gap-3'>
+            <label className='flex items-center justify-between gap-3 mb-6 rounded-2xl border border-line px-4 py-3 cursor-pointer'>
+              <span className='text-[14px] font-bold text-ink-2'>Mark the patient as critical</span>
+              <input type="checkbox" className='w-5 h-5 accent-rose-600 cursor-pointer' checked={alertForm.isCritical} onChange={(e) => setAlertForm({ ...alertForm, isCritical: e.target.checked })} />
+            </label>
+            <div className='flex flex-col-reverse sm:flex-row gap-2'>
               <button
                 disabled={isSendingAlert}
                 onClick={() => setShowAlertModal(false)}
-                className='order-2 sm:order-1 flex-1 py-4 text-xs font-black uppercase text-slate-400 active:scale-95 transition-all'
+                className='flex-1 px-5 py-3 rounded-xl border border-line bg-white text-ink-2 text-[15px] font-bold hover:bg-canvas'
               >
                 Cancel
               </button>
               <button
                 disabled={isSendingAlert}
                 onClick={handleSendAlert}
-                className={`order-1 sm:order-2 flex-1 py-4 rounded-2xl text-xs font-black uppercase transition-all active:scale-95 ${isSendingAlert ? 'bg-slate-300 text-slate-500' : 'bg-red-500 text-white shadow-lg shadow-red-100'}`}
+                className='flex-1 px-5 py-3 rounded-xl bg-rose-600 text-white text-[15px] font-bold hover:bg-rose-700 disabled:opacity-50'
               >
-                {isSendingAlert ? 'Sending...' : 'Send Alert'}
+                {isSendingAlert ? 'Sending…' : 'Send alert'}
               </button>
             </div>
           </motion.div>

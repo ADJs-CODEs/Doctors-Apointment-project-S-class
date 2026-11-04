@@ -12,9 +12,11 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "@/lib/navigation";
+import { PageHeader, Pill, Skeleton } from "../../components/panel";
 import { API_PATHS } from "../../utils/apiPath";
 import axiosInstance from "../../utils/axiosInstance";
 import DoctorPayouts from "./DoctorPayouts";
+import { PAYOUT_FILTERS as FILTERS, PAYOUT_STATUS, PayoutFilters } from "./payout-ui";
 import PharmacyPayouts from "./PharmacyPayouts";
 
 /** Money going out: patients' care funds, doctors' and pharmacies' earnings. */
@@ -23,33 +25,28 @@ export default function Payouts() {
   const navigate = useNavigate();
   const tab = params.get("tab") === "pharmacies" ? "pharmacies" : params.get("tab") === "doctors" ? "doctors" : "care";
   return (
-    <div className="bg-slate-50/50 min-h-screen">
-      <div className="px-4 sm:px-6 md:px-10 pt-6 md:pt-10">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex gap-1 p-1 bg-slate-100 rounded-2xl w-fit">
-            {(
-              [
-                ["care", "Patients' care funds"],
-                ["doctors", "Doctors"],
-                ["pharmacies", "Pharmacies"],
-              ] as const
-            ).map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => navigate(key === "care" ? "/payouts" : `/payouts?tab=${key}`)}
-                className={`px-4 py-2 rounded-xl text-sm font-bold ${tab === key ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+    <div className="p-4 sm:p-6 lg:p-8 animate-reveal">
+      <div className="max-w-5xl mx-auto mb-6 space-y-5">
+        <PageHeader eyebrow="Money" title="Payouts" subtitle="Withdrawals from patients' care funds, doctors and pharmacies." />
+        <div className="flex gap-1 p-1 bg-white border border-line rounded-2xl w-fit max-w-full overflow-x-auto">
+          {(
+            [
+              ["care", "Patients' care funds"],
+              ["doctors", "Doctors"],
+              ["pharmacies", "Pharmacies"],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => navigate(key === "care" ? "/payouts" : `/payouts?tab=${key}`)}
+              className={`shrink-0 px-4 py-2 rounded-xl text-[15px] font-bold ${tab === key ? "btn-ink" : "text-ink-2 hover:bg-canvas"}`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </div>
-      {tab === "care" ? (
-        <CareFundPayouts />
-      ) : (
-        <div className="p-4 sm:p-6 md:p-10">{tab === "doctors" ? <DoctorPayouts /> : <PharmacyPayouts />}</div>
-      )}
+      {tab === "care" ? <CareFundPayouts /> : tab === "doctors" ? <DoctorPayouts /> : <PharmacyPayouts />}
     </div>
   );
 }
@@ -78,7 +75,6 @@ type Payout = {
 
 type Setup = { paystack: boolean; ngnRate: number | null };
 
-const FILTERS = ["pending", "processing", "paid", "failed", "rejected", "all"] as const;
 const money = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 const naira = (kobo: number) => `₦${(kobo / 100).toLocaleString("en-NG", { maximumFractionDigits: 0 })}`;
 const when = (iso?: string) =>
@@ -111,49 +107,29 @@ function CareFundPayouts() {
   }, [load]);
 
   return (
-    <div className="p-4 sm:p-6 md:p-10 bg-slate-50/50 min-h-screen">
-      <div className="max-w-5xl mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2.5 bg-slate-900 rounded-xl text-teal-400">
-                <RiBankLine size={20} />
-              </div>
-              <h1 className="text-xl sm:text-3xl font-black text-slate-900">
-                Payouts
-              </h1>
-            </div>
-            <p className="text-slate-500 text-sm ml-12">
-              {setup.paystack
-                ? "Verify the patient, then send it through Paystack. Failed transfers return the money to their fund."
-                : "Verify the patient, send the bank transfer, then mark it paid with the reference."}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {FILTERS.map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold capitalize ${
-                  filter === f ? "bg-slate-900 text-white" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
-                }`}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
+    <div className="max-w-5xl mx-auto">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+          <p className="text-ink-2 text-[15px]">
+            {setup.paystack
+              ? "Verify the patient, then send it through Paystack. Failed transfers return the money to their fund."
+              : "Verify the patient, send the bank transfer, then mark it paid with the reference."}
+          </p>
+          <PayoutFilters value={filter} onChange={setFilter} />
         </div>
 
         {payouts === null ? (
           <div className="space-y-3">
             {[0, 1].map((i) => (
-              <div key={i} className="h-40 rounded-[28px] bg-slate-200/60 animate-pulse" />
+              <Skeleton key={i} className="h-40" />
             ))}
           </div>
         ) : payouts.length === 0 ? (
-          <div className="bg-white rounded-[28px] border border-slate-100 p-12 text-center">
-            <p className="font-black text-slate-900">Nothing here</p>
-            <p className="text-sm text-slate-400 mt-1">
+          <div className="surface rounded-[24px] p-12 text-center">
+            <div className="w-14 h-14 bg-brand-soft rounded-2xl flex items-center justify-center text-brand-ink mb-4 mx-auto">
+              <RiBankLine size={24} />
+            </div>
+            <p className="font-bold text-ink">Nothing here</p>
+            <p className="text-[14px] text-ink-3 mt-1">
               {filter === "pending" ? "No withdrawals are waiting." : "No payouts with this status."}
             </p>
           </div>
@@ -164,7 +140,6 @@ function CareFundPayouts() {
             ))}
           </div>
         )}
-      </div>
     </div>
   );
 }
@@ -226,48 +201,42 @@ function PayoutCard({ p, setup, onChanged }: { p: Payout; setup: Setup; onChange
     }
   };
 
-  const tone = {
-    pending: "bg-orange-50 text-orange-700 border-orange-100",
-    processing: "bg-sky-50 text-sky-700 border-sky-100",
-    paid: "bg-teal-50 text-teal-700 border-teal-100",
-    failed: "bg-red-50 text-red-700 border-red-100",
-    rejected: "bg-slate-100 text-slate-500 border-slate-200",
-  }[p.status];
+  const status = PAYOUT_STATUS[p.status];
 
   return (
-    <div className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-5 sm:p-6">
+    <div className="surface rounded-[22px] p-5 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>
-          <p className="text-3xl font-black text-slate-900">
+          <p className="num text-[30px] leading-none text-ink">
             {money(p.cents)}
-            {kobo != null && <span className="text-lg font-bold text-slate-400"> · {naira(kobo)}</span>}
+            {kobo != null && <span className="text-[18px] text-ink-3"> · {naira(kobo)}</span>}
           </p>
-          <p className="text-sm font-bold text-slate-700 mt-1">
-            {p.userName} <span className="font-medium text-slate-400">· {p.userEmail}</span>
+          <p className="text-[15px] font-bold text-ink mt-2">
+            {p.userName} <span className="font-medium text-ink-3">· {p.userEmail}</span>
           </p>
-          <p className="text-[12px] text-slate-400">Requested {when(p.createdAt)}</p>
+          <p className="text-[13px] text-ink-3">Requested {when(p.createdAt)}</p>
         </div>
-        <span className={`self-start text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full border ${tone}`}>
-          {p.status}
+        <span className="self-start">
+          <Pill tone={status.tone}>{status.label}</Pill>
         </span>
       </div>
 
-      <div className="grid sm:grid-cols-3 gap-2 mt-4 text-sm">
+      <div className="grid sm:grid-cols-3 gap-2 mt-4 text-[14px]">
         {[
           ["Account name", p.accountName],
           ["Bank", p.bankName],
           ["Account number", p.accountNumber],
         ].map(([label, value]) => (
-          <div key={label} className="rounded-xl bg-slate-50 px-3 py-2">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
-            <p className="font-bold text-slate-800 break-all">{value}</p>
+          <div key={label} className="rounded-xl bg-canvas px-3 py-2.5">
+            <p className="caption">{label}</p>
+            <p className={`text-ink break-all mt-0.5 ${label === "Account number" ? "num" : "font-bold"}`}>{value}</p>
           </div>
         ))}
       </div>
       {p.resolvedAccountName && (
         <p
-          className={`flex items-center gap-1.5 text-[12px] font-bold mt-3 ${
-            p.nameMatches ? "text-teal-700" : "text-orange-700"
+          className={`flex items-center gap-1.5 text-[13px] font-bold mt-3 ${
+            p.nameMatches ? "text-brand-ink" : "text-orange-700"
           }`}
         >
           {p.nameMatches ? <RiCheckLine size={15} /> : <RiErrorWarningLine size={15} />}
@@ -276,21 +245,21 @@ function PayoutCard({ p, setup, onChanged }: { p: Payout; setup: Setup; onChange
             : `The bank says this account belongs to ${p.resolvedAccountName}, which doesn't match ${p.userName}. Check before sending.`}
         </p>
       )}
-      {p.note && <p className="text-sm text-slate-500 mt-3 italic">“{p.note}”</p>}
+      {p.note && <p className="text-[14px] text-ink-2 mt-3 italic">“{p.note}”</p>}
 
       {p.status === "processing" ? (
         <div className="flex flex-wrap items-center gap-3 mt-4">
-          <p className="text-sm text-sky-700">Sent to Paystack, waiting for the bank to confirm.</p>
+          <p className="text-[14px] text-video">Sent to Paystack, waiting for the bank to confirm.</p>
           <button
             onClick={refresh}
             disabled={saving}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-slate-600 text-[12px] font-bold hover:bg-slate-50 disabled:opacity-40"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-line bg-white text-ink-2 text-[13px] font-bold hover:bg-canvas disabled:opacity-40"
           >
             <RiRefreshLine size={14} /> {saving ? "Checking…" : "Check again"}
           </button>
         </div>
       ) : p.status !== "pending" ? (
-        <p className="text-sm text-slate-500 mt-4">
+        <p className="text-[14px] text-ink-3 mt-4">
           {p.status === "paid"
             ? `Paid ${when(p.decidedAt)} · ref ${p.reference}`
             : p.status === "failed"
@@ -303,30 +272,30 @@ function PayoutCard({ p, setup, onChanged }: { p: Payout; setup: Setup; onChange
           {canSend && (
             <button
               onClick={() => setMode("send")}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-bold hover:bg-teal-700"
+              className="btn btn-teal !py-2.5 !px-4 !text-[14px] !rounded-xl"
             >
               <RiSendPlaneLine size={16} /> Send via Paystack
             </button>
           )}
           <button
             onClick={() => setMode("pay")}
-            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold ${
+            className={
               canSend
-                ? "border border-slate-200 text-slate-600 hover:bg-slate-50"
-                : "bg-teal-600 text-white hover:bg-teal-700"
-            }`}
+                ? "flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-line bg-white text-ink-2 text-[14px] font-bold hover:bg-canvas"
+                : "btn btn-teal !py-2.5 !px-4 !text-[14px] !rounded-xl"
+            }
           >
             <RiCheckLine size={16} /> I&apos;ve sent it by hand
           </button>
           <button
             onClick={() => setMode("reject")}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-bold hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-line bg-white text-ink-2 text-[14px] font-bold hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200"
           >
             <RiCloseLine size={16} /> Reject
           </button>
         </div>
       ) : (
-        <div className="mt-5 rounded-2xl border border-slate-200 p-4 space-y-3">
+        <div className="mt-5 rounded-2xl border border-line bg-canvas/60 p-4 space-y-3">
           {(mode === "pay" || mode === "send") && (
             <>
               {mode === "pay" ? (
@@ -334,18 +303,18 @@ function PayoutCard({ p, setup, onChanged }: { p: Payout; setup: Setup; onChange
                   value={reference}
                   onChange={(e) => setReference(e.target.value)}
                   placeholder="Bank transfer reference"
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-teal-400"
+                  className="field"
                 />
               ) : (
-                <p className="text-sm text-slate-600">
+                <p className="text-[14px] text-ink-2">
                   Paystack will send {kobo != null ? naira(kobo) : money(p.cents)} to {p.resolvedAccountName ?? p.accountName} at{" "}
                   {p.bankName}. This can&apos;t be undone.
                 </p>
               )}
-              <label className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer">
+              <label className="flex items-start gap-2 text-[14px] text-ink-2 cursor-pointer">
                 <input type="checkbox" checked={verified} onChange={(e) => setVerified(e.target.checked)} className="mt-0.5 accent-teal-600" />
                 <span className="flex items-center gap-1.5">
-                  <RiShieldUserLine size={16} className="text-teal-600" />
+                  <RiShieldUserLine size={16} className="text-brand-ink" />
                   I&apos;ve verified this is {p.userName} and the account is theirs
                 </span>
               </label>
@@ -356,7 +325,7 @@ function PayoutCard({ p, setup, onChanged }: { p: Payout; setup: Setup; onChange
             onChange={(e) => setNote(e.target.value)}
             rows={2}
             placeholder={mode === "pay" ? "Internal note (optional)" : "Reason (sent to the patient)"}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-teal-400 resize-none"
+            className="field resize-none"
           />
           <div className="flex gap-2">
             <button
@@ -365,8 +334,10 @@ function PayoutCard({ p, setup, onChanged }: { p: Payout; setup: Setup; onChange
                 saving ||
                 (mode === "pay" ? !reference.trim() || !verified : mode === "send" ? !verified : !note.trim())
               }
-              className={`px-4 py-2.5 rounded-xl text-white text-sm font-bold disabled:opacity-40 ${
-                mode === "reject" ? "bg-red-600 hover:bg-red-700" : "bg-teal-600 hover:bg-teal-700"
+              className={`disabled:opacity-40 ${
+                mode === "reject"
+                  ? "px-4 py-2.5 rounded-xl text-white text-[14px] font-bold bg-rose-600 hover:bg-rose-700"
+                  : "btn btn-teal !py-2.5 !px-4 !text-[14px] !rounded-xl"
               }`}
             >
               {saving
@@ -377,7 +348,7 @@ function PayoutCard({ p, setup, onChanged }: { p: Payout; setup: Setup; onChange
                     ? "Mark as paid"
                     : "Reject and return funds"}
             </button>
-            <button onClick={() => setMode("none")} className="px-4 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100">
+            <button onClick={() => setMode("none")} className="px-4 py-2.5 rounded-xl text-[14px] font-bold text-ink-3 hover:bg-white">
               Back
             </button>
           </div>
