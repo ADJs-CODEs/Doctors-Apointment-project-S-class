@@ -3,8 +3,6 @@
 import React, { useMemo, useState } from "react";
 import {
   RiUserUnfollowLine,
-  RiVideoOnLine,
-  RiHospitalLine,
   RiCheckboxCircleLine,
   RiCloseCircleLine,
   RiErrorWarningFill,
@@ -23,62 +21,25 @@ import DoctorsAppointmentModal from "../../Modal/DoctorsAppointmentModal";
 import DoctorsPrescribeModal from "../../Modal/DoctorsPrescribeModal";
 import MissedAppointmentModal, { canMarkMissed, MissedBadge } from "../../Modal/MissedAppointmentModal";
 import JoinCallButton from "../../components/JoinCallButton";
+import { CallButtons } from "../../components/calls/CallLayer";
 import { API_PATHS } from "../../utils/apiPath";
 import axiosInstance from "../../utils/axiosInstance";
 import type { Appointment } from "../../types/index";
+import {
+  Avatar,
+  criticalReason,
+  DateBlock,
+  dayHeading,
+  isCritical,
+  isOpen,
+  slotStart,
+  sortVisits,
+  VisitPills,
+  VisitTabs,
+  type VisitTab,
+} from "../../components/visits";
 
-type Tab = "upcoming" | "toClose" | "attention" | "completed" | "closed";
-
-// a visit counts as "upcoming" until an hour after it starts; after that it needs closing
-const STILL_UPCOMING_MS = 60 * 60_000;
-
-/** The patient's photo, or their initials when there isn't one (or it won't load). */
-function Avatar({ src, name }: { src?: string; name: string }) {
-  const [broken, setBroken] = useState(false);
-  const initials = name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase())
-    .join("");
-  if (!src || broken) {
-    return <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-700 font-black flex items-center justify-center shrink-0">{initials || "?"}</div>;
-  }
-  return <img className="w-12 h-12 rounded-2xl object-cover bg-slate-100 shrink-0" src={src} alt="" onError={() => setBroken(true)} />;
-}
-
-const MONTH = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-/** "6_4_2026" + "02:30 PM" -> a Date in local time (for sorting and the Today/Tomorrow headings). */
-function slotStart(a: Appointment) {
-  const [d, m, y] = a.slotDate.split("_").map(Number);
-  const t = /^(\d{1,2}):(\d{2})\s*(am|pm)$/i.exec(a.slotTime.trim());
-  if (!d || !m || !y) return new Date(0);
-  let h = t ? Number(t[1]) % 12 : 0;
-  if (t && t[3].toLowerCase() === "pm") h += 12;
-  return new Date(y, m - 1, d, h, t ? Number(t[2]) : 0);
-}
-
-const dayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-function dayHeading(d: Date) {
-  const today = new Date();
-  const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-  if (dayKey(d) === dayKey(today)) return "Today";
-  if (dayKey(d) === dayKey(tomorrow)) return "Tomorrow";
-  return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
-}
-
-const isOpen = (a: Appointment) => !a.isCompleted && !a.cancelled && !a.missed;
-const earlyDose = (a: Appointment) => !!a.healthData?.prescribedMedicines?.some((m) => m.overdoseAlert);
-const isCritical = (a: Appointment) => a.patientStatus === "Critical" || earlyDose(a);
-
-/** Why this patient needs attention, in words. */
-const criticalReason = (a: Appointment) =>
-  earlyDose(a) && a.patientStatus === "Critical"
-    ? "Took a dose early, and marked critical"
-    : earlyDose(a)
-      ? "Took a dose early"
-      : "Marked critical (urgent message)";
+type Tab = VisitTab;
 
 const DoctorAppointment: React.FC = () => {
   const navigate = useNavigate();
@@ -115,19 +76,7 @@ const DoctorAppointment: React.FC = () => {
   } = useDoctorAppointment();
 
   const all = appointments ?? [];
-  const lists = useMemo(() => {
-    const byTimeAsc = (a: Appointment, b: Appointment) => slotStart(a).getTime() - slotStart(b).getTime();
-    const byTimeDesc = (a: Appointment, b: Appointment) => -byTimeAsc(a, b);
-    const cutoff = Date.now() - STILL_UPCOMING_MS;
-    return {
-      upcoming: all.filter((a) => isOpen(a) && slotStart(a).getTime() >= cutoff).sort(byTimeAsc),
-      // their time has passed but nobody marked them completed or a no-show
-      toClose: all.filter((a) => isOpen(a) && slotStart(a).getTime() < cutoff).sort(byTimeDesc),
-      attention: all.filter((a) => isCritical(a) && !a.cancelled).sort(byTimeDesc),
-      completed: all.filter((a) => a.isCompleted).sort(byTimeDesc),
-      closed: all.filter((a) => a.cancelled || a.missed).sort(byTimeDesc),
-    };
-  }, [all]);
+  const lists = useMemo(() => sortVisits(all), [all]);
 
   const shown = lists[tab];
   const tabs: { id: Tab; label: string; count: number; tone?: string }[] = [
@@ -169,28 +118,7 @@ const DoctorAppointment: React.FC = () => {
         </div>
         <p className="text-slate-500 text-sm ml-12 mb-6">Your visits, soonest first. Complete each one with vitals and prescriptions.</p>
 
-        <div className="flex gap-1.5 overflow-x-auto pb-1 mb-5">
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors ${
-                tab === t.id ? "bg-slate-900 text-white" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              {t.label}
-              {t.count > 0 && (
-                <span
-                  className={`min-w-5 h-5 px-1.5 rounded-full text-[11px] font-black flex items-center justify-center ${
-                    t.tone ?? (tab === t.id ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600")
-                  }`}
-                >
-                  {t.count}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+        <VisitTabs tabs={tabs} current={tab} onChange={setTab} />
 
         {shown.length === 0 ? (
           <div className="bg-white rounded-[28px] border border-slate-100 py-16 text-center">
@@ -253,14 +181,7 @@ const DoctorAppointment: React.FC = () => {
                     )}
 
                     <div className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center gap-4">
-                      {/* when */}
-                      <div className="flex md:flex-col items-center md:items-center gap-3 md:gap-0 md:w-20 shrink-0">
-                        <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-slate-900 text-white flex flex-col items-center justify-center">
-                          <span className="text-xl font-black leading-none">{start.getDate()}</span>
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-teal-300">{MONTH[start.getMonth()]}</span>
-                        </div>
-                        <p className="text-sm font-black text-slate-800 md:mt-1.5">{item.slotTime}</p>
-                      </div>
+                      <DateBlock item={item} />
 
                       {/* who and what */}
                       <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -268,32 +189,14 @@ const DoctorAppointment: React.FC = () => {
                         <div className="min-w-0">
                           <p className="font-black text-slate-900 truncate">{item.userData.name}</p>
                           <p className="text-[12px] text-slate-500">{Number.isFinite(age) && age > 0 ? `${age} years old` : "Age not given"}</p>
-                          <div className="flex flex-wrap gap-1.5 mt-1.5">
-                            {item.kind === "video" ? (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-black text-white bg-violet-600 px-2 py-0.5 rounded-full">
-                                <RiVideoOnLine size={12} /> Video call
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-800 bg-teal-50 border border-teal-100 px-2 py-0.5 rounded-full">
-                                <RiHospitalLine size={12} /> At the clinic
-                              </span>
-                            )}
-                            <span
-                              className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
-                                !item.payment ? "bg-amber-50 text-amber-700 border-amber-100" : "bg-slate-50 text-slate-600 border-slate-200"
-                              }`}
-                            >
-                              {!item.payment
-                                ? "Not paid yet"
-                                : `Paid ${currency}${Number(item.amount).toLocaleString("en-US")} · ${item.paymentMethod === "wallet" ? "wallet" : "card"}`}
-                            </span>
-                          </div>
+                          <VisitPills item={item} currency={currency} />
                         </div>
                       </div>
 
                       {/* what they can do */}
                       <div className="flex flex-wrap items-center gap-2 md:justify-end">
                         {item.kind === "video" && open && <JoinCallButton appointment={item} />}
+                        {!item.cancelled && <CallButtons to={item.userId} appointmentId={open ? item._id : undefined} compact />}
                         {!item.cancelled && (
                           <button
                             onClick={() => navigate(`/doctor-messages?patient=${item.userId}&appointment=${item._id}`)}

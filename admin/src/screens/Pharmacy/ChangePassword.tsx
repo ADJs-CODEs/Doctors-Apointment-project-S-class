@@ -3,6 +3,7 @@
 import { RiLockPasswordLine } from "@remixicon/react";
 import { type FormEvent, useState } from "react";
 import { toast } from "sonner";
+import ConfirmLogout from "../../components/ConfirmLogout";
 import { usePharmacy } from "../../context/PharmacyContext";
 import { API_PATHS } from "../../utils/apiPath";
 import axiosInstance from "../../utils/axiosInstance";
@@ -52,6 +53,7 @@ export function ChangePasswordForm({ onDone }: { onDone?: () => void }) {
 /** Shown instead of the portal until someone replaces the starting password they were emailed. */
 export default function ChangePasswordGate() {
   const { staff, pharmacy, logout } = usePharmacy();
+  const [confirming, setConfirming] = useState(false);
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F8F9FD] p-4">
       <div className="w-full max-w-md bg-white rounded-[32px] shadow-portal p-6 sm:p-10">
@@ -63,9 +65,10 @@ export default function ChangePasswordGate() {
           Welcome to {pharmacy?.name ?? "the pharmacy"}, {staff?.name.split(" ")[0]}. Replace the starting password we emailed you before you continue.
         </p>
         <ChangePasswordForm />
-        <button onClick={logout} className="mt-4 text-[12px] font-bold text-slate-400 hover:text-slate-700">
+        <button onClick={() => setConfirming(true)} className="mt-4 text-[12px] font-bold text-slate-400 hover:text-slate-700">
           Log out
         </button>
+        <ConfirmLogout open={confirming} who="the pharmacy portal" onCancel={() => setConfirming(false)} onConfirm={logout} />
       </div>
     </div>
   );

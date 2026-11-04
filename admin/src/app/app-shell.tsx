@@ -3,7 +3,9 @@
 import { type ReactNode, useContext, useEffect, useRef } from 'react';
 import LoadingBar, { type LoadingBarRef } from 'react-top-loading-bar';
 import { Toaster } from 'sonner';
+import { CallProvider } from '@/components/calls/CallLayer';
 import DoctorAI from '@/components/DoctorAI';
+import { API_PATHS } from '@/utils/apiPath';
 import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
 import AdminContextProvider, { AdminContext } from '@/context/AdminContext';
@@ -12,6 +14,7 @@ import DoctorContextProvider, { DoctorContext } from '@/context/DoctorContext';
 import { DoctorMessagesProvider } from '@/context/DoctorMessagesContext';
 import { PharmacyContextProvider, usePharmacy } from '@/context/PharmacyContext';
 import { NavigationWatcher } from '@/lib/navigation';
+import DoctorFirstLogin from '@/screens/Doctor/DoctorFirstLogin';
 import Login from '@/screens/Login';
 import ChangePasswordGate from '@/screens/Pharmacy/ChangePassword';
 import PharmacyHome from '@/screens/Pharmacy/PharmacyHome';
@@ -61,7 +64,7 @@ function RequestLoadingBar() {
 
 function Shell({ children }: { children: ReactNode }) {
   const { aToken } = useContext(AdminContext) as AdminContextType;
-  const { dToken } = useContext(DoctorContext) as DoctorContextType;
+  const { dToken, profileData } = useContext(DoctorContext) as DoctorContextType;
   const { pToken, staff } = usePharmacy();
   const pathname = usePathname();
 
@@ -108,6 +111,17 @@ function Shell({ children }: { children: ReactNode }) {
     );
   }
 
+  // doctors the admin added replace their emailed starting password first
+  if (dToken && !aToken && profileData && profileData.mustChangePassword) {
+    return (
+      <>
+        {loadingBar}
+        <DoctorFirstLogin />
+        <Toaster richColors position="top-right" />
+      </>
+    );
+  }
+
   const page = (
     <div className="bg-[#F8F9FD] min-h-screen flex flex-col">
       {loadingBar}
@@ -122,8 +136,16 @@ function Shell({ children }: { children: ReactNode }) {
     </div>
   );
 
-  // doctors get live patient messages and the unread badge
-  return dToken ? <DoctorMessagesProvider token={dToken}>{page}</DoctorMessagesProvider> : page;
+  // doctors get live patient messages, the unread badge and in-app calls
+  return dToken ? (
+    <DoctorMessagesProvider token={dToken}>
+      <CallProvider side="doctor" apiBase={API_PATHS.DOCTOR.CALLS}>
+        {page}
+      </CallProvider>
+    </DoctorMessagesProvider>
+  ) : (
+    page
+  );
 }
 
 export default function AppShell({ children }: { children: ReactNode }) {

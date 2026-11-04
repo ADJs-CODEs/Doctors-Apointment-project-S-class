@@ -336,7 +336,8 @@ function MapCheck({ map, onChanged }: { map: Data["map"]; onChanged: (m: Data["m
   );
 }
 
-function PasswordForm() {
+/** Also the first-login screen for doctors the admin added (onDone reloads their profile). */
+export function PasswordForm({ onDone, stacked }: { onDone?: () => void; stacked?: boolean }) {
   const [form, setForm] = useState({ currentPassword: "", newPassword: "", repeat: "" });
   const [saving, setSaving] = useState(false);
 
@@ -349,6 +350,7 @@ function PasswordForm() {
       if (data.success) {
         toast.success(data.message);
         setForm({ currentPassword: "", newPassword: "", repeat: "" });
+        onDone?.();
       } else toast.error(data.message);
     } catch (err: any) {
       toast.error(err.response?.data?.message || err.message);
@@ -358,11 +360,11 @@ function PasswordForm() {
   };
 
   return (
-    <form onSubmit={submit} className="grid sm:grid-cols-3 gap-3">
-      <input required type="password" placeholder="Current password" value={form.currentPassword} onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} className={input} />
+    <form onSubmit={submit} className={stacked ? "grid gap-3" : "grid sm:grid-cols-3 gap-3"}>
+      <input required type="password" placeholder={stacked ? "Starting password from the email" : "Current password"} value={form.currentPassword} onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} className={input} />
       <input required type="password" minLength={8} placeholder="New password (8+)" value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} className={input} />
       <input required type="password" minLength={8} placeholder="Repeat new password" value={form.repeat} onChange={(e) => setForm({ ...form, repeat: e.target.value })} className={input} />
-      <button type="submit" disabled={saving} className="sm:col-span-3 justify-self-start px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-teal-600 disabled:opacity-50">
+      <button type="submit" disabled={saving} className={`${stacked ? "" : "sm:col-span-3 sm:justify-self-start"} justify-self-stretch px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-teal-600 disabled:opacity-50`}>
         {saving ? "Saving…" : "Change password"}
       </button>
     </form>

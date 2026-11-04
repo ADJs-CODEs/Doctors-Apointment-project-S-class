@@ -19,6 +19,7 @@ import {
 } from "@remixicon/react";
 import { type FormEvent, type KeyboardEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { CallButtons } from "@/components/calls/CallLayer";
 import JoinCallButton, { callState } from "@/components/JoinCallButton";
 import { useDoctorMessages } from "@/context/DoctorMessagesContext";
 import { useNavigate, useSearchParams } from "@/lib/navigation";
@@ -400,6 +401,8 @@ export default function DoctorMessages() {
                         {activeVisits.length} visit{activeVisits.length === 1 ? "" : "s"} with you
                       </p>
                     </div>
+                    {/* doctors can ring their patients any time */}
+                    <CallButtons to={thread.patient._id} compact />
                     <button
                       onClick={() => setShowPanel((s) => !s)}
                       className={`xl:hidden flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-bold ${

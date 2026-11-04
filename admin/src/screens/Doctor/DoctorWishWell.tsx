@@ -36,6 +36,11 @@ interface WishWellEntry {
     prayer: number;
   };
   totalEmojis: number;
+  /** false until the patient accepts; nothing is public before that */
+  consentGiven: boolean;
+  optedOut: boolean;
+  hidden?: boolean;
+  hiddenReason?: string;
   createdAt: string;
 }
 
@@ -58,11 +63,9 @@ const DoctorWishWell: React.FC = () => {
 
   const fetchEntries = async () => {
     try {
-      const { data } = await axiosInstance.get(API_PATHS.WISH_WELL.ALL);
-      if (data.success) {
-        // Only show entries that belong to this doctor
-        setEntries(data.entries);
-      }
+      // this doctor's own nominations, including ones still waiting for the patient
+      const { data } = await axiosInstance.get(API_PATHS.WISH_WELL.MINE);
+      if (data.success) setEntries(data.entries);
     } catch (error: any) {
       toast.error("Failed to load Wish Well entries");
     } finally {
@@ -82,7 +85,7 @@ const DoctorWishWell: React.FC = () => {
         story,
       });
       if (data.success) {
-        toast.success("Patient added to the Wish Well");
+        toast.success(data.message);
         setShowNominateModal(false);
         setCondition("");
         setStory("");
@@ -313,6 +316,19 @@ const DoctorWishWell: React.FC = () => {
                             { day: "numeric", month: "short", year: "numeric" },
                           )}
                         </p>
+                        {!entry.consentGiven ? (
+                          <p className="mt-2 inline-block text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-100 px-2.5 py-1 rounded-full">
+                            Waiting for {entry.patientName.split(" ")[0]} to accept · not public yet
+                          </p>
+                        ) : entry.optedOut ? (
+                          <p className="mt-2 inline-block text-[11px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
+                            {entry.patientName.split(" ")[0]} left the Wish Well
+                          </p>
+                        ) : entry.hidden ? (
+                          <p className="mt-2 inline-block text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-100 px-2.5 py-1 rounded-full">
+                            Hidden by the clinic{entry.hiddenReason ? `: ${entry.hiddenReason}` : ""}
+                          </p>
+                        ) : null}
                       </div>
                       <div className="text-center shrink-0">
                         <p className="text-red-500 text-2xl font-black">
@@ -345,6 +361,17 @@ const DoctorWishWell: React.FC = () => {
                     )}
 
                     {/* Doctor controls */}
+                    {!entry.consentGiven ? (
+                      <div className="flex gap-3 pt-4 border-t border-slate-50">
+                        <button
+                          onClick={() => removeEntry(entry._id, entry.patientName)}
+                          disabled={removingId === entry._id}
+                          className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-50 disabled:opacity-60"
+                        >
+                          Withdraw the request
+                        </button>
+                      </div>
+                    ) : (
                     <div className="flex gap-3 pt-4 border-t border-slate-50">
                       <button
                         onClick={() => updateStatus(entry._id, "recovered")}
@@ -380,6 +407,7 @@ const DoctorWishWell: React.FC = () => {
                         )}
                       </button>
                     </div>
+                    )}
                   </motion.div>
                 ))}
             </div>

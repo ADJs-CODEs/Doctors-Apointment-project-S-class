@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
+import ConfirmLogout from "./ConfirmLogout";
 import { AdminContext } from "../context/AdminContext";
 import { NavLink, useNavigate } from "@/lib/navigation";
 import { DoctorContext } from "../context/DoctorContext";
@@ -40,6 +41,7 @@ const Sidebar: React.FC = () => {
   const { unread: unreadMessages } = useDoctorMessages();
   const { pToken, staff, logout: pharmacyLogout } = usePharmacy();
   const navigate = useNavigate();
+  const [confirming, setConfirming] = useState(false);
 
   // clears whichever login is active and goes back to the login screen
   const logout = () => {
@@ -135,6 +137,22 @@ const Sidebar: React.FC = () => {
                 />
                 <p className="hidden lg:block text-[11px] font-black uppercase tracking-widest">
                   Registry
+                </p>
+              </NavLink>
+
+              <NavLink
+                onClick={handleLinkClick}
+                className={({ isActive }) =>
+                  `${baseClass} ${isActive ? activeClass : inactiveClass}`
+                }
+                to={"/wish-well"}
+              >
+                <RiHeart3Fill
+                  size={22}
+                  className="shrink-0 group-hover:text-rose-500 transition-colors"
+                />
+                <p className="hidden lg:block text-[11px] font-black uppercase tracking-widest">
+                  Wish Well
                 </p>
               </NavLink>
 
@@ -372,13 +390,23 @@ const Sidebar: React.FC = () => {
         {/* --- Log out (every role) --- */}
         <div className="lg:mt-8 lg:pt-6 lg:border-t border-slate-100">
           <button
-            onClick={logout}
+            onClick={() => setConfirming(true)}
+            aria-label="Log out"
             className={`${baseClass} w-full text-slate-500 hover:bg-rose-50 hover:text-rose-600`}
           >
             <RiLogoutCircleRLine size={22} className="shrink-0 transition-colors" />
             <p className="hidden lg:block text-[11px] font-black uppercase tracking-widest">Log out</p>
           </button>
         </div>
+        <ConfirmLogout
+          open={confirming}
+          who={aToken ? "the admin panel" : dToken ? "the doctor panel" : pToken ? "the pharmacy portal" : undefined}
+          onCancel={() => setConfirming(false)}
+          onConfirm={() => {
+            setConfirming(false);
+            logout();
+          }}
+        />
       </div>
     </div>
   );

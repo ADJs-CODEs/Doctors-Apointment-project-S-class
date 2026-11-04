@@ -10,7 +10,14 @@ import axiosInstance from "../../utils/axiosInstance";
 
 type Kind = "in-person" | "video";
 type Range = { day: number; start: string; end: string; kinds: Kind[] };
-type Availability = { slotMinutes: 15 | 30 | 45 | 60; weekly: Range[]; daysOff: string[] };
+export type Availability = { slotMinutes: 15 | 30 | 45 | 60; weekly: Range[]; daysOff: string[] };
+
+/** A sensible start for a new doctor: weekdays 9 to 5 at the clinic, 30-minute visits. */
+export const STARTING_HOURS: Availability = {
+  slotMinutes: 30,
+  weekly: [1, 2, 3, 4, 5].map((day) => ({ day, start: "09:00", end: "17:00", kinds: ["in-person"] })),
+  daysOff: [],
+};
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 // show the week starting Monday
@@ -26,7 +33,6 @@ export default function DoctorSchedule() {
   const [availability, setAvailability] = useState<Availability | null>(null);
   const [videoFees, setVideoFees] = useState<string>("");
   const [isDefault, setIsDefault] = useState(false);
-  const [dayOff, setDayOff] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -43,8 +49,6 @@ export default function DoctorSchedule() {
 
   if (!availability) return <div className="h-64 rounded-[32px] bg-slate-100 animate-pulse mt-8" />;
 
-  const set = (change: (a: Availability) => Availability) => setAvailability((a) => (a ? change(structuredClone(a)) : a));
-  const rangesFor = (day: number) => availability.weekly.map((r, i) => ({ r, i })).filter(({ r }) => r.day === day);
   const offersVideo = availability.weekly.some((r) => r.kinds.includes("video"));
 
   const save = async () => {
@@ -69,15 +73,6 @@ export default function DoctorSchedule() {
     }
   };
 
-  const copyMondayToWeekdays = () =>
-    set((a) => {
-      const monday = a.weekly.filter((r) => r.day === 1);
-      a.weekly = [...a.weekly.filter((r) => r.day < 1 || r.day > 5 || r.day === 1), ...[2, 3, 4, 5].flatMap((d) => monday.map((r) => ({ ...r, day: d, kinds: [...r.kinds] })))];
-      return a;
-    });
-
-  const input = "rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-sm outline-none focus:border-teal-400";
-
   return (
     <div className="mt-8 bg-white p-6 sm:p-8 rounded-[32px] border border-slate-100 shadow-sm">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
@@ -99,6 +94,47 @@ export default function DoctorSchedule() {
         </button>
       </div>
 
+      <HoursEditor availability={availability} onChange={setAvailability} videoFees={videoFees} onVideoFees={setVideoFees} currency={currency} />
+      <p className="text-[12px] text-slate-400 mt-4">
+        Changing hours doesn&apos;t affect appointments already booked. Times are the clinic&apos;s local time.
+      </p>
+    </div>
+  );
+}
+
+/**
+ * The hours form on its own (video fee, visit length, weekly hours, days off), so the admin's
+ * Add Doctor page can use it too. It only edits; whoever shows it decides when to save.
+ */
+export function HoursEditor({
+  availability,
+  onChange,
+  videoFees,
+  onVideoFees,
+  currency,
+}: {
+  availability: Availability;
+  onChange: (a: Availability) => void;
+  videoFees: string;
+  onVideoFees: (v: string) => void;
+  currency: string;
+}) {
+  const [dayOff, setDayOff] = useState("");
+  const set = (change: (a: Availability) => Availability) => onChange(change(structuredClone(availability)));
+  const rangesFor = (day: number) => availability.weekly.map((r, i) => ({ r, i })).filter(({ r }) => r.day === day);
+  const setVideoFees = onVideoFees;
+
+  const copyMondayToWeekdays = () =>
+    set((a) => {
+      const monday = a.weekly.filter((r) => r.day === 1);
+      a.weekly = [...a.weekly.filter((r) => r.day < 1 || r.day > 5 || r.day === 1), ...[2, 3, 4, 5].flatMap((d) => monday.map((r) => ({ ...r, day: d, kinds: [...r.kinds] })))];
+      return a;
+    });
+
+  const input = "rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-sm outline-none focus:border-teal-400";
+
+  return (
+    <div>
       {/* fees + length */}
       <div className="grid sm:grid-cols-2 gap-4 mb-6">
         <label className="rounded-2xl bg-violet-50/60 border border-violet-100 p-4">
@@ -139,7 +175,7 @@ export default function DoctorSchedule() {
       {/* weekly hours */}
       <div className="flex items-center justify-between mb-2">
         <p className="text-[11px] font-black uppercase tracking-[2px] text-slate-400">Weekly hours</p>
-        <button onClick={copyMondayToWeekdays} className="flex items-center gap-1 text-[12px] font-bold text-teal-600 hover:text-teal-700">
+        <button type="button" onClick={copyMondayToWeekdays} className="flex items-center gap-1 text-[12px] font-bold text-teal-600 hover:text-teal-700">
           <RiFileCopyLine size={14} /> Copy Monday to all weekdays
         </button>
       </div>
@@ -165,6 +201,7 @@ export default function DoctorSchedule() {
                       const active = r.kinds.includes(kind);
                       return (
                         <button
+                          type="button"
                           key={kind}
                           onClick={() =>
                             set((a) => {
@@ -179,7 +216,7 @@ export default function DoctorSchedule() {
                         </button>
                       );
                     })}
-                    <button onClick={() => set((a) => (a.weekly.splice(i, 1), a))} className="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50" aria-label="Remove these hours">
+                    <button type="button" onClick={() => set((a) => (a.weekly.splice(i, 1), a))} className="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50" aria-label="Remove these hours">
                       <RiDeleteBinLine size={16} />
                     </button>
                     {r.start >= r.end && <span className="text-[11px] font-bold text-red-500">End must be after start</span>}
@@ -187,6 +224,7 @@ export default function DoctorSchedule() {
                   </div>
                 ))}
                 <button
+                  type="button"
                   onClick={() => set((a) => (a.weekly.push({ day, start: "09:00", end: "17:00", kinds: ["in-person"] }), a))}
                   className="flex items-center gap-1 text-[12px] font-bold text-slate-500 hover:text-teal-600"
                 >
@@ -203,6 +241,7 @@ export default function DoctorSchedule() {
       <div className="flex flex-wrap items-center gap-2">
         <input type="date" value={dayOff} min={new Date().toISOString().slice(0, 10)} onChange={(e) => setDayOff(e.target.value)} className={input} />
         <button
+          type="button"
           onClick={() => {
             if (!dayOff) return;
             set((a) => ((a.daysOff = [...new Set([...a.daysOff, dayOff])].sort()), a));
@@ -217,15 +256,12 @@ export default function DoctorSchedule() {
           .map((d) => (
             <span key={d} className="flex items-center gap-1 pl-3 pr-1 py-1 rounded-full bg-slate-100 text-[12px] font-bold text-slate-600">
               {new Date(`${d}T12:00:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
-              <button onClick={() => set((a) => ((a.daysOff = a.daysOff.filter((x) => x !== d)), a))} className="p-0.5 rounded-full hover:bg-slate-200" aria-label="Remove day off">
+              <button type="button" onClick={() => set((a) => ((a.daysOff = a.daysOff.filter((x) => x !== d)), a))} className="p-0.5 rounded-full hover:bg-slate-200" aria-label="Remove day off">
                 ✕
               </button>
             </span>
           ))}
       </div>
-      <p className="text-[12px] text-slate-400 mt-4">
-        Changing hours doesn&apos;t affect appointments already booked. Times are the clinic&apos;s local time.
-      </p>
     </div>
   );
 }
