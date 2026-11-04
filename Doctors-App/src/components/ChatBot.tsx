@@ -27,6 +27,12 @@ const SUGGESTED_QUESTIONS = [
   "What does my prescription mean?",
 ];
 
+/** "UMUTEME FEGO" -> "Umuteme" */
+const firstName = (name?: string) => {
+  const f = (name ?? "").trim().split(" ")[0];
+  return f ? f.charAt(0).toUpperCase() + f.slice(1).toLowerCase() : "";
+};
+
 /** aboveTabBar: lift the bubble above the patient app tab bar on phones */
 const ChatBot: React.FC<{ aboveTabBar?: boolean }> = ({ aboveTabBar = false }) => {
   const bottom = aboveTabBar ? "bottom-24 lg:bottom-6" : "bottom-6";
@@ -48,7 +54,7 @@ const ChatBot: React.FC<{ aboveTabBar?: boolean }> = ({ aboveTabBar = false }) =
       setMessages([
         {
           role: "assistant",
-          content: `Hi ${userData?.name?.split(" ")[0] || "there"}! I'm your ADJ's CODEs health assistant. I can help you with your appointments, medications, vitals, and general health questions. What would you like to know?`,
+          content: `Hi ${firstName(userData?.name) || "there"}! I'm your health assistant. I can help with your appointments, medicines, vitals and general health questions. What would you like to know?`,
         },
       ]);
     }
@@ -104,19 +110,15 @@ const ChatBot: React.FC<{ aboveTabBar?: boolean }> = ({ aboveTabBar = false }) =
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+            whileHover={{ scale: 1.06 }}
+            whileTap={{ scale: 0.94 }}
             onClick={() => setOpen(true)}
-            aria-label="Open the AI assistant"
-            title="AI assistant"
+            aria-label="Open the health assistant"
+            title="Health assistant"
             // on desktop, sit just right of the sidebar instead of on top of the profile at its bottom
-            className={`fixed ${bottom} left-6 ${aboveTabBar ? "lg:left-[19.5rem]" : ""} z-50 w-14 h-14 bg-slate-900 text-white rounded-full shadow-2xl flex items-center justify-center border border-white/10 group`}
+            className={`btn-ink fixed ${bottom} left-4 sm:left-6 ${aboveTabBar ? "lg:left-[19rem]" : ""} z-50 w-[52px] h-[52px] rounded-[18px] grid place-items-center group`}
           >
-            <RiRobot2Line
-              size={24}
-              className="text-teal-400 group-hover:rotate-12 transition-transform"
-            />
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-teal-400 rounded-full animate-pulse" />
+            <RiRobot2Line size={23} className="text-[#8FE3E1] group-hover:-rotate-6 transition-transform" />
           </motion.button>
         )}
       </AnimatePresence>
@@ -129,31 +131,22 @@ const ChatBot: React.FC<{ aboveTabBar?: boolean }> = ({ aboveTabBar = false }) =
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 40, scale: 0.95 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className={`fixed ${bottom} left-4 sm:left-6 z-50 w-[calc(100vw-2rem)] max-w-[380px] h-[560px] max-h-[calc(100dvh-8rem)] bg-white border border-slate-100 rounded-[28px] shadow-2xl flex flex-col overflow-hidden`}
+            role="dialog"
+            aria-label="Health assistant"
+            className={`surface !bg-white shadow-[0_24px_60px_rgba(11,37,69,.2)] fixed ${bottom} left-3 sm:left-6 ${aboveTabBar ? "lg:left-[19rem]" : ""} z-50 w-[calc(100vw-1.5rem)] max-w-[400px] h-[580px] max-h-[calc(100dvh-8rem)] rounded-[24px] flex flex-col overflow-hidden`}
           >
-            {/* Header */}
-            <div className="bg-slate-900 px-5 py-4 flex items-center justify-between shrink-0">
+            <div className="px-4 py-3.5 flex items-center justify-between shrink-0 text-white border-b border-[#071A33] bg-[linear-gradient(160deg,#1C3D68_0%,#0B2545_80%)]">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-teal-500/20 rounded-xl flex items-center justify-center">
-                  <RiRobot2Line size={18} className="text-teal-400" />
-                </div>
+                <span className="w-9 h-9 rounded-[12px] grid place-items-center bg-white/10 border border-white/15">
+                  <RiRobot2Line size={18} className="text-[#8FE3E1]" />
+                </span>
                 <div>
-                  <p className="text-white font-black text-sm uppercase tracking-tight">
-                    ADJ Assistant
-                  </p>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
-                    <p className="text-teal-400 text-[10px] font-bold uppercase tracking-widest">
-                      Online
-                    </p>
-                  </div>
+                  <p className="text-[15px] font-bold">Health assistant</p>
+                  <p className="text-[12px] text-white/65">Knows your visits, medicines and vitals</p>
                 </div>
               </div>
-              <button
-                onClick={() => setOpen(false)}
-                className="p-2 hover:bg-white/10 rounded-xl transition-all active:scale-90"
-              >
-                <RiCloseLine size={18} className="text-white" />
+              <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="p-2 rounded-xl hover:bg-white/10 active:scale-90 transition">
+                <RiCloseLine size={18} />
               </button>
             </div>
 
@@ -166,20 +159,16 @@ const ChatBot: React.FC<{ aboveTabBar?: boolean }> = ({ aboveTabBar = false }) =
                   animate={{ opacity: 1, y: 0 }}
                   className={`flex items-start gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
                 >
-                  <div
-                    className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${msg.role === "assistant" ? "bg-teal-50" : "bg-slate-900"}`}
+                  <span
+                    className={`w-7 h-7 rounded-[10px] grid place-items-center shrink-0 ${msg.role === "assistant" ? "bg-brand-soft text-brand-ink" : "bg-ink text-white"}`}
                   >
-                    {msg.role === "assistant" ? (
-                      <RiStethoscopeLine size={14} className="text-teal-500" />
-                    ) : (
-                      <RiUserLine size={14} className="text-white" />
-                    )}
-                  </div>
+                    {msg.role === "assistant" ? <RiStethoscopeLine size={14} /> : <RiUserLine size={14} />}
+                  </span>
                   <div
-                    className={`max-w-[78%] px-3.5 py-2.5 rounded-2xl text-sm font-medium leading-relaxed ${
+                    className={`max-w-[80%] px-3.5 py-2.5 rounded-[16px] text-[14px] leading-relaxed whitespace-pre-line break-words ${
                       msg.role === "assistant"
-                        ? "bg-slate-50 text-slate-700 rounded-tl-sm"
-                        : "bg-slate-900 text-white rounded-tr-sm"
+                        ? "bg-white border border-line text-ink rounded-tl-md"
+                        : "text-white rounded-tr-md bg-[linear-gradient(180deg,#1C3D68,#0B2545)]"
                     }`}
                   >
                     {msg.content}
@@ -193,14 +182,14 @@ const ChatBot: React.FC<{ aboveTabBar?: boolean }> = ({ aboveTabBar = false }) =
                   animate={{ opacity: 1 }}
                   className="flex items-start gap-2.5"
                 >
-                  <div className="w-7 h-7 rounded-xl bg-teal-50 flex items-center justify-center shrink-0">
-                    <RiStethoscopeLine size={14} className="text-teal-500" />
-                  </div>
-                  <div className="bg-slate-50 px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-1.5">
+                  <span className="w-7 h-7 rounded-[10px] grid place-items-center shrink-0 bg-brand-soft text-brand-ink">
+                    <RiStethoscopeLine size={14} />
+                  </span>
+                  <div className="bg-white border border-line px-4 py-3 rounded-[16px] rounded-tl-md flex items-center gap-1.5" aria-label="Thinking">
                     {[0, 1, 2].map((i) => (
                       <motion.div
                         key={i}
-                        className="w-1.5 h-1.5 bg-slate-300 rounded-full"
+                        className="w-1.5 h-1.5 bg-ink-3/50 rounded-full"
                         animate={{ y: [0, -4, 0] }}
                         transition={{
                           duration: 0.6,
@@ -221,14 +210,13 @@ const ChatBot: React.FC<{ aboveTabBar?: boolean }> = ({ aboveTabBar = false }) =
                   transition={{ delay: 0.3 }}
                   className="flex flex-col gap-2 mt-2"
                 >
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
-                    Quick questions
-                  </p>
+                  <p className="text-[13px] font-bold text-ink-3 px-1">Try asking</p>
                   {SUGGESTED_QUESTIONS.map((q, i) => (
                     <button
                       key={i}
+                      type="button"
                       onClick={() => sendMessage(q)}
-                      className="text-left px-3.5 py-2.5 bg-white border border-slate-100 rounded-2xl text-xs font-medium text-slate-600 hover:border-teal-300 hover:text-teal-600 hover:bg-teal-50 transition-all active:scale-95"
+                      className="text-left px-3.5 py-2.5 bg-white border border-line rounded-[14px] text-[14px] text-ink-2 hover:border-brand hover:text-brand-ink hover:bg-brand-soft/40 transition-colors active:scale-[.98]"
                     >
                       {q}
                     </button>
@@ -240,31 +228,30 @@ const ChatBot: React.FC<{ aboveTabBar?: boolean }> = ({ aboveTabBar = false }) =
             </div>
 
             {/* Input */}
-            <div className="px-4 py-4 border-t border-slate-50 shrink-0">
-              <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-2xl px-4 py-2.5 focus-within:border-teal-400 focus-within:bg-white transition-all">
+            <div className="px-3.5 pt-3 pb-3.5 border-t border-line shrink-0 bg-white/70">
+              <div className="flex items-center gap-2 bg-white border-[1.5px] border-line rounded-[16px] pl-4 pr-1.5 py-1.5 focus-within:border-brand focus-within:shadow-[0_0_0_4px_rgba(14,165,164,.12)] transition-[border-color,box-shadow]">
                 <input
                   ref={inputRef}
                   type="text"
-                  placeholder="Ask about your health..."
+                  placeholder="Ask about your health…"
+                  aria-label="Your question"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                  className="flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400 font-medium"
+                  className="flex-1 min-w-0 bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-3/70 py-1.5"
                 />
                 <button
+                  type="button"
                   onClick={() => sendMessage()}
                   disabled={!input.trim() || loading}
-                  className="p-1.5 bg-slate-900 text-white rounded-xl disabled:opacity-30 hover:bg-teal-600 transition-all active:scale-90 disabled:cursor-not-allowed"
+                  aria-label="Send"
+                  className="btn btn-ink !p-0 w-9 h-9 !rounded-[12px] shrink-0"
                 >
-                  {loading ? (
-                    <RiLoader4Line size={14} className="animate-spin" />
-                  ) : (
-                    <RiSendPlaneLine size={14} />
-                  )}
+                  {loading ? <RiLoader4Line size={16} className="animate-spin" /> : <RiSendPlaneLine size={16} />}
                 </button>
               </div>
-              <p className="text-[9px] text-slate-300 font-bold uppercase tracking-widest text-center mt-2">
-                Powered by Gemini · Not a substitute for medical advice
+              <p className="text-[12px] text-ink-3 text-center mt-2 leading-snug">
+                For information only, not a diagnosis. In an emergency, call your local emergency number.
               </p>
             </div>
           </motion.div>

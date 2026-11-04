@@ -193,12 +193,12 @@ function CallScreen({
   // live + embedded: the call fills the screen, with the assistant beside it for doctors
   if (live && join?.embed) {
     return createPortal(
-      <div className="fixed inset-0 z-[120] bg-slate-950 flex flex-col">
+      <div className="fixed inset-0 z-[120] bg-[#081A33] flex flex-col">
         <div className="flex items-center gap-3 px-4 py-3 text-white">
           <Face person={other} size="sm" />
           <div className="min-w-0 flex-1">
             <p className="font-black truncate">{other.name}</p>
-            <p className="text-[12px] text-teal-300 tabular-nums">
+            <p className="text-[12px] text-[#8FE3E1] tabular-nums">
               {call.kind === "video" ? "Video" : "Voice"} · {elapsed}
             </p>
           </div>
@@ -216,7 +216,7 @@ function CallScreen({
             title={`Call with ${other.name}`}
             src={join.url}
             allow="camera; microphone; fullscreen; display-capture; autoplay"
-            className="flex-1 min-h-[50vh] rounded-2xl bg-slate-900 border border-white/10"
+            className="flex-1 min-h-[50vh] rounded-2xl bg-[#0B2545] border border-white/10"
           />
           {sidePanel && panelOpen && <aside className="md:w-[380px] md:shrink-0 max-h-[45vh] md:max-h-none overflow-y-auto rounded-2xl bg-white">{sidePanel(call)}</aside>}
         </div>
@@ -226,20 +226,20 @@ function CallScreen({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-      <div role="dialog" aria-modal="true" aria-label={`${kindLabel} with ${other.name}`} className="w-full max-w-sm rounded-[32px] bg-slate-900 text-white p-8 text-center shadow-2xl">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-[#081A33]/80 backdrop-blur-md">
+      <div role="dialog" aria-modal="true" aria-label={`${kindLabel} with ${other.name}`} className="w-full max-w-sm rounded-[28px] text-white p-8 text-center border border-white/10 bg-[radial-gradient(120%_90%_at_80%_0%,#1B4C6E_0%,#0E2C4D_45%,#081A33_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,.12),0_30px_70px_rgba(8,26,51,.5)]">
         <div className="relative w-28 h-28 mx-auto">
-          {(incoming || outgoing) && <span className="absolute inset-0 rounded-full bg-teal-400/30 animate-ping" />}
+          {(incoming || outgoing) && <span className="absolute inset-0 rounded-full bg-[#0EA5A4]/30 animate-ping" />}
           <Face person={other} size="lg" />
         </div>
-        <p className="text-2xl font-black mt-6">{other.name}</p>
-        <p className="text-sm text-slate-300 mt-1 flex items-center justify-center gap-1.5">
+        <p className="text-[24px] font-bold tracking-[-0.02em] mt-6">{other.name}</p>
+        <p className="text-sm text-white/70 mt-1 flex items-center justify-center gap-1.5">
           {call.kind === "video" ? <RiVideoOnLine size={16} /> : <RiPhoneLine size={16} />}
           {incoming ? `Incoming ${kindLabel}` : outgoing ? "Ringing…" : live ? `On a ${kindLabel} · ${elapsed}` : ""}
         </p>
 
         {live && join && !join.embed && (
-          <div className="mt-6 rounded-2xl bg-white/5 p-4 text-sm text-slate-300">
+          <div className="mt-6 rounded-2xl bg-white/5 p-4 text-sm text-white/70">
             The call is open in another tab.
             <a href={join.url} target="_blank" rel="noopener" className="mt-3 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/10 font-bold text-white hover:bg-white/20">
               <RiExternalLinkLine size={16} /> Open the call
@@ -247,7 +247,7 @@ function CallScreen({
           </div>
         )}
         {outgoing && join && !join.embed && (
-          <a href={join.url} target="_blank" rel="noopener" className="mt-5 inline-flex items-center gap-1.5 text-[12px] font-bold text-teal-300 hover:text-teal-200">
+          <a href={join.url} target="_blank" rel="noopener" className="mt-5 inline-flex items-center gap-1.5 text-[13px] font-bold text-[#8FE3E1] hover:text-white">
             <RiExternalLinkLine size={14} /> Open the call room now
           </a>
         )}
@@ -282,7 +282,7 @@ function RoundButton({ label, tone, onClick, children }: { label: string; tone: 
       <button onClick={onClick} aria-label={label} className={`w-16 h-16 rounded-full flex items-center justify-center text-white shadow-lg transition-colors ${tone}`}>
         {children}
       </button>
-      <span className="text-[12px] font-bold text-slate-300">{label}</span>
+      <span className="text-[13px] font-semibold text-white/75">{label}</span>
     </div>
   );
 }
@@ -297,9 +297,9 @@ function Face({ person, size }: { person: Person; size: "sm" | "lg" }) {
     .map((w) => w[0]?.toUpperCase())
     .join("");
   return person.image && !broken ? (
-    <img src={person.image} alt="" onError={() => setBroken(true)} className={`relative ${box} rounded-full object-cover object-top bg-slate-800 border-2 border-white/10`} />
+    <img src={person.image} alt="" onError={() => setBroken(true)} className={`relative ${box} rounded-full object-cover object-top bg-[#0E2C4D] border-2 border-white/15`} />
   ) : (
-    <div className={`relative ${box} rounded-full bg-teal-600 font-black flex items-center justify-center`}>{initials || "?"}</div>
+    <div className={`relative ${box} rounded-full bg-[#0B7C7B] font-bold flex items-center justify-center`}>{initials || "?"}</div>
   );
 }
 

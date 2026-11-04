@@ -31,29 +31,30 @@ export default function VideoCallPanel({ item, onPay }: { item: Appointment; onP
 
   if (item.cancelled || item.missed) return null;
 
-  let tone = "bg-violet-50 border-violet-100 text-violet-900";
-  let icon = <RiVideoOnLine size={20} className="text-violet-600" />;
+  let tone = "bg-video-soft/60 border-violet-100 text-ink";
+  let icon = <RiVideoOnLine size={20} className="text-video" />;
   let title: string;
   let detail: string;
   let action: React.ReactNode = null;
 
   if (item.isCompleted) {
-    tone = "bg-slate-50 border-slate-100 text-slate-700";
-    icon = <RiCheckboxCircleLine size={20} className="text-teal-600" />;
+    tone = "bg-canvas border-line text-ink";
+    icon = <RiCheckboxCircleLine size={20} className="text-brand-ink" />;
     title = "Video call completed";
     detail = "Your doctor's notes and prescriptions are in the visit report.";
   } else if (!item.payment && state === "ended") {
     // the time passed without payment: nothing left to pay for
-    tone = "bg-slate-50 border-slate-200 text-slate-700";
-    icon = <RiCloseCircleLine size={20} className="text-slate-400" />;
+    tone = "bg-canvas border-line text-ink";
+    icon = <RiCloseCircleLine size={20} className="text-ink-3" />;
     title = "Not paid in time, so this call didn't go ahead";
     detail = "Nothing was charged. A new time is only booked once it's paid.";
     action = (
       <button
+        type="button"
         onClick={() => navigate(`/appointments/${item.docId}?type=video`)}
-        className="px-4 py-2.5 rounded-xl bg-violet-600 text-white text-[12px] font-bold hover:bg-violet-700 shrink-0"
+        className="btn btn-ink shrink-0 !py-2 !px-3.5 !text-[14px] !rounded-xl"
       >
-        Book &amp; pay for a new time
+        Book a new time
       </button>
     );
   } else if (!item.payment) {
@@ -62,19 +63,20 @@ export default function VideoCallPanel({ item, onPay }: { item: Appointment; onP
     title = "Pay to confirm your video call";
     detail = "You can join once it's paid; the call opens 10 minutes before.";
     action = (
-      <button onClick={onPay} className="px-4 py-2.5 rounded-xl bg-amber-500 text-white text-[12px] font-bold hover:bg-amber-600 shrink-0">
+      <button type="button" onClick={onPay} className="btn btn-ink shrink-0 !py-2 !px-3.5 !text-[14px] !rounded-xl">
         Pay now
       </button>
     );
   } else if (state === "open") {
-    tone = "bg-violet-600 border-violet-600 text-white";
-    icon = <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />;
-    title = "Your video call is live";
+    tone = "text-white border-violet-800 bg-[linear-gradient(160deg,#8B5CF6,#6D28D9)] shadow-[inset_0_1px_0_rgba(255,255,255,.2)]";
+    icon = <span className="w-2.5 h-2.5 rounded-full bg-emerald-300 ring-4 ring-emerald-300/25" />;
+    title = "Your video call is open";
     detail = endsAt ? `Open until ${time(endsAt)}` : "Join now";
     action = (
       <button
+        type="button"
         onClick={() => navigate(`/call/${item._id}`)}
-        className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-white text-violet-700 text-[12px] font-black hover:bg-violet-50 shrink-0"
+        className="btn shrink-0 !py-2 !px-4 !text-[14px] !rounded-xl bg-white text-video hover:bg-violet-50"
       >
         <RiVideoOnLine size={16} /> Join call
       </button>
@@ -82,21 +84,21 @@ export default function VideoCallPanel({ item, onPay }: { item: Appointment; onP
   } else if (state === "early" && opensAt) {
     title = `Video call starts in ${until((start?.getTime() ?? 0) - Date.now())}`;
     detail = `You can join from ${time(opensAt)}${opensAt.toDateString() === new Date().toDateString() ? " today" : `, ${opensAt.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`}. We'll remind you.`;
-    icon = <RiTimeLine size={20} className="text-violet-600" />;
+    icon = <RiTimeLine size={20} className="text-video" />;
   } else {
-    tone = "bg-slate-50 border-slate-100 text-slate-600";
-    icon = <RiVideoOnLine size={20} className="text-slate-400" />;
+    tone = "bg-canvas border-line text-ink-2";
+    icon = <RiVideoOnLine size={20} className="text-ink-3" />;
     title = "Video call ended";
     detail = endsAt ? `The call window closed at ${time(endsAt)}. Your doctor will complete the visit.` : "The call window has closed.";
   }
 
   return (
-    <div className={`mt-3 flex flex-col sm:flex-row sm:items-center gap-3 rounded-2xl border px-4 py-3 text-left ${tone}`}>
+    <div className={`mt-3 flex flex-col sm:flex-row sm:items-center gap-3 rounded-[16px] border px-4 py-3 text-left ${tone}`}>
       <div className="flex items-start gap-3 flex-1 min-w-0">
         <span className="mt-0.5 shrink-0 flex items-center">{icon}</span>
         <div className="min-w-0">
-          <p className="text-sm font-black">{title}</p>
-          <p className="text-[12px] opacity-80">{detail}</p>
+          <p className="text-[15px] font-bold">{title}</p>
+          <p className="text-[13px] opacity-80">{detail}</p>
         </div>
       </div>
       {action}

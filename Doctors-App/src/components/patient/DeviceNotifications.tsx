@@ -128,17 +128,17 @@ export function DeviceNotificationsSwitch() {
           : "Get alerts when the site is closed";
 
   return (
-    <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-slate-50 bg-slate-50/60">
+    <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-line bg-canvas/70">
       <div className="min-w-0">
-        <p className="text-[12px] font-bold text-slate-800">Device notifications</p>
-        <p className="text-[11px] text-slate-400 truncate">{hint}</p>
+        <p className="text-[14px] font-bold text-ink">Notifications on this device</p>
+        <p className="text-[12px] text-ink-3 truncate">{hint}</p>
       </div>
       <button
         role="switch"
         aria-checked={on}
         disabled={busy || state === "denied" || state === "needs-install"}
         onClick={on ? disable : enable}
-        className={`relative w-10 h-6 rounded-full transition-colors shrink-0 disabled:opacity-50 ${on ? "bg-teal-500" : "bg-slate-300"}`}
+        className={`relative w-10 h-6 rounded-full transition-colors shrink-0 disabled:opacity-50 ${on ? "bg-brand" : "bg-line"}`}
       >
         <span
           className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${on ? "translate-x-4" : ""}`}
