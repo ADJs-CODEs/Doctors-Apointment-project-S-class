@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { useNavigate } from "@/lib/navigation";
 import { useEmoji } from "../Context/EmojiContext";
+import NudgePanel from "../components/NudgePanel";
 import {
   RiEyeLine,
   RiUserAddLine,
@@ -404,6 +405,11 @@ const WatchingOver: React.FC = () => {
                         })}
                       </div>
                     </div>
+
+                    {/* a notification that reaches their phone even with the app closed */}
+                    <div className="mt-4 pt-4 border-t border-slate-50">
+                      <NudgePanel toUserId={conn.patientId} name={conn.patient?.name || "them"} as="caregiver" compact />
+                    </div>
                   </motion.div>
                 ))}
               </div>
@@ -422,8 +428,9 @@ const WatchingOver: React.FC = () => {
                     key={conn._id}
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-white border border-slate-100 rounded-[24px] p-5 shadow-sm flex items-center gap-4"
+                    className="bg-white border border-slate-100 rounded-[24px] p-5 shadow-sm"
                   >
+                    <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center border border-blue-100 shrink-0">
                       <RiEyeLine size={18} className="text-blue-500" />
                     </div>
@@ -446,6 +453,11 @@ const WatchingOver: React.FC = () => {
                     >
                       <RiCloseLine size={16} />
                     </button>
+                    </div>
+                    {/* reply to the people looking after you */}
+                    <div className="mt-4 pt-4 border-t border-slate-50">
+                      <NudgePanel toUserId={conn.requesterId} name={conn.watcher?.name || "them"} as="patient" compact />
+                    </div>
                   </motion.div>
                 ))}
               </div>

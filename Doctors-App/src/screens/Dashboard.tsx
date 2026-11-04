@@ -29,6 +29,7 @@ import { useMessages } from "@/Context/MessagesContext";
 import MedicineRow from "@/components/patient/MedicineRow";
 import { DeviceNotificationsCard } from "@/components/patient/DeviceNotifications";
 import RecentGiftsBanner from "@/components/wishwell/RecentGiftsBanner";
+import WishWellInvite from "@/components/wishwell/WishWellInvite";
 import { useDashboard, type WishWellEntry } from "@/hooks/useDashboard";
 import { doseKey } from "@/hooks/useDoseLogger";
 import { Link } from "@/lib/navigation";
@@ -251,6 +252,7 @@ export default function Dashboard() {
 
       <DeviceNotificationsCard />
 
+      <WishWellInvite onAnswered={d.reload} />
       <WishWellTicker entries={d.criticalWishWell} />
       <RecentGiftsBanner />
 

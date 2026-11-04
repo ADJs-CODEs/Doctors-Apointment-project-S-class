@@ -82,6 +82,8 @@ export const API_PATHS = {
     REMOVE: "/api/connections/remove",
     PATIENT_DATA: (patientId: string) =>
       `/api/connections/patient/${patientId}`,
+    NUDGE: "/api/connections/nudge",
+    NUDGES: (otherId: string) => `/api/connections/nudges/${otherId}`,
   },
   NOTIFICATIONS: {
     CREATE: "/api/notifications/create",
@@ -90,10 +92,13 @@ export const API_PATHS = {
     MARK_ONE_READ: "/api/notifications/mark-one-read",
     CLEAR: "/api/notifications/clear",
   },
+  CALLS: "/api/user/calls",
   WISH_WELL: {
     ALL: "/api/wish-well/all",
     SEND_EMOJI: "/api/wish-well/send-emoji",
     OPT_OUT: "/api/wish-well/opt-out",
+    PENDING_CONSENT: "/api/wish-well/pending-consent",
+    CONSENT: "/api/wish-well/consent",
   },
   EMOJI: {
     SEND: "/api/emoji/send",
