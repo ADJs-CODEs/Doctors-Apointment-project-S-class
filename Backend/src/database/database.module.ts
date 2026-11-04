@@ -10,6 +10,7 @@ import {
   PushSubscriptionSchema,
   WishWellSchema,
 } from './schemas/social.schemas';
+import { DoctorPayoutSchema, PlatformSettingSchema } from './schemas/doctor-payout.schema';
 import { PharmacyPayoutSchema, PharmacySchema, PharmacyStaffSchema, ProductSchema } from './schemas/pharmacy.schemas';
 import { ShopOrderSchema } from './schemas/shop-order.schema';
 import { UserSchema } from './schemas/user.schema';
@@ -41,6 +42,8 @@ const models = MongooseModule.forFeature([
   { name: MODEL.product, schema: ProductSchema },
   { name: MODEL.shopOrder, schema: ShopOrderSchema },
   { name: MODEL.pharmacyPayout, schema: PharmacyPayoutSchema },
+  { name: MODEL.doctorPayout, schema: DoctorPayoutSchema },
+  { name: MODEL.platformSetting, schema: PlatformSettingSchema },
 ]);
 
 @Global()

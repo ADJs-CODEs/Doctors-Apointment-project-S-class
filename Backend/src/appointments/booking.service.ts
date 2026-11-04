@@ -58,7 +58,8 @@ export class BookingService {
     if (!isValidObjectId(docId)) fail('Doctor not found', HttpStatus.NOT_FOUND);
 
     await this.expireHolds(docId); // free anything that lapsed, so it can be picked
-    const doctor = await this.doctors.findById(docId).select('-password');
+    // this doctor document is also copied onto the appointment (docData): keep private fields out
+    const doctor = await this.doctors.findById(docId).select('-password -settings -googleCalendar');
     if (!doctor) fail('Doctor not found', HttpStatus.NOT_FOUND);
     if (!doctor.available) fail('This doctor is not taking bookings right now');
     if (!offers(doctor, kind)) fail(kind === 'video' ? "This doctor doesn't offer video calls" : "This doctor isn't taking clinic visits");

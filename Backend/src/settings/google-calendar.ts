@@ -5,6 +5,7 @@ import type { Model } from 'mongoose';
 import { fail } from '../common/http';
 import { MODEL } from '../database/models';
 import type { IAppointment } from '../database/schemas/appointment.schema';
+import type { IDoctor } from '../database/schemas/doctor.schema';
 import type { IUser } from '../database/schemas/user.schema';
 import { CLINIC_TZ, slotParts } from '../notifications/clinic-time';
 import { Preferences } from './preferences';
@@ -14,6 +15,10 @@ const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const EVENTS_URL = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
 export const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.events';
 const VISIT_MINUTES = 30;
+
+/** Whose calendar: the patient's (event id in calendarEventId) or the doctor's (doctorCalendarEventId). */
+type Side = 'patient' | 'doctor';
+type Connected = { googleCalendar?: { email?: string; connectedAt?: Date; lastError?: string } };
 
 /** "14_11_2026" + "10:30 am" -> "2026-11-14T10:30:00" (clinic wall-clock), plus the end. */
 function eventTimes(a: IAppointment) {
@@ -25,11 +30,10 @@ function eventTimes(a: IAppointment) {
 }
 
 /**
- * Google Calendar for patients: they connect once (OAuth "authorization code" flow from
- * the browser, exchanged here with the client secret), and their appointments are then
- * added to their primary calendar, and removed when cancelled or missed. The refresh
- * token is stored encrypted. Everything here is best-effort: a calendar hiccup never
- * fails a booking.
+ * Google Calendar for patients and doctors: they connect once (OAuth "authorization code"
+ * flow from the browser, exchanged here with the client secret), and their appointments are
+ * then added to their primary calendar, and removed when cancelled or missed. Refresh tokens
+ * are stored encrypted. Everything here is best-effort: a calendar hiccup never fails a booking.
  */
 @Injectable()
 export class GoogleCalendar {
@@ -37,6 +41,7 @@ export class GoogleCalendar {
 
   constructor(
     @InjectModel(MODEL.user) private readonly users: Model<IUser>,
+    @InjectModel(MODEL.doctor) private readonly doctors: Model<IDoctor>,
     @InjectModel(MODEL.appointment) private readonly appointments: Model<IAppointment>,
     private readonly prefs: Preferences,
   ) {}
@@ -46,9 +51,34 @@ export class GoogleCalendar {
     return !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
   }
 
+  // both kinds of account keep the connection in the same shape
+  private owners(side: Side): Model<any> {
+    return side === 'patient' ? this.users : this.doctors;
+  }
+
+  private eventField(side: Side) {
+    return side === 'patient' ? 'calendarEventId' : 'doctorCalendarEventId';
+  }
+
   // --- connecting ---
 
-  async connect(userId: string, code?: string) {
+  connect(userId: string, code?: string) {
+    return this.connectFor('patient', userId, code);
+  }
+
+  connectDoctor(docId: string, code?: string) {
+    return this.connectFor('doctor', docId, code);
+  }
+
+  disconnect(userId: string) {
+    return this.disconnectFor('patient', userId);
+  }
+
+  disconnectDoctor(docId: string) {
+    return this.disconnectFor('doctor', docId);
+  }
+
+  private async connectFor(side: Side, id: string, code?: string) {
     if (!this.configured()) fail('Google Calendar isn\'t set up on the server yet', HttpStatus.SERVICE_UNAVAILABLE);
     if (!code || typeof code !== 'string') fail('Missing Google authorization code');
 
@@ -72,7 +102,7 @@ export class GoogleCalendar {
     }
     if (!tokens.scope?.includes(CALENDAR_SCOPE)) fail('Please allow access to your calendar to connect it');
 
-    const existing = await this.users.findById(userId).select('+googleCalendar.refreshToken googleCalendar');
+    const existing = await this.owners(side).findById(id).select('+googleCalendar.refreshToken googleCalendar');
     const refreshToken = tokens.refresh_token ?? (existing?.googleCalendar?.refreshToken ? open(existing.googleCalendar.refreshToken) : undefined);
     if (!refreshToken) {
       // Google only sends it the first time someone consents; if they connected before and
@@ -90,43 +120,43 @@ export class GoogleCalendar {
       // the email is only for display
     }
 
-    await this.users.updateOne(
-      { _id: userId },
+    await this.owners(side).updateOne(
+      { _id: id },
       { $set: { googleCalendar: { email, refreshToken: seal(refreshToken), connectedAt: new Date() } } },
     );
     return { success: true, message: 'Google Calendar connected', email };
   }
 
-  async disconnect(userId: string) {
-    const user = await this.users.findById(userId).select('+googleCalendar.refreshToken googleCalendar');
-    const sealed = user?.googleCalendar?.refreshToken;
+  private async disconnectFor(side: Side, id: string) {
+    const owner = await this.owners(side).findById(id).select('+googleCalendar.refreshToken googleCalendar');
+    const sealed = owner?.googleCalendar?.refreshToken;
     if (sealed) {
       // tell Google to drop our access too
       await axios
         .post('https://oauth2.googleapis.com/revoke', new URLSearchParams({ token: open(sealed) }))
         .catch(() => {});
     }
-    await this.users.updateOne({ _id: userId }, { $unset: { googleCalendar: 1 } });
+    await this.owners(side).updateOne({ _id: id }, { $unset: { googleCalendar: 1 } });
     return { success: true, message: 'Google Calendar disconnected' };
   }
 
-  status(user: Pick<IUser, 'googleCalendar'>) {
+  status(owner: Connected) {
     return {
       configured: this.configured(),
-      connected: !!user.googleCalendar?.connectedAt,
-      email: user.googleCalendar?.email,
-      connectedAt: user.googleCalendar?.connectedAt,
-      lastError: user.googleCalendar?.lastError,
+      connected: !!owner.googleCalendar?.connectedAt,
+      email: owner.googleCalendar?.email,
+      connectedAt: owner.googleCalendar?.connectedAt,
+      lastError: owner.googleCalendar?.lastError,
     };
   }
 
   // --- talking to Google ---
 
-  /** A fresh access token for this user, or null if they aren't connected. */
-  private async accessToken(userId: string): Promise<string | null> {
+  /** A fresh access token for this patient/doctor, or null if they aren't connected. */
+  private async accessToken(side: Side, id: string): Promise<string | null> {
     if (!this.configured()) return null;
-    const user = await this.users.findById(userId).select('+googleCalendar.refreshToken googleCalendar').lean();
-    const sealed = user?.googleCalendar?.refreshToken;
+    const owner = await this.owners(side).findById(id).select('+googleCalendar.refreshToken googleCalendar').lean<Connected & { googleCalendar?: { refreshToken?: string } }>();
+    const sealed = owner?.googleCalendar?.refreshToken;
     if (!sealed) return null;
     try {
       const { data } = await axios.post(
@@ -142,16 +172,31 @@ export class GoogleCalendar {
     } catch (err: any) {
       const reason = err.response?.data?.error ?? err.message;
       // invalid_grant: they revoked access from their Google account
-      await this.users.updateOne({ _id: userId }, { $set: { 'googleCalendar.lastError': `Google refused access (${reason}). Reconnect it.` } });
+      await this.owners(side).updateOne({ _id: id }, { $set: { 'googleCalendar.lastError': `Google refused access (${reason}). Reconnect it.` } });
       return null;
     }
   }
 
-  private eventBody(a: IAppointment) {
+  private eventBody(side: Side, a: IAppointment) {
     const t = eventTimes(a)!;
     const where = [a.docData?.address?.line1, a.docData?.address?.line2].filter(Boolean).join(', ');
-    const site = process.env.USER_URL || process.env.CLIENT_URL || '';
     const video = a.kind === 'video';
+    if (side === 'doctor') {
+      const panel = process.env.ADMIN_URL || '';
+      const patient = a.userData?.name ?? 'a patient';
+      return {
+        summary: `${video ? 'Video call' : 'Appointment'}: ${patient}`,
+        description: video
+          ? `Video consultation booked on ADJ's CODEs. Join here (opens 10 minutes before):\n${panel}/doctor-call/${a._id}`
+          : `Clinic visit booked on ADJ's CODEs.\n${panel}/doctor-appointments`,
+        location: video ? `${panel}/doctor-call/${a._id}` : where || undefined,
+        start: { dateTime: t.start, timeZone: CLINIC_TZ },
+        end: { dateTime: t.end, timeZone: CLINIC_TZ },
+        reminders: { useDefault: false, overrides: [{ method: 'popup', minutes: 15 }] },
+        extendedProperties: { private: { appointmentId: String(a._id) } },
+      };
+    }
+    const site = process.env.USER_URL || process.env.CLIENT_URL || '';
     return {
       summary: `${video ? 'Video call' : 'Appointment'} with ${a.docData?.name ?? 'your doctor'}`,
       description: video
@@ -165,58 +210,82 @@ export class GoogleCalendar {
     };
   }
 
-  /** Adds (or refreshes) an appointment in the patient's calendar. Never throws. */
+  /** Adds (or refreshes) an appointment in the patient's and the doctor's calendars. Never throws. */
   async upsert(appointmentOrId: IAppointment | string) {
+    const a = typeof appointmentOrId === 'string' ? await this.appointments.findById(appointmentOrId).catch(() => null) : appointmentOrId;
+    if (!a || a.cancelled || a.missed || !eventTimes(a)) return false;
+    const [patient] = await Promise.all([
+      this.upsertFor('patient', a),
+      this.upsertFor('doctor', a),
+    ]);
+    return patient;
+  }
+
+  private async upsertFor(side: Side, a: IAppointment) {
     try {
-      const a =
-        typeof appointmentOrId === 'string' ? await this.appointments.findById(appointmentOrId) : appointmentOrId;
-      if (!a || a.cancelled || a.missed || !eventTimes(a)) return false;
-      if (!(await this.prefs.get(a.userId)).calendar.autoAdd) return false;
-      const token = await this.accessToken(a.userId);
+      const id = side === 'patient' ? a.userId : a.docId;
+      if (side === 'patient' && !(await this.prefs.get(a.userId)).calendar.autoAdd) return false;
+      const token = await this.accessToken(side, id);
       if (!token) return false;
 
       const headers = { Authorization: `Bearer ${token}` };
-      if (a.calendarEventId) {
-        await axios.patch(`${EVENTS_URL}/${encodeURIComponent(a.calendarEventId)}`, this.eventBody(a), { headers });
+      const field = this.eventField(side);
+      const existing = (a as any)[field] as string | undefined;
+      if (existing) {
+        await axios.patch(`${EVENTS_URL}/${encodeURIComponent(existing)}`, this.eventBody(side, a), { headers });
       } else {
-        const { data } = await axios.post(EVENTS_URL, this.eventBody(a), { headers });
-        await this.appointments.updateOne({ _id: a._id }, { $set: { calendarEventId: data.id } });
+        const { data } = await axios.post(EVENTS_URL, this.eventBody(side, a), { headers });
+        await this.appointments.updateOne({ _id: a._id }, { $set: { [field]: data.id } });
       }
-      await this.users.updateOne({ _id: a.userId }, { $unset: { 'googleCalendar.lastError': 1 } });
+      await this.owners(side).updateOne({ _id: id }, { $unset: { 'googleCalendar.lastError': 1 } });
       return true;
     } catch (err: any) {
-      this.logger.warn(`calendar add failed: ${err.response?.data?.error?.message ?? err.message}`);
+      this.logger.warn(`${side} calendar add failed: ${err.response?.data?.error?.message ?? err.message}`);
       return false;
     }
   }
 
-  /** Takes a cancelled/missed appointment off the patient's calendar. Never throws. */
+  /** Takes a cancelled/missed appointment off both calendars. Never throws. */
   async remove(appointment: IAppointment) {
+    await Promise.all([this.removeFor('patient', appointment), this.removeFor('doctor', appointment)]);
+  }
+
+  private async removeFor(side: Side, appointment: IAppointment) {
     try {
-      if (!appointment.calendarEventId) return;
-      const token = await this.accessToken(appointment.userId);
+      const field = this.eventField(side);
+      const eventId = (appointment as any)[field] as string | undefined;
+      if (!eventId) return;
+      const token = await this.accessToken(side, side === 'patient' ? appointment.userId : appointment.docId);
       if (!token) return;
       await axios
-        .delete(`${EVENTS_URL}/${encodeURIComponent(appointment.calendarEventId)}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        .delete(`${EVENTS_URL}/${encodeURIComponent(eventId)}`, { headers: { Authorization: `Bearer ${token}` } })
         .catch((err) => {
           if (err.response?.status !== 404 && err.response?.status !== 410) throw err; // already gone is fine
         });
-      await this.appointments.updateOne({ _id: appointment._id }, { $unset: { calendarEventId: 1 } });
+      await this.appointments.updateOne({ _id: appointment._id }, { $unset: { [field]: 1 } });
     } catch (err: any) {
-      this.logger.warn(`calendar remove failed: ${err.response?.data?.error?.message ?? err.message}`);
+      this.logger.warn(`${side} calendar remove failed: ${err.response?.data?.error?.message ?? err.message}`);
     }
   }
 
-  /** Adds every upcoming appointment (used right after connecting). */
-  async syncUpcoming(userId: string) {
+  /** Adds every upcoming appointment (used right after connecting, and "Sync now"). */
+  syncUpcoming(userId: string) {
+    return this.syncFor('patient', userId);
+  }
+
+  syncDoctorUpcoming(docId: string) {
+    return this.syncFor('doctor', docId);
+  }
+
+  private async syncFor(side: Side, id: string) {
+    const field = this.eventField(side);
     const pending = await this.appointments.find({
-      userId,
+      [side === 'patient' ? 'userId' : 'docId']: id,
       cancelled: false,
       isCompleted: false,
       missed: { $exists: false },
-      calendarEventId: { $exists: false },
+      holdExpiresAt: { $exists: false }, // not a booking until it's paid
+      [field]: { $exists: false },
       date: { $gt: Date.now() - 120 * 24 * 60 * 60 * 1000 },
     });
     const now = Date.now();
@@ -225,7 +294,7 @@ export class GoogleCalendar {
       const p = slotParts(a.slotDate, a.slotTime);
       // future visits only (a day of slack for time zones)
       if (!p || Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute) < now - 24 * 60 * 60 * 1000) continue;
-      if (await this.upsert(a)) added++;
+      if (await this.upsertFor(side, a)) added++;
     }
     return { success: true, message: added ? `Added ${added} upcoming appointment${added === 1 ? '' : 's'} to your calendar` : 'Your calendar is up to date', added };
   }

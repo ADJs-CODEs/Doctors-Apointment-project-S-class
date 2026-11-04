@@ -97,12 +97,15 @@ export class MapsService {
     return { point: { lat: home.lat, lng: home.lng }, from: 'home' };
   }
 
-  /** The clinic's coordinates, looked up once per address and saved on the doctor. */
-  private async clinicLocation(doctor: IDoctor) {
+  /**
+   * The clinic's coordinates, looked up once per address and saved on the doctor.
+   * fresh: look it up again (the doctor's "check my location" in Settings).
+   */
+  async clinicLocation(doctor: IDoctor, fresh = false) {
     const address = [doctor.address?.line1, doctor.address?.line2].filter(Boolean).join(', ');
     if (!address) return null;
     // reuse the saved point unless the address changed (or it was a rough OSM point and we now have Google)
-    if (doctor.geo && doctor.geo.address === address && !(this.key && doctor.geo.source === 'osm')) {
+    if (!fresh && doctor.geo && doctor.geo.address === address && !(this.key && doctor.geo.source === 'osm')) {
       return { ...doctor.geo, address };
     }
     const found = await this.geocode(address);

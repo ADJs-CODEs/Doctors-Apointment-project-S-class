@@ -1,5 +1,6 @@
 import { Controller, Headers, HttpCode, Logger, Post, type RawBodyRequest, Req } from '@nestjs/common';
 import type { Request } from 'express';
+import { DoctorEarningsService } from '../doctor/doctor-earnings.service';
 import { PharmacyEarningsService } from '../pharmacy/earnings.service';
 import { WalletService } from '../wallet/wallet.service';
 import { PaystackService } from './paystack.service';
@@ -16,6 +17,7 @@ export class PaystackWebhookController {
     private readonly paystack: PaystackService,
     private readonly wallet: WalletService,
     private readonly pharmacyEarnings: PharmacyEarningsService,
+    private readonly doctorEarnings: DoctorEarningsService,
   ) {}
 
   @Post('webhook')
@@ -33,6 +35,8 @@ export class PaystackWebhookController {
       // pharmacy withdrawals and care-fund withdrawals are told apart by their reference
       if (PharmacyEarningsService.isOurReference(data.reference)) {
         await this.pharmacyEarnings.completeTransfer(data.reference, outcome, data.reason);
+      } else if (DoctorEarningsService.isOurReference(data.reference)) {
+        await this.doctorEarnings.completeTransfer(data.reference, outcome, data.reason);
       } else {
         await this.wallet.completeTransfer(data.reference, outcome, data.reason);
       }

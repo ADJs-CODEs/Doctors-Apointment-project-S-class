@@ -21,7 +21,22 @@ export interface IDoctor extends Document {
   videoFees?: number;
   /** when the doctor can be booked (appointments/availability.ts); unset = the old 10am–9pm daily */
   availability?: Availability;
+  /** the doctor's own choices (settings/doctor-preferences.ts); private, never copied to appointments */
+  settings?: DoctorSettings;
+  /** Google Calendar connection; the refresh token is encrypted and never returned */
+  googleCalendar?: { email?: string; refreshToken?: string; connectedAt?: Date; lastError?: string };
+  /** where withdrawals go (the account name comes from the bank when Paystack is on) */
+  payoutBank?: { bankName: string; bankCode?: string; accountNumber: string; accountName: string; verified: boolean };
 }
+
+export type DoctorEmail = 'bookings' | 'cancellations' | 'visitStarting';
+
+export type DoctorSettings = {
+  /** which (non-safety) emails they get; safety alerts are always sent */
+  emails: Record<DoctorEmail, boolean>;
+  /** no non-urgent emails between these clinic-time hours (the bell still gets everything) */
+  quietHours: { enabled: boolean; start: string; end: string };
+};
 
 export type VisitKind = 'in-person' | 'video';
 
@@ -51,6 +66,15 @@ export const DoctorSchema = new Schema<IDoctor>(
     geo: { type: Object },
     videoFees: { type: Number, min: 0 },
     availability: { type: Object },
+    settings: { type: Object },
+    googleCalendar: {
+      email: { type: String },
+      // never returned by queries unless asked for with '+googleCalendar.refreshToken'
+      refreshToken: { type: String, select: false },
+      connectedAt: { type: Date },
+      lastError: { type: String },
+    },
+    payoutBank: { type: Object },
   },
   // keep empty slots_booked objects instead of letting mongoose strip them
   { minimize: false },

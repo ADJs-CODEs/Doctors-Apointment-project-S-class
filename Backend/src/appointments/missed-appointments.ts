@@ -5,6 +5,7 @@ import Stripe from 'stripe';
 import { fail } from '../common/http';
 import { MODEL } from '../database/models';
 import { type IAppointment, type IRefund, REFUND_PERCENT } from '../database/schemas/appointment.schema';
+import { DoctorEarningsService } from '../doctor/doctor-earnings.service';
 import { slotInstant } from '../notifications/clinic-time';
 import { EmailNotifications } from '../notifications/email-notifications';
 import { GoogleCalendar } from '../settings/google-calendar';
@@ -31,6 +32,7 @@ export class MissedAppointments {
     private readonly emails: EmailNotifications,
     private readonly wallet: WalletService,
     private readonly calendar: GoogleCalendar,
+    private readonly earnings: DoctorEarningsService,
   ) {}
 
   private get stripe() {
@@ -62,6 +64,8 @@ export class MissedAppointments {
     if (!missed) fail('This appointment is already closed');
 
     const refund = missed.payment ? await this.refund(missed, REFUND_PERCENT[by]) : null;
+    // a patient no-show earns the doctor what wasn't refunded (after the refund is recorded)
+    if (by === 'patient') await this.earnings.settle(missed._id).catch((err) => this.logger.error(`earning for ${missed._id}: ${err.message}`));
     this.emails.appointmentMissed(missed, refund);
     void this.calendar.remove(missed);
     this.logger.log(`appointment ${appointmentId} missed by ${by} (marked by ${markedBy})${refund ? `, refund ${refund.status}` : ''}`);

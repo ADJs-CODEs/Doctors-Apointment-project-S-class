@@ -2,7 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
-import type { Model } from 'mongoose';
+import { isValidObjectId, type Model } from 'mongoose';
 import { fail } from '../common/http';
 import { MODEL } from '../database/models';
 import type { IAppointment } from '../database/schemas/appointment.schema';
@@ -12,6 +12,7 @@ import { MessagesService } from '../messages/messages.service';
 import { EmailNotifications } from '../notifications/email-notifications';
 import { GoogleCalendar } from '../settings/google-calendar';
 import { WalletService } from '../wallet/wallet.service';
+import { DoctorEarningsService } from './doctor-earnings.service';
 import { releaseSlot } from '../user/user.service';
 
 // The doctor panel expects failures here as HTTP 200 with { success: false }, so most
@@ -29,10 +30,12 @@ export class DoctorService {
     private readonly emails: EmailNotifications,
     private readonly wallet: WalletService,
     private readonly calendar: GoogleCalendar,
+    private readonly earnings: DoctorEarningsService,
   ) {}
 
   async list() {
-    const doctors = await this.doctors.find({}).select(['-password', '-email']);
+    // public list: no login or private settings
+    const doctors = await this.doctors.find({}).select(['-password', '-email', '-settings', '-googleCalendar']);
     return { success: true, doctors };
   }
 
@@ -81,6 +84,8 @@ export class DoctorService {
         })),
       },
     });
+    // the wallet works from the record anyway, so a failure here is caught up on its next view
+    await this.earnings.settle(appointment._id).catch(() => undefined);
     return { success: true, message: 'Appointment Completed' };
   }
 
@@ -122,6 +127,34 @@ export class DoctorService {
   async profile(docId: string) {
     const profileData = await this.doctors.findById(docId).select('-password');
     return { success: true, profileData };
+  }
+
+  /**
+   * "Mark as resolved": takes the patient off Critical across their visits with this doctor,
+   * and clears early-dose warnings, so the red flag doesn't stay forever.
+   */
+  async resolveCritical(docId: string, userId?: string) {
+    if (!userId || !isValidObjectId(userId)) failOk('Patient not found');
+    const visits = await this.appointments.find({ docId, userId }).select(['isCompleted', 'patientStatus', 'healthData.prescribedMedicines.overdoseAlert']);
+    if (!visits.length) failOk('This patient has no visits with you');
+    let cleared = 0;
+    for (const v of visits) {
+      const critical = v.patientStatus === 'Critical';
+      const earlyDose = v.healthData?.prescribedMedicines?.some((m) => m.overdoseAlert);
+      if (!critical && !earlyDose) continue;
+      await this.appointments.updateOne(
+        { _id: v._id },
+        {
+          $set: {
+            ...(critical && { patientStatus: v.isCompleted ? 'Completed' : 'Stable' }),
+            ...(earlyDose && { 'healthData.prescribedMedicines.$[m].overdoseAlert': false }),
+          },
+        },
+        earlyDose ? { arrayFilters: [{ 'm.overdoseAlert': true }] } : {},
+      );
+      cleared++;
+    }
+    return { success: true, message: cleared ? 'Marked as resolved' : 'Nothing to resolve', cleared };
   }
 
   async updateProfile(docId: string, body: { fees?: number; address?: any; available?: boolean }) {
