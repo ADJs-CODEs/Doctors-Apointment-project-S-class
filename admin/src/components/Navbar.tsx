@@ -4,34 +4,19 @@ import React, { useContext } from 'react'
 import { AdminContext } from '../context/AdminContext'
 import { useNavigate } from "@/lib/navigation"
 import { DoctorContext } from '../context/DoctorContext'
-import { AppContext } from '../context/AppContext'
-import { RiLogoutCircleRLine, RiShieldUserLine, RiStethoscopeLine, RiStore2Line } from '@remixicon/react'
-import type { AdminContextType, DoctorContextType, AppContextType } from '../types/index'
+import { RiShieldUserLine, RiStethoscopeLine, RiStore2Line } from '@remixicon/react'
+import type { AdminContextType, DoctorContextType } from '../types/index'
 import { motion } from 'framer-motion'
 import DoctorBell from './DoctorBell'
 import { usePharmacy } from '../context/PharmacyContext'
 
 const Navbar: React.FC = () => {
-  const { aToken, setAToken } = useContext(AdminContext) as AdminContextType
-  const { dToken, setDToken } = useContext(DoctorContext) as DoctorContextType
-  const { setProgress } = useContext(AppContext) as AppContextType
-  const { pToken, logout: pharmacyLogout } = usePharmacy()
+  const { aToken } = useContext(AdminContext) as AdminContextType
+  const { dToken } = useContext(DoctorContext) as DoctorContextType
+  const { pToken } = usePharmacy()
   const role = aToken ? 'Admin' : dToken ? 'Doctor' : pToken ? 'Pharmacy' : ''
 
   const navigate = useNavigate()
-
-  const logout = (): void => {
-    navigate('/')
-    if (aToken) {
-      setAToken('')
-      localStorage.removeItem('aToken')
-    }
-    if (dToken) {
-      setDToken('')
-      localStorage.removeItem('dToken')
-    }
-    if (pToken) pharmacyLogout()
-  }
 
   const handleLogoClick = () => {
     navigate(aToken ? '/admin-dashboard' : dToken ? '/doctor-dashboard' : '/pharmacy')
@@ -88,15 +73,7 @@ const Navbar: React.FC = () => {
         </div>
 
         {dToken && <DoctorBell />}
-
-        <button
-          onClick={logout}
-          className='group flex items-center gap-2 bg-slate-50 hover:bg-rose-50 text-slate-600 hover:text-rose-500 px-4 sm:px-7 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border border-slate-100 hover:border-rose-100 transition-all duration-300 font-black text-[9px] sm:text-[10px] uppercase tracking-widest active:scale-95'
-        >
-          {/* Text hidden on very small phones to save space, icon remains */}
-          <span className='hidden xs:block'>Logout</span>
-          <RiLogoutCircleRLine size={16} className='group-hover:translate-x-1 transition-transform' />
-        </button>
+        {/* logging out lives at the bottom of the sidebar */}
       </div>
 
     </nav>

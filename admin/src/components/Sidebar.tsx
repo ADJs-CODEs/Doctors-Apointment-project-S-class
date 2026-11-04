@@ -2,7 +2,7 @@
 
 import React, { useContext } from "react";
 import { AdminContext } from "../context/AdminContext";
-import { NavLink } from "@/lib/navigation";
+import { NavLink, useNavigate } from "@/lib/navigation";
 import { DoctorContext } from "../context/DoctorContext";
 import { AppContext } from "../context/AppContext";
 import {
@@ -17,11 +17,13 @@ import {
   RiLineChartLine,
   RiSettings3Line,
   RiShoppingBag3Line,
+  RiWallet3Line,
   RiStore2Line,
   RiTeamLine,
   RiCapsuleLine,
   RiTruckLine,
   RiMoneyDollarCircleLine,
+  RiLogoutCircleRLine,
 } from "@remixicon/react";
 import { usePharmacy } from "../context/PharmacyContext";
 import { useDoctorMessages } from "../context/DoctorMessagesContext";
@@ -32,11 +34,26 @@ import type {
 } from "../types/index";
 
 const Sidebar: React.FC = () => {
-  const { aToken } = useContext(AdminContext) as AdminContextType;
-  const { dToken } = useContext(DoctorContext) as DoctorContextType;
+  const { aToken, setAToken } = useContext(AdminContext) as AdminContextType;
+  const { dToken, setDToken } = useContext(DoctorContext) as DoctorContextType;
   const { setProgress } = useContext(AppContext) as AppContextType;
   const { unread: unreadMessages } = useDoctorMessages();
-  const { pToken, staff } = usePharmacy();
+  const { pToken, staff, logout: pharmacyLogout } = usePharmacy();
+  const navigate = useNavigate();
+
+  // clears whichever login is active and goes back to the login screen
+  const logout = () => {
+    navigate("/");
+    if (aToken) {
+      setAToken("");
+      localStorage.removeItem("aToken");
+    }
+    if (dToken) {
+      setDToken("");
+      localStorage.removeItem("dToken");
+    }
+    if (pToken) pharmacyLogout();
+  };
 
   const activeClass = "bg-slate-900 text-white shadow-xl lg:translate-x-2";
   const inactiveClass = "text-slate-500 hover:bg-slate-50 hover:text-slate-900";
@@ -239,7 +256,7 @@ const Sidebar: React.FC = () => {
                   className="shrink-0 group-hover:text-indigo-500 transition-colors"
                 />
                 <p className="hidden lg:block text-[11px] font-black uppercase tracking-widest">
-                  Overview
+                  Dashboard
                 </p>
               </NavLink>
 
@@ -316,9 +333,52 @@ const Sidebar: React.FC = () => {
                   My Profile
                 </p>
               </NavLink>
+
+              <NavLink
+                onClick={handleLinkClick}
+                className={({ isActive }) =>
+                  `${baseClass} ${isActive ? activeClass : inactiveClass}`
+                }
+                to={"/doctor-wallet"}
+              >
+                <RiWallet3Line
+                  size={22}
+                  className="shrink-0 group-hover:text-indigo-500 transition-colors"
+                />
+                <p className="hidden lg:block text-[11px] font-black uppercase tracking-widest">
+                  Wallet
+                </p>
+              </NavLink>
+
+              <NavLink
+                onClick={handleLinkClick}
+                className={({ isActive }) =>
+                  `${baseClass} ${isActive ? activeClass : inactiveClass}`
+                }
+                to={"/doctor-settings"}
+              >
+                <RiSettings3Line
+                  size={22}
+                  className="shrink-0 group-hover:text-indigo-500 transition-colors"
+                />
+                <p className="hidden lg:block text-[11px] font-black uppercase tracking-widest">
+                  Settings
+                </p>
+              </NavLink>
             </ul>
           </div>
         )}
+
+        {/* --- Log out (every role) --- */}
+        <div className="lg:mt-8 lg:pt-6 lg:border-t border-slate-100">
+          <button
+            onClick={logout}
+            className={`${baseClass} w-full text-slate-500 hover:bg-rose-50 hover:text-rose-600`}
+          >
+            <RiLogoutCircleRLine size={22} className="shrink-0 transition-colors" />
+            <p className="hidden lg:block text-[11px] font-black uppercase tracking-widest">Log out</p>
+          </button>
+        </div>
       </div>
     </div>
   );

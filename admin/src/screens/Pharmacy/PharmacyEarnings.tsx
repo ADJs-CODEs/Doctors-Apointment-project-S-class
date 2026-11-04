@@ -258,24 +258,35 @@ export default function PharmacyEarnings() {
   );
 }
 
-function BankForm({ onSaved, onCancel }: { onSaved: () => void; onCancel?: () => void }) {
+/** Where withdrawals are paid. Shared with the doctor's wallet, which passes its own endpoints. */
+export function BankForm({
+  onSaved,
+  onCancel,
+  banksPath = API_PATHS.PHARMACY.BANKS,
+  savePath = API_PATHS.PHARMACY.PAYOUT_BANK,
+}: {
+  onSaved: () => void;
+  onCancel?: () => void;
+  banksPath?: string;
+  savePath?: string;
+}) {
   const [options, setOptions] = useState<{ paystack: boolean; banks: { name: string; code: string }[] } | null>(null);
   const [form, setForm] = useState({ bankCode: "", bankName: "", accountNumber: "", accountName: "" });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     axiosInstance
-      .get(API_PATHS.PHARMACY.BANKS, { silent: true } as any)
+      .get(banksPath, { silent: true } as any)
       .then(({ data }) => setOptions(data.success ? data : { paystack: false, banks: [] }))
       .catch(() => setOptions({ paystack: false, banks: [] }));
-  }, []);
+  }, [banksPath]);
 
   const save = async (e: FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
       const { data } = await axiosInstance.put(
-        API_PATHS.PHARMACY.PAYOUT_BANK,
+        savePath,
         options?.paystack ? { bankCode: form.bankCode, accountNumber: form.accountNumber } : { bankName: form.bankName, accountName: form.accountName, accountNumber: form.accountNumber },
       );
       if (data.success) {

@@ -1,14 +1,14 @@
 "use client";
 
 import { RiCheckLine, RiCloseLine, RiRefreshLine, RiSendPlaneLine, RiStore2Line } from "@remixicon/react";
-import { useCallback, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { API_PATHS } from "../../utils/apiPath";
 import axiosInstance from "../../utils/axiosInstance";
 
-type Payout = {
+export type Payout = {
   _id: string;
-  pharmacyName: string;
+  pharmacyName?: string;
   cents: number;
   bank: { bankName: string; accountName: string; accountNumber: string; verified: boolean };
   requestedBy?: string;
@@ -86,7 +86,7 @@ export default function PharmacyPayouts() {
       ) : (
         <div className="space-y-4">
           {rows.map((p) => (
-            <Card key={p._id} p={p} paystack={paystack} onChanged={load} />
+            <PayoutCard key={p._id} p={p} paystack={paystack} onChanged={load} />
           ))}
         </div>
       )}
@@ -94,7 +94,22 @@ export default function PharmacyPayouts() {
   );
 }
 
-function Card({ p, paystack, onChanged }: { p: Payout; paystack: boolean; onChanged: () => void }) {
+/** One withdrawal. Shared with doctor withdrawals, which pass their own endpoint and labels. */
+export function PayoutCard({
+  p,
+  paystack,
+  onChanged,
+  path = API_PATHS.ADMIN.PHARMACY_PAYOUT,
+  icon = <RiStore2Line size={15} className="text-teal-600" />,
+  who = "pharmacy",
+}: {
+  p: Payout & { doctorName?: string };
+  paystack: boolean;
+  onChanged: () => void;
+  path?: (id: string, action: "send" | "paid" | "reject" | "refresh") => string;
+  icon?: ReactNode;
+  who?: string;
+}) {
   const [mode, setMode] = useState<"none" | "pay" | "reject">("none");
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -103,7 +118,7 @@ function Card({ p, paystack, onChanged }: { p: Payout; paystack: boolean; onChan
   const act = async (action: "send" | "paid" | "reject" | "refresh", body: object = {}) => {
     setBusy(true);
     try {
-      const { data } = await axiosInstance.post(API_PATHS.ADMIN.PHARMACY_PAYOUT(p._id, action), body);
+      const { data } = await axiosInstance.post(path(p._id, action), body);
       if (data.success) {
         toast.success(data.message);
         onChanged();
@@ -124,7 +139,7 @@ function Card({ p, paystack, onChanged }: { p: Payout; paystack: boolean; onChan
             {p.payoutMinor ? <span className="text-lg font-bold text-slate-400"> · {naira(p.payoutMinor)}</span> : null}
           </p>
           <p className="text-sm font-bold text-slate-700 mt-1 flex items-center gap-1.5">
-            <RiStore2Line size={15} className="text-teal-600" /> {p.pharmacyName}
+            {icon} {p.pharmacyName ?? p.doctorName}
           </p>
           <p className="text-[12px] text-slate-400">
             Requested {when(p.createdAt)}
@@ -139,7 +154,7 @@ function Card({ p, paystack, onChanged }: { p: Payout; paystack: boolean; onChan
           {p.bank.accountName} · {p.bank.bankName} · {p.bank.accountNumber}
         </p>
         <p className={`text-[12px] ${p.bank.verified ? "text-teal-700" : "text-orange-700"}`}>
-          {p.bank.verified ? "Confirmed by the bank" : "Typed in by the pharmacy, not confirmed: check it before sending"}
+          {p.bank.verified ? "Confirmed by the bank" : `Typed in by the ${who}, not confirmed: check it before sending`}
         </p>
       </div>
 
@@ -183,7 +198,7 @@ function Card({ p, paystack, onChanged }: { p: Payout; paystack: boolean; onChan
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={mode === "pay" ? "Bank transfer reference" : "Reason (sent to the pharmacy)"}
+            placeholder={mode === "pay" ? "Bank transfer reference" : `Reason (sent to the ${who})`}
             className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-teal-400"
           />
           <div className="flex gap-2">

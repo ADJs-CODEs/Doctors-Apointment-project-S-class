@@ -47,6 +47,8 @@ type FinanceData = {
     pharmaciesCents: number;
     /** paid orders still on their way (go to the pharmacy, or back to the patient) */
     ordersInProgressCents: number;
+    /** doctors' recorded visit earnings not yet paid out */
+    doctorsCents: number;
     totalCents: number;
   };
   shop: {
@@ -65,12 +67,15 @@ type FinanceData = {
     grossCents: number;
     refundCents: number;
     netCents: number;
+    /** the clinic's share, on visits whose earnings have been recorded */
+    commissionCents: number;
     noShows: number;
     missedByDoctor: number;
   }[];
   attention: {
     pendingPayouts: number;
     pendingPharmacyPayouts: number;
+    pendingDoctorPayouts: number;
     failedOrderRefunds: number;
     refunds: { appointmentId: string; patient: string; doctor: string; slotDate: string; cents: number; why: string }[];
   };
@@ -242,10 +247,11 @@ function Stat({ icon, label, value, hint }: { icon: React.ReactNode; label: stri
 
 /** Things that need someone to act: payouts waiting, refunds that didn't go through. */
 function Attention({ data }: { data: FinanceData }) {
-  const { pendingPayouts, pendingPharmacyPayouts, failedOrderRefunds, refunds } = data.attention;
-  if (!pendingPayouts && !pendingPharmacyPayouts && !failedOrderRefunds && !refunds.length) return null;
+  const { pendingPayouts, pendingDoctorPayouts, pendingPharmacyPayouts, failedOrderRefunds, refunds } = data.attention;
+  if (!pendingPayouts && !pendingDoctorPayouts && !pendingPharmacyPayouts && !failedOrderRefunds && !refunds.length) return null;
   const links = [
     { n: pendingPayouts, to: "/payouts", text: `care fund withdrawal${pendingPayouts === 1 ? "" : "s"} waiting for approval` },
+    { n: pendingDoctorPayouts, to: "/payouts?tab=doctors", text: `doctor withdrawal${pendingDoctorPayouts === 1 ? "" : "s"} waiting for approval` },
     { n: pendingPharmacyPayouts, to: "/payouts?tab=pharmacies", text: `pharmacy withdrawal${pendingPharmacyPayouts === 1 ? "" : "s"} waiting for approval` },
     { n: failedOrderRefunds, to: "/shop-orders", text: `shop order refund${failedOrderRefunds === 1 ? "" : "s"} failed: send by hand` },
   ].filter((l) => l.n > 0);
@@ -528,6 +534,11 @@ function Owed({ data }: { data: FinanceData }) {
       hint: `Up to ${money(o.unspentCoins)} of gifts or visits still to be used`,
     },
     {
+      label: "Doctors' earnings",
+      value: money(o.doctorsCents),
+      hint: "Visits after the clinic's share, not paid out to the doctor yet",
+    },
+    {
       label: "Pharmacies' earnings",
       value: money(o.pharmaciesCents),
       hint: "Delivered orders not paid out to the pharmacy yet",
@@ -611,7 +622,8 @@ function DoctorTable({ doctors }: { doctors: FinanceData["doctors"] }) {
             <th className="text-right font-bold px-3 py-2">Visits</th>
             <th className="hidden sm:table-cell text-right font-bold px-3 py-2">Fees</th>
             <th className="hidden sm:table-cell text-right font-bold px-3 py-2">Refunds</th>
-            <th className="text-right font-bold px-3 py-2">Earned</th>
+            <th className="hidden sm:table-cell text-right font-bold px-3 py-2">Clinic share</th>
+            <th className="text-right font-bold px-3 py-2">Doctor earned</th>
           </tr>
         </thead>
         <tbody>
@@ -634,7 +646,10 @@ function DoctorTable({ doctors }: { doctors: FinanceData["doctors"] }) {
               <td className="hidden sm:table-cell px-3 py-2.5 text-right tabular-nums text-slate-600">
                 {d.refundCents ? `−${money(d.refundCents)}` : "—"}
               </td>
-              <td className="px-3 py-2.5 text-right tabular-nums font-black text-slate-900">{money(d.netCents)}</td>
+              <td className="hidden sm:table-cell px-3 py-2.5 text-right tabular-nums text-slate-600">
+                {d.commissionCents ? `−${money(d.commissionCents)}` : "—"}
+              </td>
+              <td className="px-3 py-2.5 text-right tabular-nums font-black text-slate-900">{money(d.netCents - d.commissionCents)}</td>
             </tr>
           ))}
         </tbody>
