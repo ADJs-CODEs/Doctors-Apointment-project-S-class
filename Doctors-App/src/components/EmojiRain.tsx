@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import NotoEmoji from "./brand/NotoEmoji";
 
 interface EmojiParticle {
   id: string;
@@ -58,26 +59,32 @@ function EmojiParticle({
         times: [0, 0.1, 0.4, 0.7, 1],
       }}
       style={{
-        position: "fixed",
-        bottom: 80,
+        position: "absolute",
+        bottom: 0,
         right: particle.x,
-        fontSize: particle.size,
-        zIndex: 99999,
         pointerEvents: "none",
         userSelect: "none",
       }}
     >
-      {particle.emoji}
+      <NotoEmoji emoji={particle.emoji} size={Math.round(particle.size * 1.15)} animated />
     </motion.div>
   );
 }
 
+/**
+ * Where love rises from: the bottom-right corner, just above the live counter (and above the
+ * phone tab bar on small screens).
+ */
+const RAIN_ORIGIN = "fixed right-0 bottom-[156px] lg:bottom-[92px] w-0 h-0 z-[99999] pointer-events-none";
+
 export default function EmojiRain({ particles, onComplete }: EmojiRainProps) {
   return (
-    <AnimatePresence>
-      {particles.map((p) => (
-        <EmojiParticle key={p.id} particle={p} onComplete={onComplete} />
-      ))}
-    </AnimatePresence>
+    <div className={RAIN_ORIGIN} aria-hidden="true">
+      <AnimatePresence>
+        {particles.map((p) => (
+          <EmojiParticle key={p.id} particle={p} onComplete={onComplete} />
+        ))}
+      </AnimatePresence>
+    </div>
   );
 }

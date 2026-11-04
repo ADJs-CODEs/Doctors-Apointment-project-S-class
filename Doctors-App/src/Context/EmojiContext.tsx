@@ -6,9 +6,14 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from "react";
 import { getSocket } from "../utils/socket";
 import EmojiRain from "../components/EmojiRain";
+import LiveLoveCounter, { type LiveLove } from "../components/wishwell/LiveLoveCounter";
+
+// the counter stays this long after the last wish arrives
+const COUNTER_MS = 4500;
 
 interface EmojiParticle {
   id: string;
@@ -30,6 +35,23 @@ export const EmojiProvider: React.FC<{
   userId?: string;
 }> = ({ children, userId }) => {
   const [particles, setParticles] = useState<EmojiParticle[]>([]);
+  // the corner counter while love is arriving
+  const [love, setLove] = useState<LiveLove | null>(null);
+  const hideLove = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  const countLove = useCallback((emoji: string, total?: number, from?: string) => {
+    setLove((prev) => ({
+      emoji,
+      total: total ?? (from ? undefined : prev?.total),
+      // a run of love from the same place adds up; a new sender starts again
+      burst: prev && prev.from === from ? prev.burst + 1 : 1,
+      from,
+      tick: Date.now(),
+    }));
+    clearTimeout(hideLove.current);
+    hideLove.current = setTimeout(() => setLove(null), COUNTER_MS);
+  }, []);
+  useEffect(() => () => clearTimeout(hideLove.current), []);
 
   const addEmoji = useCallback((emoji: string, count = 1) => {
     const newParticles: EmojiParticle[] = Array.from(
@@ -65,6 +87,8 @@ export const EmojiProvider: React.FC<{
         fromName: string;
         isWishWell?: boolean;
         isCongratulations?: boolean;
+        /** Wish Well: the patient's new running total */
+        total?: number;
       }) => {
         if (data.isCongratulations) {
           // Burst of celebration
@@ -73,6 +97,8 @@ export const EmojiProvider: React.FC<{
           addEmoji("⭐", 3);
         } else {
           addEmoji(data.emoji, 1);
+          // the Wish Well is anonymous and has a total; care circle love comes from a person
+          countLove(data.emoji, data.total, data.isWishWell ? undefined : data.fromName);
         }
       },
     );
@@ -80,13 +106,14 @@ export const EmojiProvider: React.FC<{
     return () => {
       socket.off("emoji_received");
     };
-  }, [userId, addEmoji]);
+  }, [userId, addEmoji, countLove]);
 
   return (
     <EmojiContext.Provider value={{ addEmoji }}>
       {children}
       {/* Global overlay — renders on top of everything */}
       <EmojiRain particles={particles} onComplete={removeParticle} />
+      <LiveLoveCounter love={love} />
     </EmojiContext.Provider>
   );
 };

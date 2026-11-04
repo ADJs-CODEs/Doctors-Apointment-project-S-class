@@ -1,7 +1,19 @@
 "use client";
 
-import { RiNotification3Line, RiSendPlane2Line } from "@remixicon/react";
-import { type FormEvent, useCallback, useEffect, useState } from "react";
+import {
+  RiNotification3Line,
+  RiSendPlane2Line,
+  RiHeart3Line,
+  RiCapsuleLine,
+  RiChatSmile2Line,
+  RiDropLine,
+  RiHotelBedLine,
+  RiPhoneLine,
+  RiCheckboxCircleLine,
+  RiHandHeartLine,
+  RiQuillPenLine,
+} from "@remixicon/react";
+import { type FormEvent, type ReactNode, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { API_PATHS } from "@/utils/apiPath";
 import axiosInstance from "@/utils/axiosInstance";
@@ -11,15 +23,15 @@ type Nudge = { _id: string; kind: string; text: string; fromName: string; mine: 
 // what a caregiver usually wants to say, and what the patient usually answers
 const CAREGIVER = ["love", "medicine", "checkin", "water", "rest", "call"];
 const PATIENT = ["okay", "thanks", "love", "call"];
-const LABELS: Record<string, string> = {
-  love: "❤️ Thinking of you",
-  medicine: "💊 Medicine?",
-  checkin: "🙂 How are you?",
-  water: "💧 Drink water",
-  rest: "🛌 Rest",
-  call: "📞 Call me",
-  okay: "✅ I'm okay",
-  thanks: "🙏 Thank you",
+const LABELS: Record<string, { text: string; icon: ReactNode }> = {
+  love: { text: "Thinking of you", icon: <RiHeart3Line size={15} className="text-rose-500" /> },
+  medicine: { text: "Medicine?", icon: <RiCapsuleLine size={15} className="text-brand-ink" /> },
+  checkin: { text: "How are you?", icon: <RiChatSmile2Line size={15} className="text-amber-600" /> },
+  water: { text: "Drink water", icon: <RiDropLine size={15} className="text-[#3554C4]" /> },
+  rest: { text: "Rest", icon: <RiHotelBedLine size={15} className="text-video" /> },
+  call: { text: "Call me", icon: <RiPhoneLine size={15} className="text-brand-ink" /> },
+  okay: { text: "I'm okay", icon: <RiCheckboxCircleLine size={15} className="text-brand-ink" /> },
+  thanks: { text: "Thank you", icon: <RiHandHeartLine size={15} className="text-rose-500" /> },
 };
 
 const ago = (iso: string) => {
@@ -74,26 +86,33 @@ export default function NudgePanel({ toUserId, name, as, compact }: { toUserId: 
   };
 
   return (
-    <div className={compact ? "" : "bg-white border border-slate-100 rounded-[24px] p-5 shadow-sm"}>
-      <p className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-3">
-        <RiNotification3Line size={13} /> Send {first} a nudge · reaches their phone
+    <div className={compact ? "" : "surface rounded-[22px] p-5"}>
+      <p className="flex items-center gap-1.5 text-[14px] font-bold text-ink mb-1">
+        <RiNotification3Line size={16} className="text-brand-ink" /> Send {first} a nudge
       </p>
+      <p className="text-[13px] text-ink-3 mb-3">It reaches their phone, even with the app closed.</p>
       <div className="flex flex-wrap gap-2">
         {(as === "caregiver" ? CAREGIVER : PATIENT).map((k) => (
           <button
             key={k}
+            type="button"
             onClick={() => send(k)}
             disabled={!!sending}
-            className={`px-3 py-2 rounded-xl border text-[12px] font-bold transition-colors disabled:opacity-50 ${
-              sending === k ? "bg-teal-600 text-white border-teal-600" : "bg-slate-50 border-slate-100 text-slate-700 hover:bg-teal-50 hover:border-teal-200"
+            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-[12px] border text-[14px] font-semibold transition-colors disabled:opacity-50 ${
+              sending === k ? "btn-teal" : "bg-white border-line text-ink hover:border-brand hover:bg-brand-soft/40"
             }`}
           >
-            {LABELS[k]}
+            {LABELS[k].icon}
+            {LABELS[k].text}
           </button>
         ))}
         {!writing && (
-          <button onClick={() => setWriting(true)} className="px-3 py-2 rounded-xl border border-dashed border-slate-300 text-[12px] font-bold text-slate-500 hover:bg-slate-50">
-            ✍️ Write your own
+          <button
+            type="button"
+            onClick={() => setWriting(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-[12px] border border-dashed border-line text-[14px] font-semibold text-ink-2 hover:bg-white"
+          >
+            <RiQuillPenLine size={15} /> Write your own
           </button>
         )}
       </div>
@@ -106,21 +125,21 @@ export default function NudgePanel({ toUserId, name, as, compact }: { toUserId: 
             onChange={(e) => setCustom(e.target.value)}
             maxLength={160}
             placeholder={`A short note to ${first}`}
-            className="flex-1 min-w-0 rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-teal-400"
+            className="field flex-1 min-w-0 !py-2.5"
           />
-          <button type="submit" disabled={!custom.trim() || !!sending} className="px-4 rounded-xl bg-teal-600 text-white disabled:opacity-40" aria-label="Send">
+          <button type="submit" disabled={!custom.trim() || !!sending} className="btn btn-teal !px-4 !rounded-[14px]" aria-label="Send">
             <RiSendPlane2Line size={16} />
           </button>
         </form>
       )}
 
       {!compact && history.length > 0 && (
-        <ul className="mt-4 pt-4 border-t border-slate-50 space-y-2">
+        <ul className="mt-4 pt-4 border-t border-line space-y-2">
           {history.slice(0, 5).map((n) => (
             <li key={n._id} className={`flex ${n.mine ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[80%] rounded-2xl px-3 py-2 ${n.mine ? "bg-teal-50 text-teal-900" : "bg-slate-100 text-slate-800"}`}>
-                <p className="text-[13px]">{n.text}</p>
-                <p className="text-[10px] text-slate-400 mt-0.5">
+              <div className={`max-w-[80%] rounded-[16px] px-3 py-2 ${n.mine ? "bg-brand-soft text-[#08504F]" : "bg-white border border-line text-ink"}`}>
+                <p className="text-[14px]">{n.text}</p>
+                <p className="text-[12px] text-ink-3 mt-0.5">
                   {n.mine ? "You" : n.fromName} · {ago(n.createdAt)}
                 </p>
               </div>

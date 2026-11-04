@@ -69,20 +69,20 @@ export function DeviceNotificationsCard() {
   if (dismissed || (state !== "off" && state !== "needs-install")) return null;
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 rounded-[24px] border border-teal-100 bg-gradient-to-r from-teal-50 to-white">
-      <div className="flex gap-4 items-start flex-1 min-w-0">
-        <div className="w-11 h-11 rounded-2xl bg-teal-500 text-white flex items-center justify-center shrink-0">
-          <RiNotification3Line size={22} />
-        </div>
+    <div className="glass flex flex-col sm:flex-row sm:items-center gap-4 p-5 rounded-[22px]">
+      <div className="flex gap-3.5 items-start flex-1 min-w-0">
+        <span className="w-11 h-11 rounded-[14px] btn-teal grid place-items-center shrink-0">
+          <RiNotification3Line size={21} />
+        </span>
         <div className="min-w-0">
-          <p className="font-black text-slate-900">Get reminders on this device</p>
+          <p className="text-[16px] font-bold text-ink">Get reminders on this device</p>
           {state === "needs-install" ? (
-            <p className="text-sm text-slate-600 mt-0.5">
+            <p className="text-[14px] text-ink-2 mt-0.5">
               On iPhone, tap <RiShareBoxLine size={14} className="inline -mt-0.5" /> <strong>Share</strong> then{" "}
               <strong>Add to Home Screen</strong>, open the app from there, and turn notifications on.
             </p>
           ) : (
-            <p className="text-sm text-slate-600 mt-0.5">
+            <p className="text-[14px] text-ink-2 mt-0.5">
               Dose reminders, missed doses, messages from your doctor and appointment alerts, even when this tab
               is closed.
             </p>
@@ -94,14 +94,14 @@ export function DeviceNotificationsCard() {
           <button
             onClick={enable}
             disabled={busy}
-            className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-[12px] font-bold hover:bg-teal-600 disabled:opacity-60 transition-colors"
+            className="btn btn-ink !py-2.5 !text-[14px]"
           >
             {busy ? "Turning on…" : "Turn on"}
           </button>
         )}
         <button
           onClick={dismiss}
-          className="p-2.5 rounded-xl text-slate-400 hover:bg-slate-100"
+          className="p-2.5 rounded-xl text-ink-3 hover:bg-white"
           aria-label="Not now"
           title="Not now"
         >

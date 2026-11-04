@@ -154,40 +154,38 @@ export default function Wallet() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto py-6 space-y-6">
+    <div className="max-w-5xl mx-auto py-4 space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">Wallet</h1>
-          <p className="text-slate-500 mt-1">Coins for Wish Well gifts, and your care fund.</p>
+          <p className="eyebrow mb-1.5">Your money</p>
+          <h1 className="text-[32px] sm:text-[40px] leading-[1.05] font-extrabold tracking-[-0.035em] text-ink">Wallet</h1>
+          <p className="text-[16px] text-ink-2 mt-2">Coins for Wish Well gifts, and your care fund.</p>
         </div>
-        <Link
-          to="/wish-well"
-          className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-slate-900 text-white text-[12px] font-black uppercase tracking-wider hover:bg-teal-600 transition-colors"
-        >
+        <Link to="/wish-well" className="btn btn-ink self-start sm:self-auto">
           <RiGiftLine size={18} /> Send a gift
         </Link>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* coins */}
-        <section className="rounded-[28px] p-6 bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 text-white shadow-lg shadow-orange-200">
-          <p className="text-[11px] font-black uppercase tracking-[2px] text-white/80">Your coins</p>
-          <p className="text-5xl font-black mt-2 flex items-center gap-3">
+      <div className="grid gap-5 lg:grid-cols-2">
+        {/* coins: warm and glossy, the one place the brand goes gold */}
+        <section className="rounded-[24px] p-6 text-white border border-amber-600/40 bg-[linear-gradient(160deg,#F7B23B_0%,#F08A3C_55%,#EC6A6A_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,.35),0_18px_40px_rgba(240,138,60,.28)]">
+          <p className="text-[15px] font-bold text-white/90">Your coins</p>
+          <p className="num text-[48px] leading-none mt-3 flex items-center gap-3">
             <RiCoinsLine size={40} /> {coinsText(data.coins)}
           </p>
-          <p className="text-sm text-white/85 mt-1">
+          <p className="text-[14px] text-white/90 mt-3">
             1 coin = {currencySymbol}0.01 · {100 - data.feePercent}% of every gift goes to the patient&apos;s care fund
           </p>
         </section>
 
         {/* care fund: every patient has one; it fills up if the community sends them gifts */}
-        <section className="rounded-[28px] p-6 bg-white border border-teal-100 shadow-clinical">
-          <p className="text-[11px] font-black uppercase tracking-[2px] text-teal-700">Your care fund</p>
-          <p className="text-5xl font-black text-slate-900 mt-2">{money(data.fundCents)}</p>
+        <section className="surface rounded-[24px] p-6">
+          <p className="text-[15px] font-bold text-brand-ink">Your care fund</p>
+          <p className="num text-[48px] leading-none text-ink mt-3">{money(data.fundCents)}</p>
           {data.fundLifetimeCents > 0 ? (
-            <p className="text-sm text-slate-500 mt-1">{money(data.fundLifetimeCents)} raised by the community so far</p>
+            <p className="text-[14px] text-ink-3 mt-3">{money(data.fundLifetimeCents)} raised by the community so far</p>
           ) : (
-            <p className="text-sm text-slate-500 mt-1 leading-relaxed">
+            <p className="text-[14px] text-ink-2 mt-3 leading-relaxed">
               If your doctor ever features you on the Wish Well, gifts from the community land here. You can use it for
               appointments or withdraw it to your bank.
             </p>
@@ -203,7 +201,7 @@ export default function Wallet() {
               <button
                 onClick={() => setWithdrawing(true)}
                 disabled={data.fundCents < data.minPayoutCents}
-                className="mt-4 inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-teal-600 text-white text-sm font-bold hover:bg-teal-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="btn btn-teal mt-4 !py-2.5 !text-[14px]"
                 title={data.fundCents < data.minPayoutCents ? `You can withdraw from ${money(data.minPayoutCents)}` : undefined}
               >
                 <RiBankLine size={18} /> Withdraw to my bank
@@ -213,47 +211,47 @@ export default function Wallet() {
       </div>
 
       {/* coin packs */}
-      <section className="bg-white rounded-[28px] border border-slate-100 shadow-clinical p-5 sm:p-6">
-        <h2 className="text-[11px] font-black uppercase tracking-[2px] text-slate-400 mb-4">Top up</h2>
+      <section className="surface rounded-[24px] p-5 sm:p-6">
+        <h2 className="text-[16px] font-bold text-ink mb-4">Top up your coins</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {data.packs.map((pack) => (
             <button
               key={pack.id}
               onClick={() => buy(pack)}
               disabled={!!buying}
-              className="relative rounded-2xl border border-slate-200 hover:border-amber-300 hover:bg-amber-50/40 p-4 text-left transition-colors disabled:opacity-60"
+              className="relative rounded-[16px] border border-line bg-white hover:border-amber-300 hover:bg-amber-50/40 hover:-translate-y-0.5 p-4 text-left transition-[transform,background,border-color] disabled:opacity-60"
             >
               {pack.bonus ? (
-                <span className="absolute -top-2 right-3 text-[10px] font-black text-white bg-rose-500 rounded-full px-2 py-0.5">
+                <span className="absolute -top-2 right-3 text-[11px] font-bold text-white bg-rose-500 rounded-full px-2 py-0.5">
                   +{coinsText(pack.bonus)} bonus
                 </span>
               ) : null}
-              <p className="flex items-center gap-1.5 text-lg font-black text-slate-900">
+              <p className="num flex items-center gap-1.5 text-[19px] text-ink">
                 <RiCoinsLine size={18} className="text-amber-500" /> {coinsText(pack.coins)}
               </p>
-              <p className="text-sm font-bold text-slate-500 mt-1">
+              <p className="text-[14px] font-semibold text-ink-3 mt-1">
                 {buying === pack.id ? "Opening checkout…" : money(pack.cents)}
               </p>
             </button>
           ))}
         </div>
-        <p className="text-[12px] text-slate-400 mt-3">
+        <p className="text-[13px] text-ink-3 mt-3">
           Paid securely with Stripe. You must be 18 or over to buy coins. Coins can&apos;t be cashed out; they&apos;re for
           gifts.
         </p>
       </section>
 
       {/* history */}
-      <section className="bg-white rounded-[28px] border border-slate-100 shadow-clinical p-5 sm:p-6">
-        <h2 className="text-[11px] font-black uppercase tracking-[2px] text-slate-400 mb-2">History</h2>
+      <section className="surface rounded-[24px] p-5 sm:p-6">
+        <h2 className="text-[16px] font-bold text-ink mb-2">History</h2>
         {data.transactions.length ? (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-line">
             {data.transactions.map((tx) => (
               <TxRow key={tx._id} tx={tx} money={money} />
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-slate-400 py-4">Nothing yet. Top up and send your first gift.</p>
+          <p className="text-[15px] text-ink-3 py-4">Nothing yet. Top up and send your first gift.</p>
         )}
       </section>
 

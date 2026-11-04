@@ -4,7 +4,7 @@ import React, { useEffect, useState, useContext } from "react";
 import { AppContext } from "../Context/AppContext";
 import { toast } from "sonner";
 import { useNavigate, Link } from "@/lib/navigation";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import type { AppContextType } from "../types/index";
 import { useGoogleLogin } from "@react-oauth/google";
@@ -32,12 +32,18 @@ const PERKS = [
 const Login: React.FC = () => {
   const { token, setToken } = useContext(AppContext) as AppContextType;
   const navigate = useNavigate();
-  const [state, setState] = useState<"Sign Up" | "Login">("Login");
-  // the landing page's "Get started" links here with ?mode=signup
-  const wantsSignup = useSearchParams()?.get("mode") === "signup";
+  const router = useRouter();
+  // the form follows the address: /login?mode=signup is the sign-up form, /login the log-in form,
+  // so "Log in" / "Get started" in the header switch it even while you're already here
+  const signupInUrl = useSearchParams()?.get("mode") === "signup";
+  const [state, setState] = useState<"Sign Up" | "Login">(signupInUrl ? "Sign Up" : "Login");
   useEffect(() => {
-    if (wantsSignup) setState("Sign Up");
-  }, [wantsSignup]);
+    setState(signupInUrl ? "Sign Up" : "Login");
+  }, [signupInUrl]);
+  const switchTo = (next: "Sign Up" | "Login") => {
+    setState(next);
+    router.replace(next === "Sign Up" ? "/login?mode=signup" : "/login", { scroll: false });
+  };
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -224,7 +230,7 @@ const Login: React.FC = () => {
           {signingUp ? "Already have an account?" : "New here?"}{" "}
           <button
             type="button"
-            onClick={() => setState(signingUp ? "Login" : "Sign Up")}
+            onClick={() => switchTo(signingUp ? "Login" : "Sign Up")}
             className="font-bold text-brand-ink hover:underline"
           >
             {signingUp ? "Log in" : "Create an account"}

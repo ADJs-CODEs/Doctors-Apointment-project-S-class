@@ -24,6 +24,7 @@ import {
 import { type ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { DeviceNotificationsSwitch } from "@/components/patient/DeviceNotifications";
+import WishWellOptOutButton from "@/components/wishwell/WishWellOptOut";
 import { AppContext } from "@/Context/AppContext";
 import { directionsUrl, setCachedSettings } from "@/hooks/useUserSettings";
 import type { AppContextType, GoogleCalendarStatus, NotificationCategory, TravelMode, UserSettings } from "@/types";
@@ -166,8 +167,9 @@ export default function AccountSettings() {
     <div className="max-w-5xl mx-auto py-6">
       <div className="flex items-end justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">Settings</h1>
-          <p className="text-slate-500 mt-1">Notifications, reminders, privacy, connected apps and your account.</p>
+          <p className="eyebrow mb-1.5">Your account</p>
+          <h1 className="text-[32px] sm:text-[40px] leading-[1.05] font-extrabold tracking-[-0.035em] text-ink">Settings</h1>
+          <p className="text-[16px] text-ink-2 mt-2">Notifications, reminders, privacy, connected apps and your account.</p>
         </div>
         <span
           className={`flex items-center gap-1.5 text-[12px] font-bold transition-opacity ${
@@ -208,7 +210,7 @@ export default function AccountSettings() {
               <DeviceNotificationsSwitch />
             </div>
 
-            <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-4 sm:gap-x-8 text-[11px] font-black uppercase tracking-wider text-slate-400 pb-2">
+            <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-4 sm:gap-x-8 text-[13px] font-bold text-ink-3 pb-2">
               <span>What</span>
               <span className="w-11 text-center">Email</span>
               <span className="w-11 text-center">Device</span>
@@ -391,7 +393,7 @@ function GoogleCalendarCard({
           <div className="flex flex-wrap items-center gap-2">
             <p className="font-black text-slate-900">Google Calendar</p>
             {status?.connected && (
-              <span className="text-[10px] font-black uppercase tracking-wider bg-teal-50 text-teal-700 rounded-full px-2 py-0.5">Connected</span>
+              <span className="text-[12px] font-bold bg-brand-soft text-brand-ink rounded-full px-2 py-0.5">Connected</span>
             )}
           </div>
           <p className="text-sm text-slate-500 mt-0.5">
@@ -551,32 +553,12 @@ function GoogleMapsCard({ settings, update }: { settings: UserSettings; update: 
 // --- privacy ---
 
 function WishWellOptOut() {
-  const [confirming, setConfirming] = useState(false);
-  const optOut = async () => {
-    try {
-      await axiosInstance.post(API_PATHS.WISH_WELL.OPT_OUT);
-      toast.success("You've left the Wish Well");
-      setConfirming(false);
-    } catch {
-      toast.error("Couldn't update the Wish Well");
-    }
-  };
   return (
-    <Row title="Wish Well" hint="Remove yourself from the Wish Well (if your doctor featured you)">
-      {confirming ? (
-        <>
-          <button onClick={() => setConfirming(false)} className="text-[12px] font-bold text-slate-500 px-2">
-            Keep me
-          </button>
-          <button onClick={optOut} className="px-3 py-2 rounded-xl bg-red-600 text-white text-[12px] font-bold hover:bg-red-700">
-            Yes, remove me
-          </button>
-        </>
-      ) : (
-        <button onClick={() => setConfirming(true)} className="px-3 py-2 rounded-xl border border-slate-200 text-slate-600 text-[12px] font-bold hover:bg-slate-50">
-          Leave the Wish Well
-        </button>
-      )}
+    <Row
+      title="Never feature me on the Wish Well"
+      hint="Takes you off it if you're on it, and stops doctors putting you forward"
+    >
+      <WishWellOptOutButton />
     </Row>
   );
 }

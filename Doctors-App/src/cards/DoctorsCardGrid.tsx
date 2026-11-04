@@ -20,7 +20,7 @@ const DAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const money = (n: number) => `$${Number(n).toLocaleString('en-US')}`;
 
 /** "5 Years" / "5" -> "5 years' experience"; "1 Year" -> "1 year's experience" */
-const experienceText = (exp?: string) => {
+export const experienceText = (exp?: string) => {
   const n = parseInt(exp ?? '', 10);
   if (!Number.isFinite(n) || n <= 0) return '';
   return n === 1 ? "1 year's experience" : `${n} years' experience`;

@@ -11,9 +11,9 @@ import { NOT_A_HOLD } from '../appointments/booking.service';
 import { MessagesService } from '../messages/messages.service';
 import { EmailNotifications } from '../notifications/email-notifications';
 import { GoogleCalendar } from '../settings/google-calendar';
-import { WalletService } from '../wallet/wallet.service';
 import { DoctorEarningsService } from './doctor-earnings.service';
 import { releaseSlot } from '../user/user.service';
+import { AppointmentRefunds } from '../appointments/appointment-refunds';
 
 // The doctor panel expects failures here as HTTP 200 with { success: false }, so most
 // methods use failOk(); only send-alert used real error codes in the original API.
@@ -28,9 +28,9 @@ export class DoctorService {
     @InjectModel(MODEL.appointment) private readonly appointments: Model<IAppointment>,
     private readonly chat: MessagesService,
     private readonly emails: EmailNotifications,
-    private readonly wallet: WalletService,
     private readonly calendar: GoogleCalendar,
     private readonly earnings: DoctorEarningsService,
+    private readonly refunds: AppointmentRefunds,
   ) {}
 
   async list() {
@@ -94,10 +94,17 @@ export class DoctorService {
     if (!appointment || appointment.docId.toString() !== docId) failOk(' Cancellation Failed');
     if (appointment.missed || appointment.isCompleted) failOk('This appointment is already closed');
 
-    await this.appointments.findByIdAndUpdate(appointmentId, { cancelled: true });
+    // claim it atomically, so a double tap can't cancel (and refund) twice
+    const cancelled = await this.appointments.findOneAndUpdate(
+      { _id: appointment._id, cancelled: false, isCompleted: false, missed: { $exists: false } },
+      { $set: { cancelled: true } },
+      { returnDocument: 'after' },
+    );
+    if (!cancelled) failOk('This appointment is already closed');
     // free the slot, like patient and admin cancellations already did
     await releaseSlot(this.doctors, appointment);
-    const refund = await this.wallet.refundAppointmentToWallet(String(appointment._id), 100, 'cancelled');
+    // the full fee goes back the way it was paid: wallet, or card through Stripe
+    const refund = await this.refunds.refund(cancelled, 100, 'cancelled');
     this.emails.appointmentCancelled(appointment, 'doctor', refund);
     void this.calendar.remove(appointment);
     return { success: true, message: 'Appointment Cancelled' };

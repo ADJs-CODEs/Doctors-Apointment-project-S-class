@@ -3,48 +3,44 @@
 import React from 'react'
 import type { VitalsProps } from '../types/index'
 import { RiHeartPulseLine, RiDashboardLine, RiTempHotLine } from "@remixicon/react"
+import IconTile from '../components/brand/IconTile'
 import { formatVisitDate } from '../utils/patientRecords'
 
+/** The latest vitals a doctor recorded (heart rate, blood pressure, temperature) and who recorded them. */
 const VitalsCard: React.FC<VitalsProps> = ({ latestAppointment }) => {
+  const h = latestAppointment?.healthData
+  const items = [
+    { icon: <RiHeartPulseLine size={20} className='text-rose-500' />, label: 'Heart rate', value: h?.heartRate, unit: 'BPM' },
+    { icon: <RiDashboardLine size={20} className='text-[#3554C4]' />, label: 'Blood pressure', value: h?.bloodPressure, unit: 'mmHg' },
+    { icon: <RiTempHotLine size={20} className='text-amber-600' />, label: 'Temperature', value: h?.temperature, unit: '°C' },
+  ]
   return (
-    <div className='mb-10'>
-    <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
-      <div className='glass-card-premium p-6 rounded-[35px] border-b-4 border-rose-500'>
-        <div className='flex items-center gap-3 mb-3'>
-          <RiHeartPulseLine className='text-rose-500' size={20} />
-          <p className='text-[10px] font-black text-slate-500 uppercase tracking-widest'>Heart Rate</p>
-        </div>
-        <p className='text-3xl font-black text-slate-900'>
-          {latestAppointment?.healthData?.heartRate || '--'} <span className='text-xs text-slate-400 font-bold'>BPM</span>
-        </p>
+    <section className='surface rounded-[24px] p-5 sm:p-6'>
+      <h2 className='flex items-center gap-2.5 text-[16px] font-bold text-ink mb-4'>
+        <IconTile>
+          <RiHeartPulseLine size={17} />
+        </IconTile>
+        Latest vitals
+      </h2>
+      <div className='grid grid-cols-1 min-[420px]:grid-cols-3 gap-3'>
+        {items.map((v) => (
+          <div key={v.label} className='flex items-center gap-3.5 rounded-[16px] bg-canvas border border-line/70 p-4'>
+            <span className='w-11 h-11 rounded-xl bg-white border border-line grid place-items-center shrink-0'>{v.icon}</span>
+            <div>
+              <p className='text-[13px] font-semibold text-ink-3'>{v.label}</p>
+              <p className='num text-[21px] text-ink leading-tight'>
+                {v.value || '--'} <span className='text-[12px] text-ink-3'>{v.value ? v.unit : ''}</span>
+              </p>
+            </div>
+          </div>
+        ))}
       </div>
-
-      <div className='glass-card-premium p-6 rounded-[35px] border-b-4 border-blue-500'>
-        <div className='flex items-center gap-3 mb-3'>
-          <RiDashboardLine className='text-blue-500' size={20} />
-          <p className='text-[10px] font-black text-slate-500 uppercase tracking-widest'>Blood Pressure</p>
-        </div>
-        <p className='text-3xl font-black text-slate-900'>
-          {latestAppointment?.healthData?.bloodPressure || '--'}
-        </p>
-      </div>
-
-      <div className='glass-card-premium p-6 rounded-[35px] border-b-4 border-orange-500'>
-        <div className='flex items-center gap-3 mb-3'>
-          <RiTempHotLine className='text-orange-500' size={20} />
-          <p className='text-[10px] font-black text-slate-500 uppercase tracking-widest'>Temperature</p>
-        </div>
-        <p className='text-3xl font-black text-slate-900'>
-          {latestAppointment?.healthData?.temperature || '--'} <span className='text-xs text-slate-400 font-bold'>°C</span>
-        </p>
-      </div>
-    </div>
-      <p className='text-[12px] text-slate-400 mt-3 px-2'>
+      <p className='text-[13px] text-ink-3 mt-3'>
         {latestAppointment
           ? `Recorded by ${latestAppointment.docData?.name} on ${formatVisitDate(latestAppointment)}.`
           : 'Your doctor records these during a visit.'}
       </p>
-    </div>
+    </section>
   )
 }
 

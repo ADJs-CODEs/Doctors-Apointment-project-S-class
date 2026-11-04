@@ -1,163 +1,233 @@
 "use client";
 
-import React, { useEffect } from 'react'
-import { assets } from '../assets/assets/assets_frontend/assets'
+import React, { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
-import { RiMedicineBottleLine, RiArrowRightSLine } from "@remixicon/react"
+import { RiArrowRightSLine, RiCameraLine, RiCapsuleLine, RiPencilLine, RiUser3Line } from "@remixicon/react"
 import axiosInstance from '../utils/axiosInstance'
 import { API_PATHS } from '../utils/apiPath'
 import VitalsCard from '../cards/VitalsCard'
+import IconTile from '../components/brand/IconTile'
 import { describeSchedule } from '../utils/medicationUtils'
 import useMyProfile from '../hooks/useMyProfile'
 
+// what a new account starts with, shown as "not added yet"
+const UNSET = new Set(['', 'Not Selected', '0000000000'])
+const shown = (v?: string) => (v && !UNSET.has(v) ? v : '')
+
+const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const PHOTO_MAX = 3 * 1024 * 1024
+
+type Draft = { name: string; phone: string; gender: string; dob: string; line1: string; line2: string }
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className='flex justify-between gap-4 py-3 first:pt-0 last:pb-0'>
+      <dt className='text-[14px] font-semibold text-ink-3'>{label}</dt>
+      <dd className={`text-[15px] text-right ${value ? 'text-ink font-semibold' : 'text-ink-3'}`}>{value || 'Not added yet'}</dd>
+    </div>
+  )
+}
+
 const MyProfile: React.FC = () => {
-  const { userData, setProgress, image, setImage, loadUserProfileData,
-    setIsEdit, getLatestHealthData, token, isEdit, setUserData,
-    latestAppointment, medicines, navigate } = useMyProfile()
+  const { userData, image, setImage, loadUserProfileData, setIsEdit, getLatestHealthData, token, isEdit, latestAppointment, medicines, navigate } =
+    useMyProfile()
+  const [draft, setDraft] = useState<Draft | null>(null)
+  const [saving, setSaving] = useState(false)
 
+  useEffect(() => {
+    if (token) getLatestHealthData()
+  }, [token])
 
+  const startEditing = () => {
+    if (!userData) return
+    setDraft({
+      name: userData.name ?? '',
+      phone: shown(userData.phone),
+      gender: shown(userData.gender),
+      dob: shown(userData.dob),
+      line1: userData.address?.line1 ?? '',
+      line2: userData.address?.line2 ?? '',
+    })
+    setIsEdit(true)
+  }
 
+  const cancel = () => {
+    setIsEdit(false)
+    setImage(false)
+    setDraft(null)
+  }
 
+  const pickPhoto = (file?: File) => {
+    if (!file) return
+    if (!PHOTO_TYPES.includes(file.type)) return toast.error('Use a JPG, PNG or WebP photo')
+    if (file.size > PHOTO_MAX) return toast.error('That photo is over 3 MB. Try a smaller one.')
+    setImage(file)
+  }
 
-  const updateUserProfileData = async () => {
+  const save = async () => {
+    if (!userData || !draft) return
+    if (!draft.name.trim()) return toast.error('Your name can’t be empty')
+    setSaving(true)
     try {
-      if (!userData) return;
       const formData = new FormData()
-      formData.append('name', userData.name)
-      formData.append('phone', userData.phone)
-      formData.append('gender', userData.gender)
-      formData.append('address', JSON.stringify(userData.address))
-      formData.append('dob', userData.dob)
-      image && formData.append('image', image)
+      formData.append('name', draft.name.trim())
+      // the server needs every field; unanswered ones keep their "not set" value
+      formData.append('phone', draft.phone.trim() || '0000000000')
+      formData.append('gender', draft.gender || 'Not Selected')
+      formData.append('dob', draft.dob || 'Not Selected')
+      formData.append('address', JSON.stringify({ line1: draft.line1.trim(), line2: draft.line2.trim() }))
+      if (image) formData.append('image', image)
 
-      const { data } = await axiosInstance.post(API_PATHS.USER.UPDATE_USER_PROFILE_DATA, formData,)
+      // FormData must go as multipart, or the shared client turns it into JSON and drops the photo
+      const { data } = await axiosInstance.post(API_PATHS.USER.UPDATE_USER_PROFILE_DATA, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
       if (data.success) {
-        toast.success(data.message)
+        toast.success('Profile saved')
         await loadUserProfileData()
-        setIsEdit(false)
-        setImage(false)
+        cancel()
+      } else {
+        toast.error(data.message)
       }
     } catch (error: any) {
-      toast.error(error.message)
+      toast.error(error.response?.data?.message || 'Couldn’t save your profile. Please try again.')
     } finally {
+      setSaving(false)
     }
   }
 
-  useEffect(() => {
-    if (token) getLatestHealthData();
-  }, [token])
+  if (!userData || !token) return null
 
-  return userData && token && (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className='max-w-4xl mx-auto p-4 py-12 relative z-10'
-    >
-      {/* --- Header Section --- */}
-      <div className='glass-card-premium p-8 rounded-[40px] flex flex-col md:flex-row items-center gap-8 mb-10'>
-        <div className='relative shrink-0 group'>
-          <div className='w-40 h-40 rounded-full overflow-hidden border-4 border-white shadow-xl relative z-10 ring-1 ring-slae-100 isolate'>
-            {isEdit ? (
-              <label htmlFor="image" className="cursor-pointer group relative block h-full w-full bg-slate-100">
-                <img className='w-full h-full object-cover opacity-50 bg-white' src={image ? URL.createObjectURL(image) : userData.image} alt="" />
-                <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-100">
-                  <img className="w-10 invert" src={assets.upload_icon} alt="" />
-                </div>
-                <input onChange={(e) => setImage(e.target.files ? e.target.files[0] : false)} type='file' id='image' hidden />
-              </label>
-            ) : (
-              <img className='w-full h-full object-cover rounded-full bg-white transform-gpu'
-                style={{ backfaceVisibility: 'hidden', imageRendering: 'auto' }}
-                src={userData.image.replace('/upload/', '/upload/f_jpg,q_auto:best/')} alt="" />
-            )}
-          </div>
-        </div>
+  const photo = image ? URL.createObjectURL(image) : userData.image.replace('/upload/', '/upload/f_jpg,q_auto:best/')
+  const set = (k: keyof Draft) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setDraft((d) => (d ? { ...d, [k]: e.target.value } : d))
+  const dobText = shown(userData.dob)
+    ? new Date(`${userData.dob}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+    : ''
 
-        <div className='flex-1 text-center md:text-left'>
-          {isEdit ? (
-            <input
-              className='bg-white border border-slate-200 text-slate-900 text-4xl font-bold px-4 py-2 rounded-2xl outline-none focus:border-teal/50 w-full'
-              value={userData.name}
-              onChange={e => setUserData((prev: any) => ({ ...prev, name: e.target.value }))}
-            />
-          ) : (
-            <>
-              <h1 className='text-4xl font-extrabold text-slate-900 tracking-tight'>{userData.name}</h1>
-              <div className='mt-2 inline-flex items-center px-4 py-1.5 rounded-full bg-teal/10 text-teal text-[10px] font-bold uppercase tracking-widest border border-teal/20'>
-                Verified Patient
-              </div>
-            </>
+  return (
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className='max-w-4xl mx-auto py-4 md:py-8 px-4 md:px-0 space-y-5'>
+      {/* who */}
+      <div className='glass rounded-[24px] p-5 sm:p-7 flex flex-col sm:flex-row sm:items-center gap-5'>
+        <div className='relative shrink-0 self-center sm:self-auto'>
+          <img src={photo} alt='' className='w-28 h-28 rounded-[28px] object-cover bg-brand-soft border-4 border-white shadow-[0_10px_24px_rgba(11,37,69,.12)]' />
+          {isEdit && (
+            <label className='absolute -bottom-2 -right-2 btn btn-ink !p-2.5 !rounded-full cursor-pointer' title='Change photo'>
+              <RiCameraLine size={18} />
+              <span className='sr-only'>Change photo</span>
+              <input type='file' accept='image/jpeg,image/png,image/webp' hidden onChange={(e) => pickPhoto(e.target.files?.[0])} />
+            </label>
           )}
-          <p className='text-slate-500 mt-3 font-medium'>{userData.email}</p>
         </div>
-
-        <button
-          onClick={isEdit ? updateUserProfileData : () => setIsEdit(true)}
-          className={`${isEdit ? 'bg-teal text-white' : 'bg-white border border-slate-200 text-slate-900'} px-10 py-4 rounded-2xl font-bold shadow-sm hover:scale-95 transition-all`}
-        >
-          {isEdit ? 'Save Changes' : 'Edit Profile'}
-        </button>
+        <div className='flex-1 min-w-0 text-center sm:text-left'>
+          <p className='eyebrow mb-1'>Your profile</p>
+          <h1 className='text-[30px] leading-tight font-extrabold tracking-[-0.03em] text-ink truncate'>{userData.name}</h1>
+          <p className='text-[15px] text-ink-3 truncate'>{userData.email}</p>
+        </div>
+        {!isEdit && (
+          <button type='button' onClick={startEditing} className='btn btn-glass !bg-white self-center sm:self-auto'>
+            <RiPencilLine size={17} /> Edit profile
+          </button>
+        )}
       </div>
 
-      {/* --- VITALS SECTION --- */}
-      <VitalsCard
-        latestAppointment={latestAppointment}
-      />
-
-      <div className='grid md:grid-cols-2 gap-8'>
-        {/* Contact Info */}
-        <div className='glass-card-premium p-8 rounded-[40px]'>
-          <h2 className='text-[10px] font-black text-teal uppercase tracking-[3px] mb-8'>Contact Information</h2>
-          <div className='space-y-6'>
-            <div>
-              <p className='text-[10px] font-bold text-slate-400 uppercase mb-1'>Phone</p>
-              <p className='text-lg font-bold text-slate-800'>{userData.phone}</p>
-            </div>
-            <div>
-              <p className='text-[10px] font-bold text-slate-400 uppercase mb-1'>Address</p>
-              <p className='text-lg font-bold text-slate-800 leading-tight'>
-                {userData.address.line1}<br />{userData.address.line2}
-              </p>
+      {/* details: read, or the form */}
+      <section className='surface rounded-[24px] p-5 sm:p-6'>
+        <h2 className='flex items-center gap-2.5 text-[16px] font-bold text-ink mb-4'>
+          <IconTile>
+            <RiUser3Line size={17} />
+          </IconTile>
+          Your details
+        </h2>
+        {isEdit && draft ? (
+          <div className='grid gap-4 sm:grid-cols-2'>
+            <label className='flex flex-col gap-1.5 sm:col-span-2'>
+              <span className='text-[14px] font-bold text-ink'>Full name</span>
+              <input className='field' value={draft.name} onChange={set('name')} autoComplete='name' />
+            </label>
+            <label className='flex flex-col gap-1.5'>
+              <span className='text-[14px] font-bold text-ink'>Phone</span>
+              <input className='field' type='tel' value={draft.phone} onChange={set('phone')} autoComplete='tel' placeholder='+234 …' />
+            </label>
+            <label className='flex flex-col gap-1.5'>
+              <span className='text-[14px] font-bold text-ink'>Gender</span>
+              <select className='field' value={draft.gender} onChange={set('gender')}>
+                <option value=''>Prefer not to say</option>
+                <option value='Male'>Male</option>
+                <option value='Female'>Female</option>
+              </select>
+            </label>
+            <label className='flex flex-col gap-1.5'>
+              <span className='text-[14px] font-bold text-ink'>Date of birth</span>
+              <input className='field' type='date' value={draft.dob} onChange={set('dob')} max={new Date().toISOString().slice(0, 10)} />
+              <span className='text-[13px] text-ink-3'>Needed to buy coins for Wish Well gifts (18+).</span>
+            </label>
+            <div className='hidden sm:block' />
+            <label className='flex flex-col gap-1.5'>
+              <span className='text-[14px] font-bold text-ink'>Address</span>
+              <input className='field' value={draft.line1} onChange={set('line1')} autoComplete='address-line1' placeholder='Street and number' />
+            </label>
+            <label className='flex flex-col gap-1.5'>
+              <span className='text-[14px] font-bold text-ink'>Area and city</span>
+              <input className='field' value={draft.line2} onChange={set('line2')} autoComplete='address-level2' placeholder='e.g. Isolo, Lagos' />
+            </label>
+            <p className='text-[13px] text-ink-3 sm:col-span-2'>
+              Your doctors see these details on your visits. For clinic distances and pharmacy delivery, set a home
+              address in Settings.
+            </p>
+            <div className='flex flex-col-reverse sm:flex-row gap-2 sm:col-span-2 sm:justify-end'>
+              <button type='button' onClick={cancel} disabled={saving} className='btn btn-glass !bg-white'>Cancel</button>
+              <button type='button' onClick={save} disabled={saving} className='btn btn-ink'>{saving ? 'Saving…' : 'Save changes'}</button>
             </div>
           </div>
+        ) : (
+          <dl className='divide-y divide-line'>
+            <Row label='Phone' value={shown(userData.phone)} />
+            <Row label='Gender' value={shown(userData.gender)} />
+            <Row label='Date of birth' value={dobText} />
+            <Row label='Address' value={[userData.address?.line1, userData.address?.line2].filter(Boolean).join(', ')} />
+          </dl>
+        )}
+      </section>
+
+      <VitalsCard latestAppointment={latestAppointment} />
+
+      {/* current medicines */}
+      <section className='surface rounded-[24px] p-5 sm:p-6'>
+        <div className='flex items-center justify-between gap-3 mb-4'>
+          <h2 className='flex items-center gap-2.5 text-[16px] font-bold text-ink'>
+            <IconTile>
+              <RiCapsuleLine size={17} />
+            </IconTile>
+            Current medicines
+          </h2>
+          <button type='button' onClick={() => navigate('/medication-history')} className='flex items-center text-[13px] font-bold text-brand-ink hover:underline'>
+            See all <RiArrowRightSLine size={16} />
+          </button>
         </div>
-
-        {/* Medications Section with Navigation */}
-        <div className='glass-card-premium p-8 rounded-[40px]'>
-          <div className='flex justify-between items-center mb-8'>
-            <h2 className='text-[10px] font-black text-teal uppercase tracking-[3px]'>Current Medications</h2>
-            {/* --- NAVIGATION BUTTON --- */}
-            <button
-              onClick={() => navigate('/medication-history')}
-              className='group flex items-center gap-1 text-[9px] font-black text-slate-400 hover:text-teal uppercase transition-all'
-            >
-              See All
-              <RiArrowRightSLine size={14} className='group-hover:translate-x-1 transition-transform' />
-            </button>
-          </div>
-
-          <div className='space-y-3'>
-            {medicines.length === 0 && <p className='text-slate-400 italic text-sm'>No active prescriptions.</p>}
+        {medicines.length === 0 ? (
+          <p className='text-[15px] text-ink-3'>No medicines to take right now.</p>
+        ) : (
+          <ul className='divide-y divide-line'>
             {medicines.map(({ appointmentId, med }) => (
-              <div
-                key={`${appointmentId}-${med.name}`}
-                onClick={() => navigate('/medication-history')}
-                className='bg-white/60 border border-slate-100 p-4 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-white hover:shadow-md hover:border-teal/20 transition-all group'
-              >
-                <div className='flex items-center gap-3'>
-                  <RiMedicineBottleLine className='text-teal-500 group-hover:scale-110 transition-transform' size={18} />
-                  <div>
-                    <p className='text-sm font-black text-slate-800'>{med.name}</p>
-                    <p className='text-[10px] text-slate-500 font-bold uppercase'>{describeSchedule(med)}</p>
-                  </div>
-                </div>
-                <p className='text-[10px] font-black text-teal-600 bg-teal-50 px-2 py-1 rounded-md'>{med.remainingQuantity} LEFT</p>
-              </div>
+              <li key={`${appointmentId}-${med.name}`}>
+                <button
+                  type='button'
+                  onClick={() => navigate('/medication-history')}
+                  className='w-full flex items-center justify-between gap-3 py-3 text-left hover:bg-canvas -mx-2 px-2 rounded-xl transition-colors'
+                >
+                  <span className='min-w-0'>
+                    <span className='block text-[15px] font-bold text-ink capitalize truncate'>{med.name}</span>
+                    <span className='block text-[13px] text-ink-3'>{describeSchedule(med)}</span>
+                  </span>
+                  <span className='num shrink-0 text-[13px] text-brand-ink bg-brand-soft px-2 py-1 rounded-lg'>{med.remainingQuantity} left</span>
+                </button>
+              </li>
             ))}
-          </div>
-        </div>
-      </div>
+          </ul>
+        )}
+      </section>
     </motion.div>
   )
 }

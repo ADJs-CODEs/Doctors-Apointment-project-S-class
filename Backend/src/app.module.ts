@@ -5,6 +5,7 @@ import { FinanceService } from './admin/finance.service';
 import { AvailabilityController, DoctorScheduleController } from './appointments/availability.controller';
 import { BookingService } from './appointments/booking.service';
 import { MissedAppointments } from './appointments/missed-appointments';
+import { AppointmentRefunds } from './appointments/appointment-refunds';
 import { DoctorVideoController, PatientVideoController } from './appointments/video.controller';
 import { VideoService } from './appointments/video.service';
 import { DoctorCallsController, PatientCallsController } from './calls/calls.controller';
@@ -118,6 +119,7 @@ class HealthController {
     GoogleCalendar,
     WalletService,
     MissedAppointments,
+    AppointmentRefunds,
     AppNotifier,
     EmailNotifications,
     DoseReminders,

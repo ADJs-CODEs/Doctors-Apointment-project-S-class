@@ -88,7 +88,7 @@ export default function PayAppointmentModal({
     <AnimatePresence>
       {appointment && (
         <motion.div
-          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:p-4 bg-slate-900/50 backdrop-blur-sm"
+          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:p-4 bg-ink/30 backdrop-blur-sm"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -98,7 +98,7 @@ export default function PayAppointmentModal({
             role="dialog"
             aria-modal="true"
             onClick={(e) => e.stopPropagation()}
-            className="w-full sm:max-w-md bg-white rounded-t-[32px] sm:rounded-[28px] shadow-2xl p-6"
+            className="glass !bg-white/92 w-full sm:max-w-md rounded-t-[28px] sm:rounded-[24px] p-6"
             initial={{ y: 40, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 40, opacity: 0 }}
@@ -106,42 +106,43 @@ export default function PayAppointmentModal({
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h2 className="text-xl font-black text-slate-900">Pay for your appointment</h2>
-                <p className="text-sm text-slate-500">
-                  {appointment.docData?.name} · {appointment.slotDate.replace(/_/g, "/")} at {appointment.slotTime}
+                <h2 className="text-[22px] font-extrabold tracking-[-0.02em] text-ink">Pay for your visit</h2>
+                <p className="text-[14px] text-ink-3">
+                  {appointment.docData?.name} · {appointment.slotDate.replace(/_/g, "/")} at{" "}
+                  <span className="num">{appointment.slotTime}</span>
                 </p>
               </div>
-              <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100" aria-label="Close">
+              <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-ink-3 hover:bg-white" aria-label="Close">
                 <RiCloseLine size={20} />
               </button>
             </div>
 
-            <p className="text-4xl font-black text-slate-900 mt-4">{money(cost)}</p>
+            <p className="num text-[40px] leading-none text-ink mt-4">{money(cost)}</p>
 
             {/* wallet */}
-            <div className="mt-5 rounded-2xl border border-teal-200 bg-teal-50/40 p-4">
-              <p className="flex items-center gap-2 font-black text-slate-900">
-                <RiWallet3Line size={18} className="text-teal-600" /> Pay from wallet
+            <div className="mt-5 rounded-[18px] border border-[#C4E8E5] bg-brand-soft/50 p-4">
+              <p className="flex items-center gap-2 text-[16px] font-bold text-ink">
+                <RiWallet3Line size={18} className="text-brand-ink" /> Pay from wallet
               </p>
               {!wallet ? (
-                <div className="h-10 mt-3 rounded-xl bg-slate-200/60 animate-pulse" />
+                <div className="h-10 mt-3 rounded-xl bg-line/70 animate-pulse" />
               ) : (
                 <>
-                  <ul className="mt-3 space-y-1.5 text-sm">
+                  <ul className="mt-3 space-y-1.5 text-[14px]">
                     {fromFund > 0 && (
                       <li className="flex justify-between">
-                        <span className="flex items-center gap-1.5 text-slate-600">
-                          <RiHandHeartLine size={15} className="text-teal-600" /> Care fund
+                        <span className="flex items-center gap-1.5 text-ink-2">
+                          <RiHandHeartLine size={15} className="text-brand-ink" /> Care fund
                         </span>
-                        <span className="font-bold text-slate-900">{money(fromFund)}</span>
+                        <span className="num text-ink">{money(fromFund)}</span>
                       </li>
                     )}
                     {fromCoins > 0 && (
                       <li className="flex justify-between">
-                        <span className="flex items-center gap-1.5 text-slate-600">
+                        <span className="flex items-center gap-1.5 text-ink-2">
                           <RiCoinsLine size={15} className="text-amber-500" /> Coins
                         </span>
-                        <span className={`font-bold ${enough ? "text-slate-900" : "text-red-600"}`}>
+                        <span className={`num ${enough ? "text-ink" : "text-rose-600"}`}>
                           {fromCoins.toLocaleString("en-US")} of {wallet.coins.toLocaleString("en-US")}
                         </span>
                       </li>
@@ -151,19 +152,19 @@ export default function PayAppointmentModal({
                     <button
                       onClick={payWallet}
                       disabled={!!busy}
-                      className="mt-4 w-full py-3 rounded-2xl bg-teal-600 text-white text-sm font-bold hover:bg-teal-700 disabled:opacity-60 transition-colors"
+                      className="btn btn-teal w-full mt-4"
                     >
                       {busy === "wallet" ? "Paying…" : `Pay ${money(cost)} from wallet`}
                     </button>
                   ) : (
                     <Link
                       to="/wallet"
-                      className="mt-4 w-full inline-flex justify-center items-center gap-2 py-3 rounded-2xl bg-amber-500 text-white text-sm font-bold hover:bg-amber-600"
+                      className="btn w-full mt-4 text-white border border-amber-700 bg-[linear-gradient(180deg,#F7A93B,#D97706)] shadow-[inset_0_1px_0_rgba(255,255,255,.25),0_6px_14px_rgba(217,119,6,.25)]"
                     >
                       <RiCoinsLine size={16} /> Top up {shortBy.toLocaleString("en-US")} more coins
                     </Link>
                   )}
-                  <p className="text-[11px] text-slate-500 mt-2">
+                  <p className="text-[12px] text-ink-3 mt-2">
                     Uses your care fund first, then coins (1 coin = {currencySymbol}0.01). If it&apos;s cancelled, the money
                     goes straight back to your wallet.
                   </p>
@@ -175,7 +176,7 @@ export default function PayAppointmentModal({
             <button
               onClick={payCard}
               disabled={!!busy}
-              className="mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-slate-200 text-slate-700 text-sm font-bold hover:bg-slate-50 disabled:opacity-60"
+              className="btn btn-glass !bg-white w-full mt-3"
             >
               <RiBankCardLine size={18} /> {busy === "card" ? "Opening checkout…" : "Pay with card instead"}
             </button>

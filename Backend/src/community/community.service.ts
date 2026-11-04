@@ -25,6 +25,12 @@ const EMOJI_KEYS: Record<string, keyof IWishWell['emojiCounts']> = {
 const isValidEmoji = (emoji: unknown): emoji is string =>
   typeof emoji === 'string' && emoji in EMOJI_KEYS;
 
+// a recovered patient can still be congratulated (it adds to their total, not to a wish count)
+const CONGRATULATIONS = '🎉';
+
+// care circle live wishes: the Wish Well five plus "strong"
+const CARE_CIRCLE_EMOJIS = new Set([...Object.keys(EMOJI_KEYS), '💪']);
+
 /** What the public, the emoji button and gifts may see: accepted, not opted out, not hidden. */
 export const LIVE_ON_WISH_WELL = { consentGiven: true, optedOut: false, hidden: { $ne: true } };
 const clean = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
@@ -126,20 +132,28 @@ export class WishWellService {
 
   async sendEmoji(body: { entryId?: string; emoji?: string }) {
     const { entryId, emoji } = body;
-    if (!isValidEmoji(emoji)) fail('Invalid emoji');
+    const congratulating = emoji === CONGRATULATIONS;
+    if (!congratulating && !isValidEmoji(emoji)) fail('Invalid emoji');
 
     if (!entryId || !isValidObjectId(entryId)) fail('Entry not found', HttpStatus.NOT_FOUND);
     const entry = await this.entries.findOne({ _id: entryId, ...LIVE_ON_WISH_WELL });
     if (!entry) fail('Entry not found', HttpStatus.NOT_FOUND);
-    if (entry.status !== 'critical') fail('Patient has been updated — emojis disabled');
+    // still fighting: the five wishes; recovered: congratulations only; passed: nothing
+    if (congratulating ? entry.status !== 'recovered' : entry.status !== 'critical') {
+      fail(congratulating ? 'Congratulations are for patients who have recovered' : 'Patient has been updated — emojis disabled');
+    }
 
-    await this.entries.findByIdAndUpdate(entryId, {
-      $inc: { [`emojiCounts.${EMOJI_KEYS[emoji]}`]: 1, totalEmojis: 1 },
-    });
+    const updated = await this.entries.findByIdAndUpdate(
+      entryId,
+      { $inc: congratulating ? { totalEmojis: 1 } : { [`emojiCounts.${EMOJI_KEYS[emoji as string]}`]: 1, totalEmojis: 1 } },
+      { returnDocument: 'after' },
+    );
+    // the patient's screen shows the emoji rising and their running total going up
     this.realtime.sendEmojiToUser(entry.patientId, {
       emoji,
       fromName: 'The Community',
       isWishWell: true,
+      total: updated?.totalEmojis,
     });
     return { success: true, message: 'Emoji sent' };
   }
@@ -305,7 +319,7 @@ export class EmojiService {
   async send(fromUserId: string, body: { toUserId?: string; emoji?: string }) {
     const { toUserId, emoji } = body;
     if (!toUserId || !emoji) fail('Missing fields');
-    if (!isValidEmoji(emoji)) fail('Invalid emoji');
+    if (!CARE_CIRCLE_EMOJIS.has(emoji)) fail('Invalid emoji');
 
     // allowed in either direction of an accepted connection
     const connected = await this.connections.exists({

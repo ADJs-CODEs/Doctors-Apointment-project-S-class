@@ -79,15 +79,15 @@ function NextDoseCountdown({
 
   return (
     <div className="shrink-0 w-32 sm:w-44 text-right">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Next dose in</p>
-      <p className="text-base sm:text-lg font-black text-slate-900 tabular-nums leading-tight">
+      <p className="text-[12px] font-semibold text-ink-3">Next dose in</p>
+      <p className="num text-base sm:text-lg text-ink leading-tight">
         {formatDuration(leftMs)}
       </p>
       <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden mt-1.5">
-        <div className="h-full rounded-full bg-teal-500 transition-all duration-700" style={{ width: `${elapsed}%` }} />
+        <div className="h-full rounded-full bg-brand transition-all duration-700" style={{ width: `${elapsed}%` }} />
       </div>
       <div className="flex items-center justify-end gap-1.5 mt-1 text-[11px]">
-        <span className="text-slate-400 truncate">{formatDueTime(nextDueAt, now)}</span>
+        <span className="text-ink-3 truncate">{formatDueTime(nextDueAt, now)}</span>
         <span className="text-slate-200">·</span>
         <button
           onClick={onTakeEarly}
@@ -159,15 +159,15 @@ export default function MedicineRow({
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <p
-            className={`font-black truncate capitalize ${finished ? "text-slate-500" : "text-slate-900"}`}
+            className={`text-[16px] font-bold truncate capitalize ${finished ? "text-ink-3" : "text-ink"}`}
           >
             {med.name}
           </p>
-          <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${status.tone}`}>
+          <span className={`text-[12px] font-bold px-2 py-0.5 rounded-full ${status.tone}`}>
             {status.text}
           </span>
         </div>
-        <p className="text-[12px] text-slate-400 mt-0.5 truncate">
+        <p className="text-[13px] text-ink-3 mt-0.5 truncate">
           {describeSchedule(med)} · {finished ? `${med.totalQuantity} prescribed` : `${med.remainingQuantity} left`} ·{" "}
           {rate}% taken
           {doctorName ? ` · ${doctorName}` : ""}
@@ -182,14 +182,14 @@ export default function MedicineRow({
           onClick={onTake}
           disabled={disabled}
           title="I took this dose"
-          className={`shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all disabled:opacity-50 ${
+          className={`btn shrink-0 !py-2 !px-3.5 !text-[14px] !rounded-xl ${
             urgency === "missed"
-              ? "bg-red-600 text-white hover:bg-red-700"
+              ? "text-white border border-rose-700 bg-[linear-gradient(180deg,#F05468,#D62F45)] shadow-[inset_0_1px_0_rgba(255,255,255,.22),0_6px_14px_rgba(214,47,69,.25)]"
               : urgency === "due"
-                ? "bg-orange-500 text-white hover:bg-orange-600"
+                ? "text-white border border-amber-700 bg-[linear-gradient(180deg,#F7A93B,#D97706)] shadow-[inset_0_1px_0_rgba(255,255,255,.25),0_6px_14px_rgba(217,119,6,.25)]"
                 : state.kind === "not-started"
-                  ? "bg-slate-900 text-white hover:bg-teal-600"
-                  : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                  ? "btn-ink"
+                  : "btn-glass !bg-white"
           }`}
         >
           {busy ? (

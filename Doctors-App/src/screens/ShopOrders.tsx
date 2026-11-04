@@ -90,9 +90,7 @@ export function ShopOrderList() {
       <Link to="/shop" className="inline-flex items-center gap-1 text-sm font-bold text-slate-500 hover:text-slate-900">
         <RiArrowLeftLine size={16} /> Pharmacy shop
       </Link>
-      <h1 className="text-3xl md:text-4xl font-black text-slate-900 mt-2 mb-6">
-        My <span className="text-teal-600 font-serif italic">orders</span>
-      </h1>
+      <h1 className="text-[32px] sm:text-[40px] leading-[1.05] font-extrabold tracking-[-0.035em] text-ink mt-2 mb-6">My orders</h1>
       {orders === null ? (
         <div className="space-y-3">
           {[0, 1, 2].map((i) => (
@@ -122,7 +120,7 @@ export function ShopOrderList() {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="font-black text-slate-900 tabular-nums">{money(o.totalCents)}</p>
-                    <span className={`inline-block mt-1 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${BADGE[o.status].tone}`}>
+                    <span className={`inline-block mt-1 text-[12px] font-bold px-2 py-0.5 rounded-full ${BADGE[o.status].tone}`}>
                       {BADGE[o.status].label}
                     </span>
                   </div>
@@ -217,12 +215,12 @@ export function ShopOrderDetails() {
       </Link>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl md:text-3xl font-black text-slate-900 flex items-center gap-2">
-            <RiStore2Line className="text-teal-600" /> {order.pharmacyName}
+          <h1 className="text-[28px] md:text-[34px] leading-tight font-extrabold tracking-[-0.03em] text-ink flex items-center gap-2">
+            <RiStore2Line className="text-brand-ink" /> {order.pharmacyName}
           </h1>
-          <p className="text-sm text-slate-500">Ordered {when(order.createdAt)}</p>
+          <p className="text-[14px] text-ink-3">Ordered {when(order.createdAt)}</p>
         </div>
-        <span className={`text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-full ${BADGE[order.status].tone}`}>{BADGE[order.status].label}</span>
+        <span className={`text-[13px] font-bold px-3 py-1 rounded-full ${BADGE[order.status].tone}`}>{BADGE[order.status].label}</span>
       </div>
 
       {order.status === "awaiting_payment" && (
