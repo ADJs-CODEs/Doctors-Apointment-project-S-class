@@ -31,23 +31,20 @@ export default function RecentGiftsBanner() {
   if (!gifts.length) return null;
 
   const items = gifts.map((g, i) => (
-    <span key={`${g._id ?? i}`} className="inline-flex items-center gap-2 mx-6 text-sm">
+    <span key={`${g._id ?? i}`} className="inline-flex items-center gap-2 mx-5 text-[14px]">
       <span className="text-xl">{g.gift?.emoji}</span>
-      <span className="font-bold text-slate-800">{g.fromName}</span>
-      <span className="text-slate-500">sent</span>
-      <span className="font-bold text-rose-600">{g.gift?.name}</span>
-      <span className="text-slate-500">to</span>
-      <span className="font-bold text-slate-800">{g.toName}</span>
+      <span className="font-bold text-ink">{g.fromName}</span>
+      <span className="text-ink-3">sent</span>
+      <span className="font-semibold text-rose-600">{g.gift?.name}</span>
+      <span className="text-ink-3">to</span>
+      <span className="font-bold text-ink">{g.toName}</span>
     </span>
   ));
 
   return (
-    <Link
-      to="/wish-well"
-      className="group flex items-center overflow-hidden rounded-2xl bg-gradient-to-r from-amber-50 via-rose-50 to-violet-50 border border-rose-100"
-    >
-      <span className="shrink-0 flex items-center gap-1.5 px-4 py-3 bg-white/70 border-r border-rose-100 text-[10px] font-black uppercase tracking-[2px] text-rose-600">
-        <RiGiftLine size={14} /> Gifts
+    <Link to="/wish-well" className="group glass flex items-center overflow-hidden rounded-[18px]">
+      <span className="shrink-0 flex items-center gap-1.5 px-4 py-3 border-r border-line text-[13px] font-bold text-rose-600">
+        <RiGiftLine size={15} /> Gifts
       </span>
       <div className="overflow-hidden flex-1">
         {/* the list twice, so the scroll loops without a gap */}

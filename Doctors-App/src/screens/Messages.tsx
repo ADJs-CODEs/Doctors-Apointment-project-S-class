@@ -218,21 +218,22 @@ export default function Messages() {
   const lastOwnId = [...(thread?.messages ?? [])].reverse().find((m) => m.sender === "patient")?._id;
 
   return (
-    <div className="max-w-6xl mx-auto py-6">
+    <div className="max-w-6xl mx-auto py-4">
       <div className="mb-5 hidden lg:block">
-        <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">Messages</h1>
-        <p className="text-slate-500 mt-1">Talk to your doctors about your visits and medicines.</p>
+        <p className="eyebrow mb-1.5">Your doctors</p>
+        <h1 className="text-[40px] leading-[1.05] font-extrabold tracking-[-0.035em] text-ink">Messages</h1>
+        <p className="text-[16px] text-ink-2 mt-2">Talk to your doctors about your visits and medicines.</p>
       </div>
 
-      <div className="bg-white rounded-[28px] border border-slate-200 shadow-[0_12px_40px_-12px_rgba(15,23,42,0.18)] overflow-hidden flex h-[calc(100dvh-12.5rem)] lg:h-[calc(100dvh-13rem)] min-h-[420px]">
+      <div className="surface rounded-[24px] overflow-hidden flex h-[calc(100dvh-12.5rem)] lg:h-[calc(100dvh-15rem)] min-h-[420px]">
         {/* --- conversation list (tinted, so it reads as its own column) --- */}
         <aside
-          className={`${doctorId ? "hidden md:flex" : "flex"} w-full md:w-80 shrink-0 flex-col bg-slate-100/70 border-r border-slate-200`}
+          className={`${doctorId ? "hidden md:flex" : "flex"} w-full md:w-80 shrink-0 flex-col bg-canvas border-r border-line`}
         >
-          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
-            <p className="text-[11px] font-black uppercase tracking-[2px] text-slate-500">Your doctors</p>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-line">
+            <p className="text-[15px] font-bold text-ink">Conversations</p>
             {conversations.length > 0 && (
-              <span className="text-[11px] font-bold text-slate-500 bg-white rounded-full px-2 py-0.5 border border-slate-200">
+              <span className="num text-[12px] text-ink-3 bg-white rounded-full px-2 py-0.5 border border-line">
                 {conversations.length}
               </span>
             )}
@@ -252,7 +253,7 @@ export default function Messages() {
                 </p>
                 <button
                   onClick={() => navigate("/doctors")}
-                  className="mt-4 px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-teal-600"
+                  className="btn btn-ink mt-4 !py-2.5 !text-[14px]"
                 >
                   Find a doctor
                 </button>
@@ -492,7 +493,7 @@ export default function Messages() {
                   <button
                     type="submit"
                     disabled={!text.trim() || sending}
-                    className="h-[46px] w-[46px] shrink-0 rounded-2xl bg-slate-900 text-white flex items-center justify-center hover:bg-teal-600 disabled:opacity-40 disabled:hover:bg-slate-900 transition-colors"
+                    className="btn btn-ink h-[46px] w-[46px] shrink-0 !p-0 !rounded-[14px]"
                     aria-label="Send"
                   >
                     {sending ? (
@@ -519,14 +520,14 @@ function Bubble({ m, topic, showRead }: { m: ChatMessage; topic: string | null; 
         <div
           className={`rounded-2xl px-4 py-2.5 ${
             mine
-              ? "bg-slate-900 text-white rounded-br-md"
+              ? "bg-[linear-gradient(180deg,#1C3D68,#0B2545)] text-white rounded-br-md shadow-[inset_0_1px_0_rgba(255,255,255,.15)]"
               : m.urgent
-                ? "bg-red-50 text-red-900 border border-red-200 rounded-bl-md"
-                : "bg-white text-slate-800 border border-slate-100 rounded-bl-md"
+                ? "bg-rose-50 text-rose-900 border border-rose-200 rounded-bl-md"
+                : "bg-white text-ink border border-line rounded-bl-md"
           }`}
         >
           {m.urgent && !mine && (
-            <p className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-red-600 mb-1">
+            <p className="flex items-center gap-1 text-[12px] font-bold text-rose-600 mb-1">
               <RiErrorWarningFill size={13} /> Urgent
             </p>
           )}

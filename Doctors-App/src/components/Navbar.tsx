@@ -8,9 +8,8 @@ import type { AppContextType } from "../types/index";
 import { motion, AnimatePresence } from "framer-motion";
 import NotificationBell from "./NotificationBell";
 import Logo from "./brand/Logo";
-import { disablePush } from "../utils/push";
-import { clearCachedSettings } from "../hooks/useUserSettings";
-import { basket } from "../utils/basket";
+import ConfirmLogout from "./ConfirmLogout";
+import { useLogout } from "../hooks/useLogout";
 import { List, X, SignOut, CalendarCheck, UserGear, CaretDown, Fingerprint } from "@phosphor-icons/react";
 import { RiEyeLine } from "@remixicon/react";
 
@@ -32,7 +31,7 @@ const ACCOUNT = [
 /** The glass header on the public pages (doctors, about, contact, login). */
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
-  const { token, setToken, userData } = useContext(AppContext) as AppContextType;
+  const { token, userData } = useContext(AppContext) as AppContextType;
   const [showMenu, setShowMenu] = useState(false);
 
   useEffect(() => {
@@ -42,15 +41,11 @@ const Navbar: React.FC = () => {
     };
   }, [showMenu]);
 
-  const logout = async () => {
-    // stop this device getting the next person's notifications (needs the token, so first)
-    await disablePush().catch(() => {});
-    clearCachedSettings();
-    basket.clear();
-    setToken("");
-    localStorage.removeItem("token");
+  const logoutNow = useLogout();
+  const [confirmOut, setConfirmOut] = useState(false);
+  const logout = () => {
     setShowMenu(false);
-    navigate("/login");
+    setConfirmOut(true);
   };
 
   const go = (path: string) => {
@@ -61,10 +56,11 @@ const Navbar: React.FC = () => {
 
   return (
     <nav className="sticky top-0 z-50 px-4 pt-3.5 pb-2">
-      <div className="glass max-w-[1180px] mx-auto flex items-center gap-5 rounded-[18px] py-2.5 pl-5 pr-3">
+      {/* logo | links centred | buttons: three columns so the links sit in the true middle */}
+      <div className="glass max-w-[1180px] mx-auto flex md:grid md:grid-cols-[1fr_auto_1fr] items-center gap-5 rounded-[18px] py-2.5 pl-5 pr-3">
         <Logo compact />
 
-        <ul className="hidden md:flex items-center gap-6 ml-auto">
+        <ul className="hidden md:flex items-center gap-7">
           {LINKS.map((l) => (
             <li key={l.to}>
               <NavLink to={l.to}>
@@ -82,7 +78,7 @@ const Navbar: React.FC = () => {
           ))}
         </ul>
 
-        <div className="flex items-center gap-2 ml-auto md:ml-0">
+        <div className="flex items-center gap-2 ml-auto md:ml-0 md:justify-self-end">
           {token && <NotificationBell />}
           {token && userData ? (
             <div className="hidden md:flex items-center gap-2 cursor-pointer group relative py-1">
@@ -225,6 +221,7 @@ const Navbar: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+      <ConfirmLogout open={confirmOut} onCancel={() => setConfirmOut(false)} onConfirm={logoutNow} />
     </nav>
   );
 };

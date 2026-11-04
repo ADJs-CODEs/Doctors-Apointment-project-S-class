@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  RiAddLine,
   RiApps2Line,
   RiCalendarCheckLine,
   RiCapsuleLine,
@@ -21,12 +22,13 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import { type ReactNode, useContext, useEffect, useState } from "react";
 import NotificationBell from "@/components/NotificationBell";
+import ConfirmLogout from "@/components/ConfirmLogout";
+import { BRAND } from "@/components/brand/Logo";
 import { AppContext } from "@/Context/AppContext";
 import { useMessages } from "@/Context/MessagesContext";
-import { Link, NavLink, useNavigate } from "@/lib/navigation";
-import { disablePush, syncPush } from "@/utils/push";
-import { clearCachedSettings } from "@/hooks/useUserSettings";
-import { basket } from "@/utils/basket";
+import { Link, NavLink } from "@/lib/navigation";
+import { useLogout } from "@/hooks/useLogout";
+import { syncPush } from "@/utils/push";
 import type { AppContextType } from "@/types";
 
 type NavItem = { label: string; path: string; icon: typeof RiHome5Line };
@@ -59,18 +61,9 @@ const MORE_MENU = [...MAIN_NAV.slice(4), ...ACCOUNT_NAV, ...HELP_NAV];
 
 function Logo() {
   return (
-    <Link to="/dashboard" className="flex items-center gap-2.5 shrink-0">
-      <div className="w-10 h-10 bg-teal-50 rounded-full border-2 border-dotted border-teal-200 flex items-center justify-center">
-        <span className="text-teal-600 font-black text-xl leading-none">+</span>
-      </div>
-      <div className="flex flex-col leading-tight">
-        <span className="text-[15px] font-black text-slate-800 tracking-tighter uppercase whitespace-nowrap">
-          ADJ&apos;s <span className="text-teal-600">CODEs</span>
-        </span>
-        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[2px]">
-          Patient portal
-        </span>
-      </div>
+    <Link to="/dashboard" className="flex items-baseline gap-2 shrink-0">
+      <b className="text-[20px] font-extrabold tracking-[-0.5px] text-ink">{BRAND.name}</b>
+      <span className="text-[12px] font-semibold text-ink-3 whitespace-nowrap hidden sm:inline">{BRAND.by}</span>
     </Link>
   );
 }
@@ -81,8 +74,8 @@ function MessagesBadge({ className = "" }: { className?: string }) {
   if (!unread) return null;
   return (
     <span
-      className={`min-w-5 h-5 px-1.5 rounded-full text-[11px] font-black text-white flex items-center justify-center ${
-        urgentUnread ? "bg-red-600 animate-pulse" : "bg-teal-500"
+      className={`num min-w-5 h-5 px-1.5 rounded-full text-[11px] text-white flex items-center justify-center ${
+        urgentUnread ? "bg-rose-600 animate-pulse" : "bg-brand"
       } ${className}`}
     >
       {unread > 99 ? "99+" : unread}
@@ -96,16 +89,18 @@ function SidebarLink({ item }: { item: NavItem }) {
     <NavLink
       to={item.path}
       className={({ isActive }) =>
-        `flex items-center gap-3 px-4 py-3 rounded-2xl text-[13px] font-bold transition-colors ${
-          isActive
-            ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10"
-            : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+        `flex items-center gap-3 px-3.5 py-2.5 rounded-[14px] text-[15px] font-semibold transition-colors ${
+          isActive ? "btn-ink" : "text-ink-2 hover:bg-white/80 hover:text-ink"
         }`
       }
     >
-      <Icon size={19} />
-      {item.label}
-      {item.path === "/messages" && <MessagesBadge className="ml-auto" />}
+      {({ isActive }) => (
+        <>
+          <Icon size={19} className={isActive ? "" : "text-ink-3"} />
+          {item.label}
+          {item.path === "/messages" && <MessagesBadge className="ml-auto" />}
+        </>
+      )}
     </NavLink>
   );
 }
@@ -114,16 +109,12 @@ function UserBadge({ compact = false }: { compact?: boolean }) {
   const { userData } = useContext(AppContext) as AppContextType;
   if (!userData) return null;
   return (
-    <Link to="/my-profile" className="flex items-center gap-3 min-w-0">
-      <img
-        src={userData.image}
-        alt=""
-        className="w-10 h-10 rounded-xl object-cover border border-slate-100 bg-white shrink-0"
-      />
+    <Link to="/my-profile" className="flex items-center gap-3 min-w-0" aria-label="My profile">
+      <img src={userData.image} alt="" className="w-10 h-10 rounded-xl object-cover border border-line bg-white shrink-0" />
       {!compact && (
         <div className="min-w-0">
-          <p className="text-sm font-black text-slate-900 truncate">{userData.name}</p>
-          <p className="text-[11px] font-medium text-slate-400 truncate">{userData.email}</p>
+          <p className="text-[14px] font-bold text-ink truncate">{userData.name}</p>
+          <p className="text-[12px] text-ink-3 truncate">{userData.email}</p>
         </div>
       )}
     </Link>
@@ -131,9 +122,9 @@ function UserBadge({ compact = false }: { compact?: boolean }) {
 }
 
 export default function PatientShell({ children }: { children: ReactNode }) {
-  const { setToken } = useContext(AppContext) as AppContextType;
-  const navigate = useNavigate();
+  const logout = useLogout();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [confirmOut, setConfirmOut] = useState(false);
 
   // close the "More" sheet with Escape
   useEffect(() => {
@@ -148,52 +139,49 @@ export default function PatientShell({ children }: { children: ReactNode }) {
     syncPush();
   }, []);
 
-  const logout = async () => {
+  const askLogout = () => {
     setMoreOpen(false);
-    // stop this device getting the next person's notifications; needs the token, so first
-    await disablePush().catch(() => {});
-    clearCachedSettings();
-    basket.clear();
-    setToken("");
-    localStorage.removeItem("token");
-    navigate("/login");
+    setConfirmOut(true);
   };
 
   return (
-    <div className="min-h-screen bg-clinic-bg text-slate-800">
+    <div className="relative isolate min-h-screen bg-canvas text-ink overflow-x-clip">
+      {/* the brand's soft teal and blue glow */}
+      <div aria-hidden="true" className="fixed -z-10 rounded-full blur-[60px] opacity-50 pointer-events-none w-[46vw] h-[46vw] bg-[#CDEFED] -right-[12vw] -top-[10vw]" />
+      <div aria-hidden="true" className="fixed -z-10 rounded-full blur-[60px] opacity-50 pointer-events-none w-[40vw] h-[40vw] bg-[#DCE3FA] -left-[14vw] top-[40vh]" />
+
       {/* --- desktop sidebar --- */}
-      <aside className="hidden lg:flex fixed inset-y-0 left-0 w-72 flex-col bg-white border-r border-slate-100 px-5 py-6 z-40">
-        <div className="px-2 mb-8">
+      <aside className="hidden lg:flex fixed inset-y-3 left-3 w-[272px] flex-col glass rounded-[22px] px-3.5 py-5 z-40">
+        <div className="px-2.5 mb-6">
           <Logo />
         </div>
 
-        <nav className="flex-1 overflow-y-auto space-y-1">
+        <nav className="flex-1 overflow-y-auto space-y-0.5 [scrollbar-width:thin]">
           {MAIN_NAV.map((item) => (
             <SidebarLink key={item.path} item={item} />
           ))}
-
-          <p className="px-4 pt-6 pb-2 text-[10px] font-black uppercase tracking-[2px] text-slate-400">
-            Account
-          </p>
+          <p className="px-3.5 pt-5 pb-1.5 text-[12px] font-bold text-ink-3">Account</p>
           {ACCOUNT_NAV.map((item) => (
             <SidebarLink key={item.path} item={item} />
           ))}
         </nav>
 
-        <div className="pt-4 mt-4 border-t border-slate-100 space-y-4">
-          <div className="flex gap-4 px-4 text-[11px] font-bold text-slate-400">
+        <div className="pt-3 mt-3 border-t border-line space-y-3">
+          <div className="flex gap-4 px-3.5 text-[13px] font-semibold text-ink-3">
             {HELP_NAV.map((item) => (
-              <Link key={item.path} to={item.path} className="hover:text-teal-600">
+              <Link key={item.path} to={item.path} className="hover:text-brand-ink">
                 {item.label}
               </Link>
             ))}
           </div>
-          <div className="flex items-center justify-between gap-2 px-2">
+          <div className="flex items-center justify-between gap-2 px-1.5">
             <UserBadge />
             <button
-              onClick={logout}
+              type="button"
+              onClick={askLogout}
               title="Log out"
-              className="p-2.5 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"
+              aria-label="Log out"
+              className="p-2.5 rounded-xl text-ink-3 hover:text-rose-600 hover:bg-rose-50 transition-colors shrink-0"
             >
               <RiLogoutBoxRLine size={19} />
             </button>
@@ -202,33 +190,33 @@ export default function PatientShell({ children }: { children: ReactNode }) {
       </aside>
 
       {/* --- top bar (phones and tablets) --- */}
-      <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between gap-3 px-4 py-3 bg-white/85 backdrop-blur-xl border-b border-slate-100">
-        <Logo />
-        <div className="flex items-center gap-3">
-          <NotificationBell />
-          <UserBadge compact />
+      <header className="lg:hidden sticky top-0 z-40 px-3 pt-3">
+        <div className="glass rounded-[18px] flex items-center justify-between gap-3 pl-4 pr-2.5 py-2">
+          <Logo />
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <UserBadge compact />
+          </div>
         </div>
       </header>
 
       {/* --- page content --- */}
-      <div className="lg:pl-72">
-        <header className="hidden lg:flex sticky top-0 z-30 h-16 items-center justify-end gap-5 px-10 bg-clinic-bg/85 backdrop-blur-xl border-b border-slate-100">
-          <Link
-            to="/doctors"
-            className="text-[12px] font-bold text-slate-500 hover:text-teal-600 transition-colors"
-          >
-            Book an appointment
-          </Link>
-          <span className="w-px h-5 bg-slate-200" />
-          <NotificationBell />
+      <div className="lg:pl-[290px]">
+        <header className="hidden lg:flex sticky top-0 z-30 px-7 pt-3">
+          <div className="glass rounded-[18px] w-full flex items-center justify-end gap-3 px-3 py-2">
+            <Link to="/doctors" className="btn btn-ink !py-2 !px-3.5 !text-[14px] !rounded-xl">
+              <RiAddLine size={17} /> Book a visit
+            </Link>
+            <NotificationBell />
+          </div>
         </header>
         {/* bottom padding keeps content clear of the phone tab bar */}
-        <main className="px-4 sm:px-6 lg:px-10 pb-28 lg:pb-12">{children}</main>
+        <main className="px-4 sm:px-6 lg:px-7 pt-4 pb-28 lg:pb-12">{children}</main>
       </div>
 
       {/* --- phone tab bar --- */}
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-100 pb-[env(safe-area-inset-bottom)]">
-        <div className="grid grid-cols-5">
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="glass rounded-[20px] grid grid-cols-5">
           {TAB_BAR.map((item) => {
             const Icon = item.icon;
             return (
@@ -236,9 +224,7 @@ export default function PatientShell({ children }: { children: ReactNode }) {
                 key={item.path}
                 to={item.path}
                 className={({ isActive }) =>
-                  `flex flex-col items-center gap-1 py-2.5 text-[10px] font-bold ${
-                    isActive ? "text-teal-600" : "text-slate-400"
-                  }`
+                  `flex flex-col items-center gap-1 py-2.5 text-[11px] font-bold ${isActive ? "text-brand-ink" : "text-ink-3"}`
                 }
               >
                 <span className="relative">
@@ -252,8 +238,9 @@ export default function PatientShell({ children }: { children: ReactNode }) {
             );
           })}
           <button
+            type="button"
             onClick={() => setMoreOpen(true)}
-            className="flex flex-col items-center gap-1 py-2.5 text-[10px] font-bold text-slate-400"
+            className="flex flex-col items-center gap-1 py-2.5 text-[11px] font-bold text-ink-3"
           >
             <RiApps2Line size={22} />
             More
@@ -266,14 +253,14 @@ export default function PatientShell({ children }: { children: ReactNode }) {
         {moreOpen && (
           <>
             <motion.div
-              className="lg:hidden fixed inset-0 z-50 bg-slate-900/40"
+              className="lg:hidden fixed inset-0 z-50 bg-ink/30 backdrop-blur-sm"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setMoreOpen(false)}
             />
             <motion.div
-              className="lg:hidden fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-[32px] px-5 pt-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
+              className="lg:hidden fixed inset-x-0 bottom-0 z-50 bg-canvas rounded-t-[28px] px-4 pt-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-[0_-10px_40px_rgba(11,37,69,0.15)]"
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
@@ -281,7 +268,7 @@ export default function PatientShell({ children }: { children: ReactNode }) {
             >
               <div className="flex items-center justify-between mb-4 px-1">
                 <UserBadge />
-                <button onClick={() => setMoreOpen(false)} className="p-2 text-slate-400">
+                <button type="button" aria-label="Close" onClick={() => setMoreOpen(false)} className="p-2 rounded-xl text-ink-3 hover:bg-white">
                   <RiCloseLine size={22} />
                 </button>
               </div>
@@ -293,17 +280,18 @@ export default function PatientShell({ children }: { children: ReactNode }) {
                       key={item.path}
                       to={item.path}
                       onClick={() => setMoreOpen(false)}
-                      className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-slate-50 text-slate-700 text-[11px] font-bold text-center"
+                      className="surface flex flex-col items-center gap-2 p-3.5 rounded-[16px] text-ink text-[13px] font-semibold text-center"
                     >
-                      <Icon size={22} className="text-teal-600" />
+                      <Icon size={22} className="text-brand-ink" />
                       {item.label}
                     </Link>
                   );
                 })}
               </div>
               <button
-                onClick={logout}
-                className="mt-4 w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-red-50 text-red-600 text-sm font-bold"
+                type="button"
+                onClick={askLogout}
+                className="btn w-full mt-3 bg-rose-50 text-rose-600 border border-rose-100"
               >
                 <RiLogoutBoxRLine size={18} />
                 Log out
@@ -312,6 +300,8 @@ export default function PatientShell({ children }: { children: ReactNode }) {
           </>
         )}
       </AnimatePresence>
+
+      <ConfirmLogout open={confirmOut} onCancel={() => setConfirmOut(false)} onConfirm={logout} />
     </div>
   );
 }

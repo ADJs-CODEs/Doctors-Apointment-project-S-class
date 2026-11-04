@@ -22,6 +22,15 @@
   --color-line: #E3EAF2;
   --color-canvas: #F6F8FB;
   --animate-bob: bob 2.6s cubic-bezier(.34, 1.56, .64, 1) infinite;
+  /* resting emoji: still most of the time, a small lift and tilt every few seconds */
+  --animate-breathe: breathe 6s ease-in-out infinite;
+
+  @keyframes breathe {
+    0%, 82%, 100% { transform: none; }
+    87% { transform: translateY(-2px) scale(1.1) rotate(-6deg); }
+    92% { transform: translateY(0) scale(.97) rotate(3deg); }
+    96% { transform: scale(1.02) rotate(0); }
+  }
 
   @keyframes bob {
     0%, 100% { transform: translateY(0) scale(1); }
@@ -114,7 +123,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-bob { animation: none; }
+  .animate-bob, .animate-breathe { animation: none; }
 }
 
 

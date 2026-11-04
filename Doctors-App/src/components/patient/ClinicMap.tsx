@@ -55,7 +55,7 @@ export default function ClinicMap({
       : `https://www.google.com/maps?q=${encodeURIComponent(where)}&output=embed`;
 
   return (
-    <div className="bg-white rounded-[24px] md:rounded-[32px] border border-slate-100 shadow-sm overflow-hidden">
+    <div className="surface rounded-[24px] overflow-hidden">
       <iframe
         key={mapSrc}
         title={`Map of ${name ?? "the clinic"}`}
@@ -66,17 +66,17 @@ export default function ClinicMap({
       />
       <div className="p-4 md:p-5 space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <p className="flex items-start gap-2 text-sm text-slate-600">
-            <RiMapPin2Line size={18} className="text-teal-600 shrink-0 mt-0.5" />
+          <p className="flex items-start gap-2 text-[15px] text-ink-2">
+            <RiMapPin2Line size={18} className="text-brand-ink shrink-0 mt-0.5" />
             <span>
-              <span className="font-bold text-slate-900">Clinic</span> · {where}
+              <span className="font-bold text-ink">Clinic</span> · {where}
             </span>
           </p>
           <a
             href={directionsUrl(where, settings, result?.from === "current" ? lastOrigin() : undefined)}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-[12px] font-bold hover:bg-teal-600 shrink-0"
+            className="btn btn-ink shrink-0 !py-2.5 !text-[14px]"
           >
             <RiDirectionLine size={16} /> Directions
           </a>
@@ -84,12 +84,12 @@ export default function ClinicMap({
 
         {/* distance */}
         {token && docId && (
-          <div className="rounded-2xl bg-teal-50/60 border border-teal-100 px-4 py-3">
+          <div className="rounded-[16px] bg-brand-soft/60 border border-[#C4E8E5] px-4 py-3">
             {status === "done" && result ? (
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <p className="text-base font-black text-slate-900">{distanceSentence(result)}</p>
-                  <p className="text-[12px] text-slate-500">
+                  <p className="text-[16px] font-bold text-ink">{distanceSentence(result)}</p>
+                  <p className="text-[13px] text-ink-3">
                     From {result.from === "home" ? "your home address" : "where you are now"}
                     {result.kind === "straight-line" ? " · travel time needs the clinic's Google Maps set-up" : ""}
                   </p>
@@ -99,8 +99,8 @@ export default function ClinicMap({
                     <button
                       key={m.id}
                       onClick={() => measure(m.id)}
-                      className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition-colors ${
-                        result.mode === m.id ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                      className={`px-2.5 py-1.5 rounded-lg text-[13px] font-bold border transition-colors ${
+                        result.mode === m.id ? "bg-ink text-white border-ink" : "bg-white text-ink-2 border-line hover:border-brand"
                       }`}
                     >
                       {m.label}
@@ -112,18 +112,19 @@ export default function ClinicMap({
                 </div>
               </div>
             ) : status === "locating" || status === "loading" ? (
-              <p className="flex items-center gap-2 text-sm font-bold text-slate-600">
-                <RiLoader4Line size={16} className="animate-spin text-teal-600" />
+              <p className="flex items-center gap-2 text-[14px] font-semibold text-ink-2">
+                <RiLoader4Line size={16} className="animate-spin text-brand-ink" />
                 {status === "locating" ? "Finding where you are…" : "Working out the distance…"}
               </p>
             ) : (
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <p className="text-sm text-slate-600">
+                <p className="text-[14px] text-ink-2">
                   {error ?? "See how far this clinic is from you and how long it takes to get there."}
                 </p>
                 <button
+                  type="button"
                   onClick={() => measure()}
-                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-600 text-white text-[12px] font-bold hover:bg-teal-700 shrink-0"
+                  className="btn btn-teal shrink-0 !py-2.5 !text-[14px]"
                 >
                   <RiNavigationLine size={15} /> How far is it?
                 </button>
@@ -160,16 +161,16 @@ export function DirectionsButton({
       rel="noreferrer"
       onClick={(e) => e.stopPropagation()}
       title={result ? distanceSentence(result) : "Directions to the clinic"}
-      className={`inline-flex items-center justify-center gap-1.5 border border-slate-200 bg-white text-slate-600 hover:border-teal-300 hover:text-teal-700 font-bold px-4 py-3 rounded-xl md:rounded-2xl text-[11px] md:text-xs transition-colors ${className}`}
+      className={`inline-flex items-center justify-center gap-1.5 border border-line bg-white text-ink-2 hover:border-brand hover:text-brand-ink font-bold px-4 py-2.5 rounded-xl text-[14px] transition-colors ${className}`}
     >
       <RiDirectionLine size={15} />
       {result ? (
-        <span className="normal-case">
+        <span>
           {formatDistance(result.distanceMeters)}
           {result.durationSeconds != null ? ` · ${formatDuration(result.durationSeconds)}` : ""}
         </span>
       ) : (
-        <span className="uppercase">Directions</span>
+        <span>Directions</span>
       )}
     </a>
   );

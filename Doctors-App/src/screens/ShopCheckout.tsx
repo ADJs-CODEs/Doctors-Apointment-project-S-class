@@ -137,8 +137,8 @@ export default function ShopCheckout() {
       <Link to="/shop" className="inline-flex items-center gap-1 text-sm font-bold text-slate-500 hover:text-slate-900">
         <RiArrowLeftLine size={16} /> Keep shopping
       </Link>
-      <h1 className="text-3xl md:text-4xl font-black text-slate-900 mt-2">Checkout</h1>
-      <p className="text-slate-500 mt-1">
+      <h1 className="text-[32px] sm:text-[40px] leading-[1.05] font-extrabold tracking-[-0.035em] text-ink mt-2">Checkout</h1>
+      <p className="text-[16px] text-ink-2 mt-2">
         From <strong className="text-slate-700">{current.pharmacy.name}</strong> · {current.pharmacy.distanceKm} km away
       </p>
 
@@ -219,7 +219,7 @@ export default function ShopCheckout() {
               {current.pharmacy.name}&apos;s delivery area.
             </p>
             <label className="block">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Full address for the rider</span>
+              <span className="text-[14px] font-bold text-ink">Full address for the rider</span>
               <textarea
                 required
                 rows={2}
@@ -231,7 +231,7 @@ export default function ShopCheckout() {
             </label>
             <div className="grid sm:grid-cols-2 gap-3">
               <label className="block">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Phone</span>
+                <span className="text-[14px] font-bold text-ink">Phone</span>
                 <input
                   required
                   type="tel"
@@ -241,7 +241,7 @@ export default function ShopCheckout() {
                 />
               </label>
               <label className="block">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Note for the rider (optional)</span>
+                <span className="text-[14px] font-bold text-ink">Note for the rider (optional)</span>
                 <input
                   value={form.note}
                   onChange={(e) => setForm({ ...form, note: e.target.value })}

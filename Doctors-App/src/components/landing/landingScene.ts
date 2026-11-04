@@ -266,7 +266,8 @@ export function startLandingScene(root: HTMLElement, onNo3d: () => void): () => 
     let side = 0;
     for (let i = 0; i < SIDE.length; i++) side += SIDE[i] * w[i];
     const tx = narrow ? 0 : side * Math.min(halfW * 0.48, 2.6);
-    const ty = narrow ? halfH * 0.42 : w[0] * halfH * 0.42 + w[6] * halfH * 0.18;
+    // opening: high enough to sit above the words, low enough that the orbit clears the header
+    const ty = narrow ? halfH * 0.42 : w[0] * halfH * 0.27 + w[6] * halfH * 0.18;
     smooth.x = lerp(smooth.x, tx, ease);
     smooth.y = lerp(smooth.y, ty, ease);
     world.position.set(smooth.x, smooth.y, 0);
@@ -285,7 +286,7 @@ export function startLandingScene(root: HTMLElement, onNo3d: () => void): () => 
     if (w[0] > 0.02 && !narrow) {
       tmp.set(0, 0, 0).applyMatrix4(heartHolder.matrixWorld).project(camera);
       const c = toScreen(tmp);
-      const rx = Math.min(W * 0.36, 470), ry = Math.min(H * 0.2, 170);
+      const rx = Math.min(W * 0.36, 470), ry = Math.min(H * 0.17, 150);
       orbitChips.forEach((chip, i) => {
         const a = (i / orbitChips.length) * Math.PI * 2 + t * 0.18;
         const depth = (Math.sin(a) + 1) / 2; // the front of the orbit is bigger and clearer

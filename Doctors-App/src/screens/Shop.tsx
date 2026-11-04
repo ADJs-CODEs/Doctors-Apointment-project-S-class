@@ -168,10 +168,11 @@ export default function Shop() {
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 md:py-10">
       <div className="mb-5">
-        <h1 className="text-3xl md:text-4xl font-black text-slate-900">
-          Pharmacy <span className="text-teal-600 font-serif italic">shop</span>
+        <p className="eyebrow mb-1.5">Your pharmacy</p>
+        <h1 className="text-[32px] sm:text-[40px] leading-[1.05] font-extrabold tracking-[-0.035em] text-ink">
+          Medicine to your door.
         </h1>
-        <p className="text-slate-500 mt-1">
+        <p className="text-[16px] text-ink-2 mt-2">
           Medicines from certified pharmacies that deliver to you.{" "}
           <Link to="/shop/orders" className="font-bold text-teal-700 hover:underline whitespace-nowrap">
             My orders →
@@ -187,7 +188,7 @@ export default function Shop() {
               {where === "current" ? <RiNavigationLine size={20} /> : where === "home" ? <RiHome4Line size={20} /> : <RiMapPin2Line size={20} />}
             </span>
             <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-black uppercase tracking-wider text-teal-700">Delivering to</p>
+              <p className="text-[13px] font-bold text-brand-ink">Delivering to</p>
               <p className="font-black text-slate-900 truncate">
                 {where === "current" ? "Where you are now" : where === "home" ? "Your home address" : otherAddress}
               </p>
@@ -304,7 +305,7 @@ export default function Shop() {
                       <RiStore2Line size={16} className="text-teal-600 shrink-0" />
                       <span className="truncate">{p.name}</span>
                     </p>
-                    {p.operatedByClinic && <p className="text-[10px] font-black uppercase tracking-wider text-teal-700 mt-1">Our clinic&apos;s pharmacy</p>}
+                    {p.operatedByClinic && <p className="text-[12px] font-bold text-brand-ink mt-1">Our clinic&apos;s pharmacy</p>}
                     <p className="text-[12px] text-slate-500 mt-1">
                       {p.distanceKm} km away · {fee(p.deliveryFeeCents)}
                     </p>
@@ -541,11 +542,11 @@ function AddressBox({ initial, onUse, onCancel }: { initial: string; onUse: (add
 function RxBadge({ p }: { p: ShopProduct }) {
   if (!p.requiresPrescription && !p.prescribedForYou) return null;
   return p.prescribedForYou ? (
-    <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-teal-800 bg-teal-50 border border-teal-100 px-2 py-0.5 rounded-full">
+    <span className="inline-flex items-center gap-1 text-[12px] font-bold text-brand-ink bg-brand-soft border border-[#C4E8E5] px-2 py-0.5 rounded-full">
       <RiFileList3Line size={11} /> Prescribed for you
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-violet-700 bg-violet-50 px-2 py-0.5 rounded-full">
+    <span className="inline-flex items-center gap-1 text-[12px] font-bold text-video bg-video-soft px-2 py-0.5 rounded-full">
       <RiFileList3Line size={11} /> Needs a prescription
     </span>
   );
@@ -563,7 +564,7 @@ function ProductCard({ p, onOpen, onAdd }: { p: ShopProduct; onOpen: () => void;
         <div className="relative w-full aspect-[4/3] bg-slate-50 flex items-center justify-center">
           {p.image ? <img src={p.image} alt="" className="w-full h-full object-cover" /> : <RiCapsuleLine size={40} className="text-slate-200" />}
           {!p.inStock && (
-            <span className="absolute inset-x-3 bottom-3 text-center text-[11px] font-black uppercase tracking-wider bg-white/90 text-slate-600 rounded-full py-1">
+            <span className="absolute inset-x-3 bottom-3 text-center text-[12px] font-bold bg-white/90 text-ink-2 rounded-full py-1">
               Out of stock
             </span>
           )}

@@ -6,26 +6,29 @@ import { useParams, useNavigate, useSearchParams } from "@/lib/navigation";
 import { AppContext } from "../Context/AppContext";
 import RelatedDoctors from "../components/RelatedDoctors";
 import ClinicMap from "../components/patient/ClinicMap";
+import IconTile from "../components/brand/IconTile";
+import { experienceText } from "../cards/DoctorsCardGrid";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   RiVerifiedBadgeFill,
-  RiInformationLine,
-  RiMoneyDollarCircleLine,
   RiCalendarEventLine,
   RiTimeLine,
   RiHospitalLine,
   RiVideoOnLine,
+  RiArrowRightLine,
+  RiShieldCheckLine,
 } from "@remixicon/react";
 import type { AppContextType, Appointment, Doctor, DoctorAvailability } from "../types/index";
 import axiosInstance from "../utils/axiosInstance";
 import { API_PATHS } from "../utils/apiPath";
 
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
 const Appointments: React.FC = () => {
   const { docId } = useParams<{ docId: string }>();
   const context = useContext(AppContext) as AppContextType;
   const { doctors, currencySymbol, token, getDoctorsData } = context;
-  const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
   const navigate = useNavigate();
 
   const [docInfo, setDocInfo] = useState<Doctor | null>(null);
@@ -63,11 +66,11 @@ const Appointments: React.FC = () => {
 
   const bookAppointment = async () => {
     if (!token) {
-      toast.warning("Please login to continue");
+      toast.warning("Log in or create an account to book");
       return navigate("/login");
     }
     const day = availability?.days[slotIndex];
-    if (!slotTime || !day) return toast.info("Please select a time");
+    if (!slotTime || !day) return toast.info("Pick a time first");
     setHolding(true);
     try {
       const { data } = await axiosInstance.post(API_PATHS.USER.BOOK_APPOINTMENT, {
@@ -101,97 +104,70 @@ const Appointments: React.FC = () => {
 
   if (!docInfo) return null;
 
+  const day = availability?.days[slotIndex];
+  const dayText = day
+    ? new Date(`${day.iso}T12:00:00`).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })
+    : "";
+  const video = kind === "video";
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="max-w-5xl mx-auto py-6 md:py-12 px-4"
-    >
-      {/* Doctor hero */}
-      <div className="flex flex-col md:flex-row gap-5 md:gap-8 mb-8 md:mb-12">
-        {/* Image */}
-        <div className="w-full md:w-64 shrink-0">
-          <img
-            className="w-full aspect-[4/3] md:aspect-[4/5] object-cover rounded-[24px] md:rounded-[36px] bg-slate-900 shadow-lg"
-            src={docInfo.image}
-            alt={docInfo.name}
-          />
-        </div>
-
-        {/* Info card */}
-        <div className="flex-1 bg-white border border-slate-100 p-5 md:p-10 rounded-[24px] md:rounded-[40px] shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-teal-500/5 blur-3xl rounded-full -mr-12 -mt-12" />
-
-          <div className="flex flex-wrap items-start gap-2 mb-3">
-            <h1 className="text-2xl md:text-3xl font-black text-slate-900 uppercase tracking-tighter leading-tight">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-5xl mx-auto py-4 md:py-8 px-4 md:px-0">
+      {/* the doctor */}
+      <div className="grid gap-5 md:grid-cols-[260px_minmax(0,1fr)] mb-6">
+        <img
+          className="w-full aspect-[4/3] md:aspect-[4/5] object-cover object-top rounded-[24px] bg-brand-soft border border-line"
+          src={docInfo.image}
+          alt={docInfo.name}
+        />
+        <div className="glass rounded-[24px] p-5 md:p-8 flex flex-col gap-4">
+          <div>
+            <p className="eyebrow !text-[12px] mb-1">{docInfo.speciality}</p>
+            <h1 className="flex flex-wrap items-center gap-2 text-[30px] md:text-[38px] leading-[1.05] font-extrabold tracking-[-0.035em] text-ink">
               {docInfo.name}
+              <RiVerifiedBadgeFill className="text-brand shrink-0" size={24} aria-label="Verified doctor" />
             </h1>
-            <RiVerifiedBadgeFill
-              className="text-teal-500 mt-1 shrink-0"
-              size={22}
-            />
-          </div>
-
-          <p className="text-[10px] font-black text-teal-600 uppercase tracking-[2px] mb-1">
-            {docInfo.degree} — {docInfo.speciality}
-          </p>
-          <span className="inline-block text-[9px] font-bold text-slate-400 uppercase tracking-wider px-3 py-1 bg-slate-50 border border-slate-100 rounded-full mb-5">
-            {docInfo.experience} Experience
-          </span>
-
-          <div className="mb-6 md:mb-8">
-            <p className="flex items-center gap-2 text-[10px] font-black text-slate-900 uppercase tracking-[2px] mb-2">
-              <RiInformationLine size={14} className="text-teal-500" /> About
-            </p>
-            <p className="text-slate-500 text-sm leading-relaxed font-medium">
-              {docInfo.about}
+            <p className="text-[15px] text-ink-3 mt-1.5">
+              {[docInfo.degree, experienceText(docInfo.experience)].filter(Boolean).join(" · ")}
             </p>
           </div>
-
-          <div className="pt-5 border-t border-slate-50 flex items-center gap-3">
-            <div className="p-2.5 bg-teal-50 rounded-xl text-teal-600">
-              <RiMoneyDollarCircleLine size={20} />
-            </div>
-            <div>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                Consultation Fee
-              </p>
-              <p className="text-lg font-black text-slate-900">
-                {currencySymbol}
-                {availability?.fees ?? docInfo.fees}
-                <span className="text-[11px] font-bold text-slate-400 ml-1">at the clinic</span>
-              </p>
-              {availability?.offersVideo && availability.videoFees != null && (
-                <p className="text-sm font-black text-violet-700">
+          {docInfo.about && <p className="text-[16px] text-ink-2 leading-relaxed">{docInfo.about}</p>}
+          <div className="flex flex-wrap gap-2 mt-auto pt-2">
+            {availability?.offersInPerson !== false && (
+              <span className="inline-flex items-center gap-2 rounded-[14px] border border-line bg-white px-3.5 py-2.5">
+                <RiHospitalLine size={17} className="text-brand-ink" />
+                <span className="text-[14px] font-semibold text-ink-2">Clinic</span>
+                <span className="num text-[16px] text-ink">
+                  {currencySymbol}
+                  {availability?.fees ?? docInfo.fees}
+                </span>
+              </span>
+            )}
+            {availability?.offersVideo && availability.videoFees != null && (
+              <span className="inline-flex items-center gap-2 rounded-[14px] border border-line bg-white px-3.5 py-2.5">
+                <RiVideoOnLine size={17} className="text-video" />
+                <span className="text-[14px] font-semibold text-ink-2">Video call</span>
+                <span className="num text-[16px] text-ink">
                   {currencySymbol}
                   {availability.videoFees}
-                  <span className="text-[11px] font-bold text-violet-400 ml-1">video call</span>
-                </p>
-              )}
-            </div>
+                </span>
+              </span>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Where the clinic is (Google Maps; can be switched off in Settings) */}
-      <div className="mb-8 md:mb-12">
-        <ClinicMap docId={docInfo._id} address={docInfo.address} name={docInfo.name} />
-      </div>
+      {/* booking */}
+      <section className="surface rounded-[24px] p-5 md:p-8">
+        <h2 className="flex items-center gap-2.5 text-[20px] font-extrabold tracking-[-0.02em] text-ink mb-5">
+          <IconTile>
+            <RiCalendarEventLine size={17} />
+          </IconTile>
+          Book a visit
+        </h2>
 
-      {/* Booking section */}
-      <div className="bg-white p-5 md:p-10 rounded-[24px] md:rounded-[40px] border border-slate-100 shadow-sm">
-        <div className="flex items-center gap-2 mb-6 md:mb-8">
-          <RiCalendarEventLine className="text-teal-500" size={18} />
-          <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">
-            Book{" "}
-            <span className="text-teal-500 font-serif normal-case italic">
-              Appointment
-            </span>
-          </h2>
-        </div>
-
-        {/* In person or video */}
-        <div className="grid grid-cols-2 gap-2 md:gap-3 mb-6 md:mb-8 max-w-md">
+        {/* 1. in person or video */}
+        <p className="text-[14px] font-bold text-ink mb-2">How do you want to meet?</p>
+        <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-2.5 mb-7 max-w-lg" role="group" aria-label="Type of visit">
           {(
             [
               { id: "in-person", title: "At the clinic", hint: "Visit in person", icon: RiHospitalLine },
@@ -204,21 +180,25 @@ const Appointments: React.FC = () => {
             return (
               <button
                 key={o.id}
+                type="button"
+                aria-pressed={active}
                 onClick={() => setKind(o.id)}
                 disabled={!offered}
                 title={offered ? undefined : `This doctor doesn't offer ${o.id === "video" ? "video calls" : "clinic visits"}`}
-                className={`flex items-center gap-3 text-left rounded-2xl border px-3 md:px-4 py-3 transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                className={`flex items-center gap-3 text-left rounded-[16px] border-[1.5px] bg-white px-3.5 py-3 transition-[transform,border-color,box-shadow] hover:-translate-y-0.5 disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:translate-y-0 ${
                   active
                     ? o.id === "video"
-                      ? "border-violet-400 bg-violet-50 ring-2 ring-violet-100"
-                      : "border-teal-400 bg-teal-50 ring-2 ring-teal-100"
-                    : "border-slate-200 hover:bg-slate-50"
+                      ? "border-video shadow-[0_0_0_3px_rgba(109,40,217,.12)]"
+                      : "border-brand shadow-[0_0_0_3px_rgba(14,165,164,.15)]"
+                    : "border-line"
                 }`}
               >
-                <Icon size={22} className={active ? (o.id === "video" ? "text-violet-600" : "text-teal-600") : "text-slate-400"} />
+                <IconTile tone={o.id === "video" ? "video" : "brand"} size="md">
+                  <Icon size={20} />
+                </IconTile>
                 <span>
-                  <span className="block text-sm font-black text-slate-900">{o.title}</span>
-                  <span className="block text-[11px] text-slate-500">{offered ? o.hint : "Not offered"}</span>
+                  <span className="block text-[15px] font-bold text-ink">{o.title}</span>
+                  <span className="block text-[13px] text-ink-3">{offered ? o.hint : "Not offered"}</span>
                 </span>
               </button>
             );
@@ -228,86 +208,125 @@ const Appointments: React.FC = () => {
         {!availability ? (
           <div className="flex gap-2">
             {[0, 1, 2, 3, 4].map((i) => (
-              <div key={i} className="w-16 md:w-[76px] h-20 rounded-[20px] bg-slate-100 animate-pulse" />
+              <div key={i} className="w-[68px] h-[84px] rounded-[18px] bg-line/70 animate-pulse" />
             ))}
           </div>
         ) : !availability.available || availability.days.length === 0 ? (
-          <div className="rounded-2xl bg-slate-50 border border-slate-100 px-5 py-6 text-center">
-            <p className="font-black text-slate-800">
+          <div className="rounded-[18px] bg-canvas border border-line px-5 py-6 text-center">
+            <p className="text-[16px] font-bold text-ink">
               {!availability.available
                 ? "This doctor isn't taking bookings right now"
-                : `No free ${kind === "video" ? "video call" : "clinic"} times in the next two weeks`}
+                : `No free ${video ? "video call" : "clinic"} times in the next two weeks`}
             </p>
-            <p className="text-sm text-slate-500 mt-1">
-              Try {kind === "video" ? "a clinic visit" : availability.offersVideo ? "a video call" : "another doctor"}, or message the doctor.
+            <p className="text-[14px] text-ink-3 mt-1">
+              Try {video ? "a clinic visit" : availability.offersVideo ? "a video call" : "another doctor"}, or message the doctor.
             </p>
           </div>
         ) : (
           <>
-            {/* Date selector */}
-            <div className="flex gap-2 md:gap-3 overflow-x-auto pb-3 no-scrollbar">
-              {availability.days.map((day, index) => (
-                <button
-                  key={day.slotDate}
-                  onClick={() => {
-                    setSlotIndex(index);
-                    setSlotTime("");
-                  }}
-                  className={`flex flex-col items-center justify-center min-w-[64px] md:min-w-[76px] py-4 md:py-5 rounded-[20px] md:rounded-[28px] transition-all duration-300 shrink-0 ${
-                    slotIndex === index
-                      ? "bg-slate-900 text-white shadow-lg -translate-y-1"
-                      : "bg-slate-50 text-slate-400 border border-transparent hover:border-teal-200 hover:bg-white"
-                  }`}
-                >
-                  <span className="text-[8px] md:text-[9px] font-black mb-1 opacity-60">{daysOfWeek[day.weekday]}</span>
-                  <span className="text-base md:text-lg font-black">{Number(day.slotDate.split("_")[0])}</span>
-                  <span className="text-[8px] md:text-[9px] font-bold opacity-50">
-                    {new Date(`${day.iso}T12:00:00`).toLocaleDateString("en-GB", { month: "short" })}
-                  </span>
-                </button>
-              ))}
-            </div>
-
-            {/* Time selector */}
-            <div className="flex flex-wrap gap-2 mt-6 md:mt-8">
-              <AnimatePresence mode="wait">
-                {availability.days[slotIndex]?.slots.map((time) => (
-                  <motion.button
-                    key={`${slotIndex}-${time}`}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    onClick={() => setSlotTime(time)}
-                    className={`flex items-center gap-1.5 px-4 md:px-5 py-2.5 md:py-3 rounded-xl md:rounded-2xl text-[10px] md:text-[11px] font-black uppercase tracking-wider transition-all ${
-                      time === slotTime
-                        ? kind === "video"
-                          ? "bg-violet-600 text-white shadow-lg shadow-violet-500/20"
-                          : "bg-teal-500 text-white shadow-lg shadow-teal-500/20"
-                        : "bg-white text-slate-500 border border-slate-100 hover:border-teal-300"
+            {/* 2. the day */}
+            <p className="text-[14px] font-bold text-ink mb-2">Pick a day</p>
+            <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 [scrollbar-width:none]">
+              {availability.days.map((d, index) => {
+                const on = slotIndex === index;
+                return (
+                  <button
+                    key={d.slotDate}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => {
+                      setSlotIndex(index);
+                      setSlotTime("");
+                    }}
+                    className={`flex flex-col items-center justify-center min-w-[68px] py-3.5 rounded-[18px] border transition-[transform,background] shrink-0 ${
+                      on ? "btn-ink -translate-y-0.5" : "bg-white border-line text-ink-2 hover:border-brand"
                     }`}
                   >
-                    <RiTimeLine size={11} className="shrink-0" />
-                    {time}
-                  </motion.button>
-                ))}
+                    <span className={`text-[12px] font-semibold ${on ? "text-white/75" : "text-ink-3"}`}>{DAYS[d.weekday]}</span>
+                    <span className="num text-[20px] leading-tight">{Number(d.slotDate.split("_")[0])}</span>
+                    <span className={`text-[12px] font-semibold ${on ? "text-white/75" : "text-ink-3"}`}>
+                      {new Date(`${d.iso}T12:00:00`).toLocaleDateString("en-GB", { month: "short" })}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 3. the time */}
+            <p className="text-[14px] font-bold text-ink mt-6 mb-2">Pick a time</p>
+            <div className="flex flex-wrap gap-2">
+              <AnimatePresence mode="wait">
+                {day?.slots.map((time) => {
+                  const on = time === slotTime;
+                  return (
+                    <motion.button
+                      key={`${slotIndex}-${time}`}
+                      type="button"
+                      aria-pressed={on}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      onClick={() => setSlotTime(time)}
+                      className={`num inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-[12px] text-[14px] border transition-colors ${
+                        on
+                          ? video
+                            ? "text-white border-violet-800 bg-[linear-gradient(180deg,#8B5CF6,#6D28D9)] shadow-[inset_0_1px_0_rgba(255,255,255,.22),0_6px_14px_rgba(109,40,217,.25)]"
+                            : "btn-teal"
+                          : "bg-white text-ink-2 border-line hover:border-brand"
+                      }`}
+                    >
+                      <RiTimeLine size={14} className="shrink-0" />
+                      {time}
+                    </motion.button>
+                  );
+                })}
               </AnimatePresence>
             </div>
 
-            <motion.button
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              onClick={bookAppointment}
-              disabled={holding || !slotTime}
-              className="mt-8 md:mt-10 w-full md:w-auto px-10 md:px-14 py-4 md:py-5 bg-slate-900 text-white rounded-xl md:rounded-2xl font-black uppercase tracking-[2px] text-[10px] md:text-[11px] shadow-lg hover:bg-teal-600 transition-all disabled:opacity-50"
-            >
-              {holding ? "Holding your time…" : `Continue to payment${fee != null ? ` · ${currencySymbol}${fee}` : ""}`}
-            </motion.button>
-            <p className="text-[12px] text-slate-500 mt-3">
-              Your time is held for 30 minutes while you pay; it&apos;s only booked once paid.
-              {kind === "video" && " You'll join the video call from your Appointments page; it opens 10 minutes before."}
-            </p>
+            {/* summary + pay */}
+            <div className="mt-7 pt-5 border-t border-line flex flex-col md:flex-row md:items-center gap-4">
+              <div className="flex-1 min-w-0">
+                {slotTime ? (
+                  <p className="text-[16px] text-ink">
+                    <b>{video ? "Video call" : "Clinic visit"}</b> on {dayText} at <span className="num">{slotTime}</span>
+                  </p>
+                ) : (
+                  <p className="text-[16px] text-ink-3">Pick a time to continue.</p>
+                )}
+                <p className="flex items-start gap-1.5 text-[13px] text-ink-3 mt-1">
+                  <RiShieldCheckLine size={15} className="text-brand-ink shrink-0 mt-0.5" />
+                  <span>
+                    Your time is held for 30 minutes while you pay from your wallet or by card; it&apos;s only booked once paid.
+                    {video && " You'll join from your Appointments page; it opens 10 minutes before."}
+                  </span>
+                </p>
+              </div>
+              <button type="button" onClick={bookAppointment} disabled={holding || !slotTime} className="btn btn-ink shrink-0">
+                {holding ? (
+                  "Holding your time…"
+                ) : (
+                  <>
+                    Continue to payment
+                    {fee != null && (
+                      <span className="num">
+                        · {currencySymbol}
+                        {fee}
+                      </span>
+                    )}
+                    <RiArrowRightLine size={18} />
+                  </>
+                )}
+              </button>
+            </div>
           </>
         )}
-      </div>
+      </section>
+
+      {/* where the clinic is (Google Maps; can be switched off in Settings) */}
+      {!video && (
+        <div className="mt-6">
+          <ClinicMap docId={docInfo._id} address={docInfo.address} name={docInfo.name} />
+        </div>
+      )}
 
       {/* pay for the held time: wallet or card */}
       <PayAppointmentModal
@@ -323,8 +342,7 @@ const Appointments: React.FC = () => {
         }}
       />
 
-      {/* Related */}
-      <div className="mt-16 md:mt-28">
+      <div className="mt-14 md:mt-20">
         <RelatedDoctors docId={docId || ""} speciality={docInfo.speciality} />
       </div>
     </motion.div>

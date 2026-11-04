@@ -10,6 +10,20 @@ export type ActiveMedicine = {
 
 const visitTime = (a: Appointment) => slotToDate(a.slotDate, a.slotTime)?.getTime() ?? 0;
 
+// a visit still counts as upcoming for an hour after it starts (it may be under way)
+const STILL_ON_MS = 60 * 60 * 1000;
+
+/** Still to happen: held, or not closed and its time hasn't passed. Everything else is past. */
+export const isUpcomingVisit = (a: Appointment, now = Date.now()) => {
+  if (a.cancelled || a.isCompleted || a.missed) return false;
+  if (a.holdExpiresAt && !a.payment) return true;
+  const start = slotToDate(a.slotDate, a.slotTime);
+  return !start || start.getTime() > now - STILL_ON_MS;
+};
+
+/** When the visit starts (0 if the slot text can't be read), for sorting. */
+export const visitStart = visitTime;
+
 /** Completed visits, newest first. */
 export const completedVisits = (appointments: Appointment[]) =>
   appointments.filter((a) => a.isCompleted).sort((x, y) => visitTime(y) - visitTime(x));

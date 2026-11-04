@@ -34,10 +34,10 @@ export default function MessageDoctorButton({
   };
 
   const tone = urgentUnread
-    ? "bg-red-600 text-white border-red-600 hover:bg-red-700"
+    ? "bg-rose-600 text-white border-rose-600 hover:bg-rose-700"
     : unread
-      ? "bg-teal-500 text-white border-teal-500 hover:bg-teal-600"
-      : "bg-white text-slate-600 border-slate-200 hover:border-teal-300 hover:text-teal-700";
+      ? "btn-teal"
+      : "bg-white text-ink-2 border-line hover:border-brand hover:text-brand-ink";
 
   return (
     <button
@@ -48,7 +48,7 @@ export default function MessageDoctorButton({
       }}
       title={urgentUnread ? "Your doctor sent you an urgent message" : label}
       className={`relative inline-flex items-center justify-center gap-1.5 border font-bold transition-colors ${
-        compact ? "px-3 py-2 rounded-xl text-[11px]" : "px-5 py-3 rounded-xl md:rounded-2xl text-[11px] md:text-xs uppercase"
+        compact ? "px-3 py-2 rounded-xl text-[13px]" : "px-4 py-2.5 rounded-xl text-[14px]"
       } ${tone} ${className}`}
     >
       {urgentUnread ? <RiErrorWarningFill size={15} className="animate-pulse" /> : <RiChat3Line size={15} />}
