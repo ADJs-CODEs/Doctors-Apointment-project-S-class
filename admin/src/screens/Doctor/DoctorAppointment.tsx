@@ -25,6 +25,7 @@ import { CallButtons } from "../../components/calls/CallLayer";
 import { API_PATHS } from "../../utils/apiPath";
 import axiosInstance from "../../utils/axiosInstance";
 import type { Appointment } from "../../types/index";
+import { PageHeader, Pill } from "../../components/panel";
 import {
   Avatar,
   criticalReason,
@@ -106,26 +107,20 @@ const DoctorAppointment: React.FC = () => {
   let lastDay = "";
 
   return (
-    <div className="p-4 sm:p-6 md:p-10 bg-slate-50/50 min-h-screen animate-reveal">
+    <div className="p-4 sm:p-6 lg:p-8 animate-reveal">
       <div className="max-w-5xl mx-auto">
-        <div className="flex items-center gap-3 mb-1">
-          <div className="p-2.5 bg-slate-900 rounded-xl text-teal-400">
-            <RiCalendarCheckLine size={20} />
-          </div>
-          <h1 className="text-xl sm:text-3xl font-black text-slate-900">
-            Schedule
-          </h1>
+        <div className="mb-6">
+          <PageHeader eyebrow="Your practice" title="Schedule" subtitle="Your visits, soonest first. Complete each one with vitals and prescriptions." />
         </div>
-        <p className="text-slate-500 text-sm ml-12 mb-6">Your visits, soonest first. Complete each one with vitals and prescriptions.</p>
 
         <VisitTabs tabs={tabs} current={tab} onChange={setTab} />
 
         {shown.length === 0 ? (
-          <div className="bg-white rounded-[28px] border border-slate-100 py-16 text-center">
-            <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-4 mx-auto">
+          <div className="surface rounded-[24px] py-16 text-center">
+            <div className="w-14 h-14 bg-brand-soft rounded-2xl flex items-center justify-center text-brand-ink mb-4 mx-auto">
               <RiCalendarCheckLine size={24} />
             </div>
-            <p className="font-black text-slate-900">
+            <p className="font-bold text-ink">
               {tab === "upcoming"
                 ? "No upcoming visits"
                 : tab === "toClose"
@@ -134,7 +129,7 @@ const DoctorAppointment: React.FC = () => {
                     ? "Nobody needs attention"
                     : "Nothing here"}
             </p>
-            <p className="text-slate-400 text-sm mt-1">
+            <p className="text-ink-3 text-[14px] mt-1">
               {tab === "upcoming"
                 ? "New bookings appear here as soon as they're paid."
                 : tab === "toClose"
@@ -163,9 +158,9 @@ const DoctorAppointment: React.FC = () => {
 
               return (
                 <React.Fragment key={item._id}>
-                  {showHeading && <p className="text-[11px] font-black uppercase tracking-[2px] text-slate-400 pt-3 px-1">{heading}</p>}
+                  {showHeading && <p className="text-[15px] font-bold text-ink pt-3 px-1">{heading}</p>}
 
-                  <div className={`bg-white rounded-[24px] border overflow-hidden ${critical ? "border-rose-200" : "border-slate-200"}`}>
+                  <div className={`surface rounded-[22px] overflow-hidden ${critical ? "!border-rose-200" : ""}`}>
                     {critical && (
                       <div className="flex flex-wrap items-center gap-2 bg-rose-50 px-4 sm:px-5 py-2.5 border-b border-rose-100">
                         <RiErrorWarningFill size={16} className="text-rose-600" />
@@ -173,7 +168,7 @@ const DoctorAppointment: React.FC = () => {
                         <button
                           onClick={() => resolve(item)}
                           disabled={resolving === item.userId}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-rose-200 text-[12px] font-black text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-rose-200 text-[12px] font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-50"
                         >
                           <RiShieldCheckLine size={14} /> {resolving === item.userId ? "Saving…" : "Mark as resolved"}
                         </button>
@@ -187,8 +182,8 @@ const DoctorAppointment: React.FC = () => {
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <Avatar src={item.userData.image} name={item.userData.name} />
                         <div className="min-w-0">
-                          <p className="font-black text-slate-900 truncate">{item.userData.name}</p>
-                          <p className="text-[12px] text-slate-500">{Number.isFinite(age) && age > 0 ? `${age} years old` : "Age not given"}</p>
+                          <p className="text-[16px] font-bold text-ink truncate">{item.userData.name}</p>
+                          <p className="text-[13px] text-ink-3">{Number.isFinite(age) && age > 0 ? `${age} years old` : "Age not given"}</p>
                           <VisitPills item={item} currency={currency} />
                         </div>
                       </div>
@@ -200,7 +195,7 @@ const DoctorAppointment: React.FC = () => {
                         {!item.cancelled && (
                           <button
                             onClick={() => navigate(`/doctor-messages?patient=${item.userId}&appointment=${item._id}`)}
-                            className="relative flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-[13px] font-bold text-slate-700 hover:bg-slate-50"
+                            className="relative flex items-center gap-1.5 px-3 py-2 rounded-xl border border-line bg-white text-[13px] font-bold text-ink-2 hover:bg-canvas"
                           >
                             <RiChat3Line size={16} /> Message
                             {forPatient(item.userId) > 0 && <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-teal-500 border-2 border-white" />}
@@ -209,11 +204,11 @@ const DoctorAppointment: React.FC = () => {
                         {item.missed ? (
                           <MissedBadge item={item} currency={currency} />
                         ) : item.cancelled ? (
-                          <span className="text-[12px] font-bold text-slate-500 bg-slate-100 px-3 py-2 rounded-xl">Cancelled</span>
+                          <Pill tone="rose">Cancelled</Pill>
                         ) : item.isCompleted ? (
                           <button
                             onClick={() => setExpandedId(expandedId === item._id ? null : item._id)}
-                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-teal-50 border border-teal-100 text-[13px] font-bold text-teal-800 hover:bg-teal-100"
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand-soft border border-teal-100 text-[13px] font-bold text-brand-ink hover:bg-teal-100"
                           >
                             <RiCheckboxCircleLine size={16} /> {expandedId === item._id ? "Hide report" : "Report & adherence"}
                             <RiArrowDownSLine size={16} className={`transition-transform ${expandedId === item._id ? "rotate-180" : ""}`} />
@@ -230,7 +225,7 @@ const DoctorAppointment: React.FC = () => {
                             )}
                             <button
                               onClick={() => cancelAppointment(item._id)}
-                              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-[13px] font-bold text-slate-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200"
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-line bg-white text-[13px] font-bold text-ink-2 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200"
                             >
                               <RiCloseCircleLine size={16} /> Cancel
                             </button>
@@ -239,7 +234,7 @@ const DoctorAppointment: React.FC = () => {
                                 setSelectedApptId(item._id);
                                 setShowModal(true);
                               }}
-                              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 text-[13px] font-black text-white hover:bg-teal-700"
+                              className="btn btn-teal !py-2 !px-4 !text-[13px] !rounded-xl"
                             >
                               <RiStethoscopeLine size={16} /> Complete visit
                             </button>

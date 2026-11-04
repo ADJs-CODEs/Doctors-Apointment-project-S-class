@@ -3,6 +3,7 @@
 import { RiAddLine, RiCheckLine, RiCloseLine, RiForbidLine, RiMapPin2Line, RiStore2Line, RiTruckLine } from "@remixicon/react";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { PageHeader, Pill, Skeleton } from "../../components/panel";
 import type { Pharmacy } from "../../context/PharmacyContext";
 import { API_PATHS } from "../../utils/apiPath";
 import axiosInstance from "../../utils/axiosInstance";
@@ -10,13 +11,27 @@ import axiosInstance from "../../utils/axiosInstance";
 type Row = Pharmacy & { owners: { name: string; email: string; pharmacistLicense?: string }[]; staffCount: number };
 
 const FILTERS = ["pending", "approved", "suspended", "rejected", "all"] as const;
-const TONE: Record<Pharmacy["status"], string> = {
-  pending: "bg-orange-50 text-orange-700 border-orange-100",
-  approved: "bg-teal-50 text-teal-700 border-teal-100",
-  suspended: "bg-red-50 text-red-700 border-red-100",
-  rejected: "bg-slate-100 text-slate-500 border-slate-200",
+const FILTER_LABEL: Record<(typeof FILTERS)[number], string> = {
+  pending: "Waiting",
+  approved: "Approved",
+  suspended: "Suspended",
+  rejected: "Rejected",
+  all: "All",
 };
-const input = "w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-teal-400";
+const TONE: Record<Pharmacy["status"], "amber" | "brand" | "rose" | "neutral"> = {
+  pending: "amber",
+  approved: "brand",
+  suspended: "rose",
+  rejected: "neutral",
+};
+const STATUS_LABEL: Record<Pharmacy["status"], string> = {
+  pending: "Waiting for review",
+  approved: "Approved",
+  suspended: "Suspended",
+  rejected: "Rejected",
+};
+const input = "field";
+const ghost = "flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-line bg-white text-ink-2 text-[14px] font-bold hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200";
 const when = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
 /** Pharmacies that want to (or do) sell in the shop: check the licence, approve, suspend. */
@@ -41,28 +56,21 @@ export default function Pharmacies() {
   }, [load]);
 
   return (
-    <div className="p-4 sm:p-6 md:p-10 bg-slate-50/50 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-8 animate-reveal">
       <div className="max-w-5xl mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2.5 bg-slate-900 rounded-xl text-teal-400">
-                <RiStore2Line size={20} />
-              </div>
-              <h1 className="text-xl sm:text-3xl font-black text-slate-900">
-                Pharmacies
-              </h1>
-            </div>
-            <p className="text-slate-500 text-sm ml-12">Check each licence with the Pharmacy Council before approving.</p>
-          </div>
-          {!creating && (
-            <button
-              onClick={() => setCreating(true)}
-              className="self-start sm:self-auto flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-teal-600"
-            >
-              <RiAddLine size={16} /> Add the clinic&apos;s pharmacy
-            </button>
-          )}
+        <div className="mb-6">
+          <PageHeader
+            eyebrow="Medicine shop"
+            title="Pharmacies"
+            subtitle="Check each licence with the Pharmacy Council before approving."
+            action={
+              !creating && (
+                <button onClick={() => setCreating(true)} className="btn btn-ink !rounded-xl">
+                  <RiAddLine size={17} /> Add the clinic&apos;s pharmacy
+                </button>
+              )
+            }
+          />
         </div>
 
         {creating && <CreateClinicPharmacy onDone={(created) => { setCreating(false); if (created) { setFilter("approved"); load(); } }} />}
@@ -72,21 +80,24 @@ export default function Pharmacies() {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold capitalize ${
-                filter === f ? "bg-slate-900 text-white" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
+              className={`px-3.5 py-2 rounded-xl text-[14px] font-bold ${
+                filter === f ? "btn-ink" : "bg-white border border-line text-ink-2 hover:border-ink-3/40"
               }`}
             >
-              {f}
+              {FILTER_LABEL[f]}
             </button>
           ))}
         </div>
 
         {rows === null ? (
-          <div className="h-48 rounded-[28px] bg-slate-200/60 animate-pulse" />
+          <Skeleton className="h-48" />
         ) : rows.length === 0 ? (
-          <div className="bg-white rounded-[28px] border border-slate-100 p-12 text-center">
-            <p className="font-black text-slate-900">Nothing here</p>
-            <p className="text-sm text-slate-400 mt-1">{filter === "pending" ? "No applications are waiting." : "No pharmacies with this status."}</p>
+          <div className="surface rounded-[24px] p-12 text-center">
+            <div className="w-14 h-14 bg-brand-soft rounded-2xl flex items-center justify-center text-brand-ink mb-4 mx-auto">
+              <RiStore2Line size={24} />
+            </div>
+            <p className="font-bold text-ink">Nothing here</p>
+            <p className="text-[14px] text-ink-3 mt-1">{filter === "pending" ? "No applications are waiting." : "No pharmacies with this status."}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -121,57 +132,59 @@ function PharmacyCard({ p, onChanged }: { p: Row; onChanged: () => void }) {
   };
 
   return (
-    <div className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-5 sm:p-6">
+    <div className="surface rounded-[22px] p-5 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xl font-black text-slate-900 flex flex-wrap items-center gap-2">
+          <p className="text-[19px] font-extrabold tracking-[-0.02em] text-ink flex flex-wrap items-center gap-2">
             {p.name}
-            {p.operatedByClinic && <span className="text-[10px] font-black uppercase tracking-wider bg-slate-900 text-white px-2.5 py-1 rounded-full">Clinic</span>}
+            {p.operatedByClinic && <Pill tone="violet">The clinic&apos;s own</Pill>}
             {p.demo && (
-              <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full" title="Only shown to the test accounts in SHOP_DEMO_USERS">
-                Demo
+              <span title="Only shown to the test accounts in SHOP_DEMO_USERS">
+                <Pill tone="amber">Demo</Pill>
               </span>
             )}
           </p>
-          <p className="text-[12px] text-slate-400">
-            Applied {when(p.createdAt)} · {p.staffCount} active staff
+          <p className="text-[13px] text-ink-3 mt-0.5">
+            Applied {when(p.createdAt)} · <span className="num">{p.staffCount}</span> active staff
           </p>
         </div>
-        <span className={`self-start text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full border ${TONE[p.status]}`}>{p.status}</span>
+        <span className="self-start">
+          <Pill tone={TONE[p.status]}>{STATUS_LABEL[p.status]}</Pill>
+        </span>
       </div>
 
-      <div className="grid sm:grid-cols-3 gap-2 mt-4 text-sm">
-        <div className="rounded-xl bg-slate-50 px-3 py-2">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Premises licence</p>
-          <p className="font-bold text-slate-800 break-all">{p.licenseNumber}</p>
+      <div className="grid sm:grid-cols-3 gap-2 mt-4 text-[14px]">
+        <div className="rounded-xl bg-canvas px-3 py-2.5">
+          <p className="caption">Premises licence</p>
+          <p className="num text-ink break-all mt-0.5">{p.licenseNumber}</p>
         </div>
-        <div className="rounded-xl bg-slate-50 px-3 py-2">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Contact</p>
-          <p className="font-bold text-slate-800 break-all">{p.email}</p>
-          <p className="text-[12px] text-slate-500">{p.phone}</p>
+        <div className="rounded-xl bg-canvas px-3 py-2.5">
+          <p className="caption">Contact</p>
+          <p className="font-bold text-ink break-all mt-0.5">{p.email}</p>
+          <p className="text-[13px] text-ink-3">{p.phone}</p>
         </div>
-        <div className="rounded-xl bg-slate-50 px-3 py-2">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Owner</p>
+        <div className="rounded-xl bg-canvas px-3 py-2.5">
+          <p className="caption">Owner</p>
           {p.owners.map((o) => (
-            <p key={o.email} className="text-[12px] text-slate-700">
-              <span className="font-bold">{o.name}</span>
+            <p key={o.email} className="text-[13px] text-ink-2 mt-0.5">
+              <span className="font-bold text-ink">{o.name}</span>
               {o.pharmacistLicense ? ` · pharmacist ${o.pharmacistLicense}` : ""}
             </p>
           ))}
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-x-5 gap-y-1 mt-3 text-[12px]">
-        <span className={`flex items-center gap-1 ${p.located ? "text-slate-500" : "text-orange-700 font-bold"}`}>
+      <div className="flex flex-wrap gap-x-5 gap-y-1 mt-3 text-[13px]">
+        <span className={`flex items-center gap-1 ${p.located ? "text-ink-3" : "text-orange-700 font-bold"}`}>
           <RiMapPin2Line size={14} />
           {[p.address.line1, p.address.line2].filter(Boolean).join(", ")}
           {!p.located && " (not found on the map: can't be approved yet)"}
         </span>
-        <span className="flex items-center gap-1 text-slate-500">
+        <span className="flex items-center gap-1 text-ink-3">
           <RiTruckLine size={14} /> Up to {p.deliveryRadiusKm} km · {p.deliveryFeeCents ? `$${(p.deliveryFeeCents / 100).toFixed(2)}` : "free"} delivery
         </span>
       </div>
-      {p.statusNote && p.status !== "approved" && <p className="text-sm text-slate-500 mt-3 italic">Reason given: “{p.statusNote}”</p>}
+      {p.statusNote && p.status !== "approved" && <p className="text-[14px] text-ink-2 mt-3 italic">Reason given: “{p.statusNote}”</p>}
 
       {mode === "none" ? (
         <div className="flex flex-wrap gap-2 mt-5">
@@ -180,30 +193,24 @@ function PharmacyCard({ p, onChanged }: { p: Row; onChanged: () => void }) {
               onClick={() => setStatus("approved")}
               disabled={saving || !p.located}
               title={p.located ? undefined : "Their address must be found on the map first"}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-bold hover:bg-teal-700 disabled:opacity-40"
+              className="btn btn-teal !py-2.5 !px-4 !text-[14px] !rounded-xl disabled:opacity-40"
             >
               <RiCheckLine size={16} /> {p.status === "suspended" ? "Lift suspension" : "Approve"}
             </button>
           )}
           {p.status === "pending" && (
-            <button
-              onClick={() => setMode("rejected")}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-bold hover:bg-red-50 hover:text-red-600 hover:border-red-200"
-            >
+            <button onClick={() => setMode("rejected")} className={ghost}>
               <RiCloseLine size={16} /> Reject
             </button>
           )}
           {p.status === "approved" && (
-            <button
-              onClick={() => setMode("suspended")}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-bold hover:bg-red-50 hover:text-red-600 hover:border-red-200"
-            >
+            <button onClick={() => setMode("suspended")} className={ghost}>
               <RiForbidLine size={16} /> Suspend
             </button>
           )}
         </div>
       ) : (
-        <div className="mt-5 rounded-2xl border border-slate-200 p-4 space-y-3">
+        <div className="mt-5 rounded-2xl border border-line bg-canvas/60 p-4 space-y-3">
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
@@ -215,11 +222,11 @@ function PharmacyCard({ p, onChanged }: { p: Row; onChanged: () => void }) {
             <button
               onClick={() => setStatus(mode, note)}
               disabled={saving || !note.trim()}
-              className="px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-bold hover:bg-red-700 disabled:opacity-40"
+              className="px-4 py-2.5 rounded-xl bg-rose-600 text-white text-[14px] font-bold hover:bg-rose-700 disabled:opacity-40"
             >
               {saving ? "Saving…" : mode === "rejected" ? "Reject" : "Suspend"}
             </button>
-            <button onClick={() => setMode("none")} className="px-4 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100">
+            <button onClick={() => setMode("none")} className="px-4 py-2.5 rounded-xl text-[14px] font-bold text-ink-3 hover:bg-white">
               Back
             </button>
           </div>
@@ -275,10 +282,10 @@ function CreateClinicPharmacy({ onDone }: { onDone: (created: boolean) => void }
   };
 
   return (
-    <form onSubmit={submit} className="bg-white rounded-[28px] border border-slate-200 p-5 sm:p-6 mb-6 space-y-3">
+    <form onSubmit={submit} className="surface rounded-[22px] p-5 sm:p-6 mb-6 space-y-3">
       <div>
-        <p className="font-black text-slate-900">The clinic&apos;s own pharmacy</p>
-        <p className="text-[12px] text-slate-500">Approved straight away and sold through the same shop, with no commission. Its manager gets a login by email.</p>
+        <p className="text-[16px] font-bold text-ink">The clinic&apos;s own pharmacy</p>
+        <p className="text-[13px] text-ink-3">Approved straight away and sold through the same shop, with no commission. Its manager gets a login by email.</p>
       </div>
       <div className="grid sm:grid-cols-2 gap-3">
         {field("name", "Pharmacy name", { required: true })}
@@ -290,17 +297,17 @@ function CreateClinicPharmacy({ onDone }: { onDone: (created: boolean) => void }
         {field("deliveryRadiusKm", "Deliver up to (km)", { required: true, type: "number", min: 1, max: 100 })}
         {field("deliveryFee", "Delivery fee ($)", { required: true, type: "number", min: 0, step: "0.01" })}
       </div>
-      <p className="text-sm font-black text-slate-900 pt-2">Who runs it</p>
+      <p className="text-[15px] font-bold text-ink pt-2">Who runs it</p>
       <div className="grid sm:grid-cols-3 gap-3">
         {field("ownerName", "Full name", { required: true })}
         {field("ownerEmail", "Email", { required: true, type: "email" })}
         {field("pharmacistLicense", "Pharmacist licence (if they are one)")}
       </div>
       <div className="flex gap-2">
-        <button type="submit" disabled={saving} className="px-4 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-bold disabled:opacity-50">
+        <button type="submit" disabled={saving} className="btn btn-teal !py-2.5 !px-4 !text-[14px] !rounded-xl disabled:opacity-50">
           {saving ? "Creating…" : "Create and email login"}
         </button>
-        <button type="button" onClick={() => onDone(false)} className="px-4 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100">
+        <button type="button" onClick={() => onDone(false)} className="px-4 py-2.5 rounded-xl text-[14px] font-bold text-ink-3 hover:bg-canvas">
           Cancel
         </button>
       </div>

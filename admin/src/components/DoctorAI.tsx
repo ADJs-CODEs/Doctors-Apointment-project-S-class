@@ -111,10 +111,9 @@ const DoctorAI: React.FC<DoctorAIProps> = ({ appointmentContext }) => {
             aria-label="Open the AI assistant"
             title="AI assistant"
             // same button as the patient site's assistant
-            className="fixed bottom-6 right-6 z-[9999] w-14 h-14 bg-slate-900 text-white rounded-full shadow-2xl flex items-center justify-center border border-white/10 group"
+            className="btn-ink fixed bottom-6 right-6 z-[9999] w-14 h-14 rounded-full flex items-center justify-center group"
           >
-            <RiRobot2Line size={24} className="text-teal-400 group-hover:rotate-12 transition-transform" />
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-teal-400 rounded-full animate-pulse" />
+            <RiRobot2Line size={24} className="text-[#8FE3E1] group-hover:rotate-12 transition-transform" />
           </motion.button>
         )}
       </AnimatePresence>
@@ -127,29 +126,22 @@ const DoctorAI: React.FC<DoctorAIProps> = ({ appointmentContext }) => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 40, scale: 0.95 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-6 right-6 z-[9999] w-[360px] sm:w-[420px] h-[580px] bg-white border border-slate-100 rounded-[28px] shadow-2xl flex flex-col overflow-hidden"
+            className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9999] w-[calc(100vw-2rem)] sm:w-[420px] h-[min(580px,calc(100dvh-2rem))] surface !bg-white rounded-[24px] shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
-            <div className="bg-slate-900 px-5 py-4 flex items-center justify-between shrink-0">
+            <div className="btn-ink !rounded-none px-5 py-4 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-teal-500/20 rounded-xl flex items-center justify-center">
-                  <RiRobot2Line size={18} className="text-teal-400" />
+                <div className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center">
+                  <RiRobot2Line size={18} className="text-[#8FE3E1]" />
                 </div>
                 <div>
-                  <p className="text-white font-black text-sm uppercase tracking-tight">
-                    Clinical AI
-                  </p>
+                  <p className="text-white font-bold text-[15px]">Clinical assistant</p>
                   {appointmentContext ? (
-                    <p className="text-teal-400 text-[10px] font-bold truncate max-w-[180px]">
-                      {appointmentContext.userData?.name} loaded
+                    <p className="text-[#8FE3E1] text-[12px] font-semibold truncate max-w-[180px]">
+                      Looking at {appointmentContext.userData?.name}
                     </p>
                   ) : (
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
-                      <p className="text-teal-400 text-[10px] font-bold uppercase tracking-widest">
-                        Ready
-                      </p>
-                    </div>
+                    <p className="text-white/60 text-[12px] font-semibold">Ask about a patient or a medicine</p>
                   )}
                 </div>
               </div>
@@ -171,19 +163,19 @@ const DoctorAI: React.FC<DoctorAIProps> = ({ appointmentContext }) => {
                   className={`flex items-start gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
                 >
                   <div
-                    className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${msg.role === "assistant" ? "bg-teal-50" : "bg-slate-900"}`}
+                    className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${msg.role === "assistant" ? "bg-brand-soft" : "bg-ink"}`}
                   >
                     {msg.role === "assistant" ? (
-                      <RiStethoscopeLine size={14} className="text-teal-500" />
+                      <RiRobot2Line size={14} className="text-brand-ink" />
                     ) : (
-                      <RiRobot2Line size={14} className="text-white" />
+                      <RiStethoscopeLine size={14} className="text-white" />
                     )}
                   </div>
                   <div
-                    className={`max-w-[80%] px-3.5 py-2.5 rounded-2xl text-sm font-medium leading-relaxed whitespace-pre-wrap ${
+                    className={`max-w-[80%] px-3.5 py-2.5 rounded-2xl text-[14px] leading-relaxed whitespace-pre-wrap ${
                       msg.role === "assistant"
-                        ? "bg-slate-50 text-slate-700 rounded-tl-sm"
-                        : "bg-slate-900 text-white rounded-tr-sm"
+                        ? "bg-canvas border border-line text-ink-2 rounded-tl-sm"
+                        : "bg-ink text-white rounded-tr-sm"
                     }`}
                   >
                     {msg.content}
@@ -197,14 +189,14 @@ const DoctorAI: React.FC<DoctorAIProps> = ({ appointmentContext }) => {
                   animate={{ opacity: 1 }}
                   className="flex items-start gap-2.5"
                 >
-                  <div className="w-7 h-7 rounded-xl bg-teal-50 flex items-center justify-center shrink-0">
-                    <RiStethoscopeLine size={14} className="text-teal-500" />
+                  <div className="w-7 h-7 rounded-xl bg-brand-soft flex items-center justify-center shrink-0">
+                    <RiRobot2Line size={14} className="text-brand-ink" />
                   </div>
-                  <div className="bg-slate-50 px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-1.5">
+                  <div className="bg-canvas border border-line px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-1.5">
                     {[0, 1, 2].map((i) => (
                       <motion.div
                         key={i}
-                        className="w-1.5 h-1.5 bg-slate-300 rounded-full"
+                        className="w-1.5 h-1.5 bg-ink-3/50 rounded-full"
                         animate={{ y: [0, -4, 0] }}
                         transition={{
                           duration: 0.6,
@@ -225,14 +217,12 @@ const DoctorAI: React.FC<DoctorAIProps> = ({ appointmentContext }) => {
                   transition={{ delay: 0.2 }}
                   className="flex flex-col gap-2 mt-2"
                 >
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
-                    Quick actions
-                  </p>
+                  <p className="caption px-1">Try asking</p>
                   {QUICK_PROMPTS.map((q, i) => (
                     <button
                       key={i}
                       onClick={() => sendMessage(q)}
-                      className="text-left px-3.5 py-2.5 bg-white border border-slate-100 rounded-2xl text-xs font-medium text-slate-600 hover:border-teal-300 hover:text-teal-600 hover:bg-teal-50 transition-all active:scale-95"
+                      className="text-left px-3.5 py-2.5 bg-white border border-line rounded-2xl text-[13px] text-ink-2 hover:border-teal-300 hover:text-brand-ink hover:bg-brand-soft transition-colors"
                     >
                       {q}
                     </button>
@@ -244,21 +234,22 @@ const DoctorAI: React.FC<DoctorAIProps> = ({ appointmentContext }) => {
             </div>
 
             {/* Input */}
-            <div className="px-4 py-4 border-t border-slate-50 shrink-0">
-              <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-2xl px-4 py-2.5 focus-within:border-teal-400 focus-within:bg-white transition-all">
+            <div className="px-4 py-4 border-t border-line shrink-0">
+              <div className="flex items-center gap-2 bg-white border-[1.5px] border-line rounded-2xl px-4 py-2.5 focus-within:border-brand transition-colors">
                 <input
                   ref={inputRef}
                   type="text"
-                  placeholder="Ask a clinical question..."
+                  placeholder="Ask a clinical question…"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                  className="flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400 font-medium"
+                  className="flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-3"
                 />
                 <button
                   onClick={() => sendMessage()}
                   disabled={!input.trim() || loading}
-                  className="p-1.5 bg-slate-900 text-white rounded-xl disabled:opacity-30 hover:bg-teal-600 transition-all active:scale-90 disabled:cursor-not-allowed"
+                  aria-label="Send"
+                  className="btn btn-teal !p-2 !rounded-xl disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <RiLoader4Line size={14} className="animate-spin" />
@@ -267,8 +258,8 @@ const DoctorAI: React.FC<DoctorAIProps> = ({ appointmentContext }) => {
                   )}
                 </button>
               </div>
-              <p className="text-[9px] text-slate-300 font-bold uppercase tracking-widest text-center mt-2">
-                Powered by Gemini · Clinical use only
+              <p className="text-[12px] text-ink-3 text-center mt-2">
+                Powered by Gemini. Check its answers before acting on them.
               </p>
             </div>
           </motion.div>

@@ -13,6 +13,7 @@ import {
 } from "@remixicon/react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { PageHeader, Pill, Skeleton } from "../../components/panel";
 import { usePharmacy } from "../../context/PharmacyContext";
 import { API_PATHS } from "../../utils/apiPath";
 import axiosInstance from "../../utils/axiosInstance";
@@ -104,19 +105,15 @@ export default function PharmacyOrders() {
   }, [load]);
 
   return (
-    <div className="p-4 sm:p-6 md:p-10 bg-slate-50/50 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-8 animate-reveal">
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-2.5 bg-slate-900 rounded-xl text-teal-400">
-            <RiTruckLine size={20} />
-          </div>
-          <h1 className="text-xl sm:text-3xl font-black text-slate-900">
-            Orders
-          </h1>
+        <div className="mb-6">
+          <PageHeader
+            eyebrow="Your pharmacy"
+            title="Orders"
+            subtitle="Accept new orders, pack them and update the patient as they go. Orders with prescription-only medicines need a pharmacist."
+          />
         </div>
-        <p className="text-slate-500 text-sm ml-12 mb-6">
-          Accept new orders, pack them and update the patient as they go. Orders with prescription-only medicines need a pharmacist.
-        </p>
 
         <div className="flex gap-1.5 mb-5">
           {VIEWS.map((v) => {
@@ -125,13 +122,13 @@ export default function PharmacyOrders() {
               <button
                 key={v.id}
                 onClick={() => setView(v.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold ${
-                  view === v.id ? "bg-slate-900 text-white" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[15px] font-bold ${
+                  view === v.id ? "btn-ink" : "bg-white border border-line text-ink-2 hover:border-ink-3/40"
                 }`}
               >
                 {v.label}
                 {n > 0 && (
-                  <span className={`min-w-5 h-5 px-1.5 rounded-full text-[11px] font-black flex items-center justify-center ${v.id === "new" ? "bg-rose-500 text-white" : "bg-teal-500 text-white"}`}>
+                  <span className={`num min-w-5 h-5 px-1.5 rounded-full text-[11px] flex items-center justify-center ${v.id === "new" ? "bg-rose-500 text-white" : "bg-brand text-white"}`}>
                     {n}
                   </span>
                 )}
@@ -141,11 +138,14 @@ export default function PharmacyOrders() {
         </div>
 
         {orders === null ? (
-          <div className="h-48 rounded-[28px] bg-slate-200/60 animate-pulse" />
+          <Skeleton className="h-48" />
         ) : orders.length === 0 ? (
-          <div className="bg-white rounded-[28px] border border-slate-100 p-12 text-center">
-            <p className="font-black text-slate-900">Nothing here</p>
-            <p className="text-sm text-slate-400 mt-1">{view === "new" ? "New orders appear here as soon as patients pay." : "No orders in this list."}</p>
+          <div className="surface rounded-[24px] p-12 text-center">
+            <div className="w-14 h-14 bg-brand-soft rounded-2xl flex items-center justify-center text-brand-ink mb-4 mx-auto">
+              <RiTruckLine size={24} />
+            </div>
+            <p className="font-bold text-ink">Nothing here</p>
+            <p className="text-[14px] text-ink-3 mt-1">{view === "new" ? "New orders appear here as soon as patients pay." : "No orders in this list."}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -183,33 +183,35 @@ function OrderCard({ o, isPharmacist, onChanged }: { o: Order; isPharmacist: boo
   const next = NEXT[o.status];
 
   return (
-    <div className={`bg-white rounded-[28px] border shadow-sm p-5 sm:p-6 ${o.status === "placed" ? "border-rose-200" : "border-slate-200"}`}>
+    <div className={`surface rounded-[22px] p-5 sm:p-6 ${o.status === "placed" ? "!border-rose-200" : ""}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-lg font-black text-slate-900">{o.patientName}</p>
-          <p className="text-[12px] text-slate-400">
-            Order {o._id.slice(-6).toUpperCase()} · {when(o.createdAt)}
+          <p className="text-[17px] font-bold text-ink">{o.patientName}</p>
+          <p className="text-[13px] text-ink-3">
+            Order <span className="num">{o._id.slice(-6).toUpperCase()}</span> · {when(o.createdAt)}
           </p>
         </div>
-        <div className="text-right">
-          <p className="text-xl font-black text-slate-900 tabular-nums">{money(o.totalCents)}</p>
-          <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">{STATUS_LABEL[o.status]}</span>
+        <div className="text-right space-y-1">
+          <p className="num text-[20px] text-ink">{money(o.totalCents)}</p>
+          <Pill tone={o.status === "placed" ? "rose" : o.status === "delivered" ? "brand" : o.status === "rejected" || o.status === "cancelled" ? "neutral" : "violet"}>
+            {STATUS_LABEL[o.status]}
+          </Pill>
         </div>
       </div>
 
       <ul className="mt-4 space-y-2">
         {o.items.map((i) => (
-          <li key={i.productId} className="rounded-2xl bg-slate-50 px-3 py-2.5">
+          <li key={i.productId} className="rounded-2xl bg-canvas border border-line px-3 py-2.5">
             <div className="flex items-center gap-2">
-              <RiCapsuleLine size={16} className="text-slate-400 shrink-0" />
-              <p className="flex-1 text-sm">
-                <span className="font-black text-slate-900">{i.quantity} ×</span> {i.name}
-                {i.strength && <span className="text-slate-500"> · {i.strength}</span>}
+              <RiCapsuleLine size={16} className="text-ink-3 shrink-0" />
+              <p className="flex-1 text-[14px] text-ink-2">
+                <span className="num text-ink">{i.quantity} ×</span> {i.name}
+                {i.strength && <span className="text-ink-3"> · {i.strength}</span>}
               </p>
-              <p className="text-sm font-bold tabular-nums text-slate-700">{money(i.priceCents * i.quantity)}</p>
+              <p className="num text-[14px] text-ink">{money(i.priceCents * i.quantity)}</p>
             </div>
             {i.prescription && (
-              <p className="mt-1.5 ml-6 text-[12px] text-violet-800 flex items-start gap-1.5">
+              <p className="mt-1.5 ml-6 text-[13px] text-video flex items-start gap-1.5">
                 <RiFileList3Line size={14} className="shrink-0 mt-0.5" />
                 <span>
                   Prescription-only. Prescribed as <strong>{i.prescription.medicineName}</strong> by {i.prescription.doctorName} on{" "}
@@ -221,48 +223,48 @@ function OrderCard({ o, isPharmacist, onChanged }: { o: Order; isPharmacist: boo
         ))}
       </ul>
 
-      <div className="grid sm:grid-cols-2 gap-2 mt-3 text-sm">
-        <p className="flex items-start gap-1.5 text-slate-700">
-          <RiMapPin2Line size={16} className="text-teal-600 shrink-0 mt-0.5" />
+      <div className="grid sm:grid-cols-2 gap-2 mt-3 text-[14px]">
+        <p className="flex items-start gap-1.5 text-ink-2">
+          <RiMapPin2Line size={16} className="text-brand-ink shrink-0 mt-0.5" />
           <span>
             {o.delivery.address}
-            {o.delivery.note && <span className="block text-[12px] text-slate-500">“{o.delivery.note}”</span>}
+            {o.delivery.note && <span className="block text-[13px] text-ink-3">“{o.delivery.note}”</span>}
           </span>
         </p>
-        <p className="flex items-center gap-1.5 text-slate-700">
-          <RiPhoneLine size={16} className="text-teal-600" />
-          <a href={`tel:${o.delivery.phone}`} className="font-bold hover:underline">
+        <p className="flex items-center gap-1.5 text-ink-2">
+          <RiPhoneLine size={16} className="text-brand-ink" />
+          <a href={`tel:${o.delivery.phone}`} className="num hover:underline">
             {o.delivery.phone}
           </a>
         </p>
       </div>
 
       {o.rxCheck && (
-        <p className="mt-3 text-[12px] text-teal-800 bg-teal-50 rounded-xl px-3 py-2 flex items-center gap-1.5">
+        <p className="mt-3 text-[13px] text-brand-ink bg-brand-soft border border-teal-100 rounded-xl px-3 py-2 flex items-center gap-1.5">
           <RiShieldCheckLine size={15} /> Prescriptions checked by {o.rxCheck.name} (licence {o.rxCheck.license}), {when(o.rxCheck.at)}
         </p>
       )}
-      {o.rejectReason && <p className="mt-3 text-sm text-slate-500 italic">Reason: “{o.rejectReason}”</p>}
+      {o.rejectReason && <p className="mt-3 text-[14px] text-ink-2 italic">Reason: “{o.rejectReason}”</p>}
 
       {o.status === "placed" &&
         (rejecting ? (
-          <div className="mt-4 rounded-2xl border border-slate-200 p-4 space-y-3">
+          <div className="mt-4 rounded-2xl border border-line bg-canvas/60 p-4 space-y-3">
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={2}
               placeholder="Why you can't take it (the patient sees this, and is refunded in full)"
-              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-teal-400 resize-none"
+              className="field resize-none"
             />
             <div className="flex gap-2">
               <button
                 onClick={() => act(axiosInstance.post(API_PATHS.PHARMACY.ORDER_REJECT(o._id), { reason }))}
                 disabled={busy || !reason.trim()}
-                className="px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-bold disabled:opacity-40"
+                className="px-4 py-2.5 rounded-xl bg-rose-600 text-white text-[14px] font-bold hover:bg-rose-700 disabled:opacity-40"
               >
                 Reject and refund
               </button>
-              <button onClick={() => setRejecting(false)} className="px-4 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100">
+              <button onClick={() => setRejecting(false)} className="px-4 py-2.5 rounded-xl text-[14px] font-bold text-ink-3 hover:bg-white">
                 Back
               </button>
             </div>
@@ -270,7 +272,7 @@ function OrderCard({ o, isPharmacist, onChanged }: { o: Order; isPharmacist: boo
         ) : (
           <div className="mt-4">
             {blockedForRx && (
-              <p className="text-[12px] font-bold text-violet-800 bg-violet-50 rounded-xl px-3 py-2 mb-2">
+              <p className="text-[13px] font-bold text-video bg-video-soft border border-violet-100 rounded-xl px-3 py-2 mb-2">
                 This order has prescription-only medicines: a pharmacist on your team must check and accept it.
               </p>
             )}
@@ -278,13 +280,13 @@ function OrderCard({ o, isPharmacist, onChanged }: { o: Order; isPharmacist: boo
               <button
                 onClick={() => act(axiosInstance.post(API_PATHS.PHARMACY.ORDER_ACCEPT(o._id)))}
                 disabled={busy || blockedForRx}
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-bold hover:bg-teal-700 disabled:opacity-40"
+                className="btn btn-teal !py-2.5 !px-4 !text-[14px] !rounded-xl disabled:opacity-40"
               >
                 <RiCheckLine size={16} /> {o.needsPharmacist ? "Prescriptions checked, accept" : "Accept"}
               </button>
               <button
                 onClick={() => setRejecting(true)}
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-bold hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-line bg-white text-ink-2 text-[14px] font-bold hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200"
               >
                 <RiCloseLine size={16} /> Reject
               </button>
@@ -296,7 +298,7 @@ function OrderCard({ o, isPharmacist, onChanged }: { o: Order; isPharmacist: boo
         <button
           onClick={() => act(axiosInstance.post(API_PATHS.PHARMACY.ORDER_STATUS(o._id), { status: next.to }))}
           disabled={busy}
-          className="mt-4 flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-teal-600 disabled:opacity-50"
+          className="btn btn-ink mt-4 !py-2.5 !px-4 !text-[14px] !rounded-xl disabled:opacity-50"
         >
           <next.Icon size={16} /> {next.label}
         </button>

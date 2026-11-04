@@ -128,7 +128,7 @@ export default function DoctorBell() {
       >
         <RiNotification3Line size={20} />
         {unread > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center ring-2 ring-white">
+          <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 rounded-full bg-rose-500 text-white text-[10px] num flex items-center justify-center ring-2 ring-white">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
@@ -138,7 +138,7 @@ export default function DoctorBell() {
         <div className="fixed sm:absolute inset-x-3 sm:inset-x-auto sm:right-0 top-20 sm:top-auto sm:mt-3 sm:w-96 z-50 bg-white rounded-3xl border border-slate-200 shadow-2xl shadow-slate-300/40 overflow-hidden">
           <div className="flex items-center justify-between gap-2 px-5 py-4 border-b border-slate-100">
             <div>
-              <p className="font-black text-slate-900">Notifications</p>
+              <p className="text-[16px] font-bold text-ink">Notifications</p>
               <p className="text-[11px] text-slate-400">{unread ? `${unread} unread` : "You're all caught up"}</p>
             </div>
             {items.length > 0 && (
@@ -179,7 +179,7 @@ export default function DoctorBell() {
                       </span>
                       <span className="flex-1 min-w-0">
                         <span className="flex items-start justify-between gap-2">
-                          <span className={`text-sm ${n.isRead ? "font-semibold text-slate-700" : "font-black text-slate-900"}`}>{n.title}</span>
+                          <span className={`text-sm ${n.isRead ? "font-semibold text-ink-2" : "font-extrabold text-ink"}`}>{n.title}</span>
                           {!n.isRead && <span className="mt-1.5 w-2 h-2 rounded-full bg-teal-500 shrink-0" aria-label="unread" />}
                         </span>
                         <span className="block text-[12px] text-slate-500 leading-snug mt-0.5">{n.message}</span>

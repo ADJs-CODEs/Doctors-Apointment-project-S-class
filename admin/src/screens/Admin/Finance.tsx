@@ -5,7 +5,6 @@ import {
   RiArrowRightLine,
   RiCoinsLine,
   RiHandCoinLine,
-  RiLineChartLine,
   RiRefund2Line,
   RiSafe2Line,
   RiStethoscopeLine,
@@ -13,6 +12,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Link } from "@/lib/navigation";
+import { PageHeader, Skeleton } from "../../components/panel";
 import { API_PATHS } from "../../utils/apiPath";
 import axiosInstance from "../../utils/axiosInstance";
 
@@ -131,43 +131,39 @@ export default function Finance() {
   const periodName = PERIODS.find((p) => p.days === days)?.label.toLowerCase() ?? "";
 
   return (
-    <div className="p-4 sm:p-6 md:p-10 bg-slate-50/50 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-8 animate-reveal">
       <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2.5 bg-slate-900 rounded-xl text-teal-400">
-                <RiLineChartLine size={20} />
+        <div className="mb-8">
+          <PageHeader
+            eyebrow="Money"
+            title="Finance"
+            subtitle="What came in, what the clinic keeps, and what it still owes."
+            action={
+              <div className="flex flex-wrap gap-1.5">
+                {PERIODS.map((p) => (
+                  <button
+                    key={p.days}
+                    onClick={() => setDays(p.days)}
+                    className={`px-3.5 py-2 rounded-xl text-[14px] font-bold ${
+                      days === p.days ? "btn-ink" : "bg-white border border-line text-ink-2 hover:border-ink-3/40"
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
               </div>
-              <h1 className="text-xl sm:text-3xl font-black text-slate-900">
-                Finance
-              </h1>
-            </div>
-            <p className="text-slate-500 text-sm ml-12">What came in, what the clinic keeps, and what it still owes.</p>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {PERIODS.map((p) => (
-              <button
-                key={p.days}
-                onClick={() => setDays(p.days)}
-                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold ${
-                  days === p.days ? "bg-slate-900 text-white" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
+            }
+          />
         </div>
 
         {data === null ? (
           <div className="space-y-4">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {[0, 1, 2, 3].map((i) => (
-                <div key={i} className="h-32 rounded-[24px] bg-slate-200/60 animate-pulse" />
+                <Skeleton key={i} className="h-32" />
               ))}
             </div>
-            <div className="h-72 rounded-[28px] bg-slate-200/60 animate-pulse" />
+            <Skeleton className="h-72" />
           </div>
         ) : (
           <div className="space-y-6">
@@ -201,8 +197,8 @@ export default function Finance() {
               />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <section className="lg:col-span-2 bg-white rounded-[28px] border border-slate-200 shadow-sm p-5 sm:p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:items-start">
+              <section className="lg:col-span-2 surface rounded-[22px] p-5 sm:p-6">
                 <TrendChart data={data} />
               </section>
               <Owed data={data} />
@@ -210,9 +206,9 @@ export default function Finance() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <PaymentSplit data={data} />
-              <section className="lg:col-span-2 bg-white rounded-[28px] border border-slate-200 shadow-sm p-5 sm:p-6">
-                <h2 className="font-black text-slate-900">Doctor earnings</h2>
-                <p className="text-[12px] text-slate-400 mt-0.5 mb-4">
+              <section className="lg:col-span-2 surface rounded-[22px] p-5 sm:p-6">
+                <h2 className="text-[16px] font-bold text-ink">Doctor earnings</h2>
+                <p className="text-[13px] text-ink-3 mt-0.5 mb-4">
                   Paid visits in the last {periodName}, minus refunds. Cancelled visits are left out.
                 </p>
                 <DoctorTable doctors={data.doctors} />
@@ -221,7 +217,7 @@ export default function Finance() {
 
             <ShopPanel data={data} periodName={periodName} />
 
-            <p className="text-[11px] text-slate-400 leading-relaxed">
+            <p className="text-[13px] text-ink-3 leading-relaxed">
               Visits and orders paid from the wallet used coins or care fund money that was already counted when the coins
               were bought, so &quot;Cash in&quot; leaves them out. Totals are in {data.currency}; 1 coin = 1 cent.
             </p>
@@ -234,13 +230,13 @@ export default function Finance() {
 
 function Stat({ icon, label, value, hint }: { icon: React.ReactNode; label: string; value: string; hint: string }) {
   return (
-    <div className="bg-white rounded-[24px] border border-slate-200 shadow-sm p-4 sm:p-5">
-      <div className="flex items-center gap-2 text-slate-400">
-        {icon}
-        <p className="text-[10px] font-black uppercase tracking-wider">{label}</p>
+    <div className="surface rounded-[22px] p-4 sm:p-5">
+      <div className="flex items-center gap-2">
+        <span className="w-8 h-8 rounded-[10px] grid place-items-center border border-teal-100 bg-brand-soft text-brand-ink">{icon}</span>
+        <p className="text-[14px] font-semibold text-ink-2">{label}</p>
       </div>
-      <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-2 tabular-nums">{value}</p>
-      <p className="text-[11px] text-slate-400 mt-1 leading-snug">{hint}</p>
+      <p className="num text-[24px] sm:text-[28px] leading-none text-ink mt-3">{value}</p>
+      <p className="text-[12px] text-ink-3 mt-2 leading-snug">{hint}</p>
     </div>
   );
 }
@@ -256,19 +252,19 @@ function Attention({ data }: { data: FinanceData }) {
     { n: failedOrderRefunds, to: "/shop-orders", text: `shop order refund${failedOrderRefunds === 1 ? "" : "s"} failed: send by hand` },
   ].filter((l) => l.n > 0);
   return (
-    <section className="rounded-[28px] border border-orange-200 bg-orange-50/60 p-5 sm:p-6">
+    <section className="rounded-[22px] border border-orange-200 bg-orange-50/60 p-5 sm:p-6">
       <div className="flex items-center gap-2 text-orange-800">
         <RiAlertLine size={18} />
-        <h2 className="font-black">Needs attention</h2>
+        <h2 className="text-[16px] font-bold">Needs attention</h2>
       </div>
       {links.map((l) => (
         <Link
           key={l.to}
           to={l.to}
-          className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-white border border-orange-100 px-4 py-3 text-sm font-bold text-slate-800 hover:border-orange-300"
+          className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-white border border-orange-100 px-4 py-3 text-[14px] font-bold text-ink hover:border-orange-300"
         >
           <span>
-            {l.n} {l.text}
+            <span className="num">{l.n}</span> {l.text}
           </span>
           <RiArrowRightLine size={16} className="text-orange-600 shrink-0" />
         </Link>
@@ -278,11 +274,11 @@ function Attention({ data }: { data: FinanceData }) {
           {refunds.map((r) => (
             <li
               key={r.appointmentId}
-              className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 rounded-2xl bg-white border border-orange-100 px-4 py-3 text-sm"
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 rounded-2xl bg-white border border-orange-100 px-4 py-3 text-[14px]"
             >
-              <span className="text-slate-800">
-                <span className="font-bold">{money(r.cents)}</span> to {r.patient}{" "}
-                <span className="text-slate-400">
+              <span className="text-ink">
+                <span className="num">{money(r.cents)}</span> to {r.patient}{" "}
+                <span className="text-ink-3">
                   · {r.doctor} · {r.slotDate.replaceAll("_", "/")}
                 </span>
               </span>
@@ -327,12 +323,12 @@ function TrendChart({ data }: { data: FinanceData }) {
     <div>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="font-black text-slate-900">Money in over time</h2>
-          <p className="text-[12px] text-slate-400 mt-0.5">Per {data.bucket}, through Stripe</p>
+          <h2 className="text-[16px] font-bold text-ink">Money in over time</h2>
+          <p className="text-[13px] text-ink-3 mt-0.5">Per {data.bucket}, through Stripe</p>
         </div>
         <button
           onClick={() => setAsTable((t) => !t)}
-          className="text-[11px] font-bold text-slate-500 hover:text-slate-900 underline underline-offset-2"
+          className="text-[13px] font-bold text-brand-ink hover:underline underline-offset-2"
         >
           {asTable ? "Show chart" : "Show as table"}
         </button>
@@ -341,29 +337,29 @@ function TrendChart({ data }: { data: FinanceData }) {
       {/* legend with totals, so the colours are never the only label */}
       <div className="flex flex-wrap gap-x-5 gap-y-1 mt-3 mb-4">
         {keys.map((k) => (
-          <span key={k} className="flex items-center gap-2 text-[12px] text-slate-600">
+          <span key={k} className="flex items-center gap-2 text-[13px] text-ink-2">
             <span className="w-2.5 h-2.5 rounded-sm" style={{ background: SERIES[k].color }} />
-            {SERIES[k].label} <span className="font-bold text-slate-900 tabular-nums">{money(totals[k])}</span>
+            {SERIES[k].label} <span className="num text-ink">{money(totals[k])}</span>
           </span>
         ))}
       </div>
 
       {asTable ? (
-        <div className="max-h-72 overflow-y-auto rounded-xl border border-slate-100">
-          <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-slate-50 text-[10px] uppercase tracking-wider text-slate-400">
+        <div className="max-h-72 overflow-y-auto rounded-xl border border-line">
+          <table className="w-full text-[14px]">
+            <thead className="sticky top-0 bg-canvas text-[13px] text-ink-3">
               <tr>
-                <th className="text-left font-bold px-3 py-2">{data.bucket}</th>
-                <th className="text-right font-bold px-3 py-2">Appointments</th>
-                <th className="text-right font-bold px-3 py-2">Coins</th>
+                <th className="text-left font-semibold px-3 py-2 capitalize">{data.bucket}</th>
+                <th className="text-right font-semibold px-3 py-2">Appointments</th>
+                <th className="text-right font-semibold px-3 py-2">Coins</th>
               </tr>
             </thead>
             <tbody>
               {points.map((p) => (
-                <tr key={p.at} className="border-t border-slate-100">
-                  <td className="px-3 py-1.5 text-slate-600">{bucketLabel(p.at, data.bucket)}</td>
-                  <td className="px-3 py-1.5 text-right tabular-nums">{money(p.appointmentsCents)}</td>
-                  <td className="px-3 py-1.5 text-right tabular-nums">{money(p.coinsCents)}</td>
+                <tr key={p.at} className="border-t border-line">
+                  <td className="px-3 py-1.5 text-ink-2">{bucketLabel(p.at, data.bucket)}</td>
+                  <td className="px-3 py-1.5 text-right num text-ink">{money(p.appointmentsCents)}</td>
+                  <td className="px-3 py-1.5 text-right num text-ink">{money(p.coinsCents)}</td>
                 </tr>
               ))}
             </tbody>
@@ -372,13 +368,13 @@ function TrendChart({ data }: { data: FinanceData }) {
       ) : (
         <div className="relative pt-3">
           {empty && (
-            <p className="absolute inset-0 flex items-center justify-center text-sm text-slate-400 z-10">
+            <p className="absolute inset-0 flex items-center justify-center text-[14px] text-ink-3 z-10">
               No card payments or coin sales in this period
             </p>
           )}
           <div className="flex gap-2">
             {/* y axis */}
-            <div className="relative h-56 w-10 shrink-0 text-[10px] text-slate-400 tabular-nums">
+            <div className="relative h-56 w-10 shrink-0 text-[11px] text-ink-3 num">
               {ticks.map((t) => (
                 <span key={t} className="absolute right-0 -translate-y-1/2" style={{ bottom: `${(t / max) * 100}%` }}>
                   {shortMoney(t)}
@@ -391,7 +387,7 @@ function TrendChart({ data }: { data: FinanceData }) {
                 {ticks.map((t) => (
                   <div
                     key={t}
-                    className={`absolute inset-x-0 border-t ${t === 0 ? "border-slate-300" : "border-slate-100"}`}
+                    className={`absolute inset-x-0 border-t ${t === 0 ? "border-ink-3/40" : "border-line"}`}
                     style={{ bottom: `${(t / max) * 100}%` }}
                   />
                 ))}
@@ -408,7 +404,7 @@ function TrendChart({ data }: { data: FinanceData }) {
                       onFocus={() => setActive(i)}
                       onBlur={() => setActive(null)}
                       className={`relative flex-1 h-full flex flex-col justify-end outline-none rounded-t ${
-                        active === i ? "bg-slate-100/80" : ""
+                        active === i ? "bg-canvas" : ""
                       }`}
                     >
                       {/* top segment first (column-reverse would flip the tab order) */}
@@ -438,7 +434,7 @@ function TrendChart({ data }: { data: FinanceData }) {
                 })}
               </div>
               {/* x axis */}
-              <div className="flex gap-[2px] mt-2 text-[10px] text-slate-400">
+              <div className="flex gap-[2px] mt-2 text-[11px] text-ink-3">
                 {points.map((p, i) => (
                   <span
                     key={p.at}
@@ -452,7 +448,7 @@ function TrendChart({ data }: { data: FinanceData }) {
               </div>
               {shown && (
                 <div
-                  className="absolute top-0 z-20 pointer-events-none rounded-xl bg-slate-900 text-white px-3 py-2 text-[12px] shadow-lg w-48"
+                  className="absolute top-0 z-20 pointer-events-none rounded-xl bg-ink text-white px-3 py-2 text-[13px] shadow-lg w-52"
                   style={{
                     left: `${((active! + 0.5) / points.length) * 100}%`,
                     transform: `translateX(${active! > points.length / 2 ? "-105%" : "5%"})`,
@@ -468,7 +464,7 @@ function TrendChart({ data }: { data: FinanceData }) {
                         <span className="w-2 h-2 rounded-sm" style={{ background: SERIES[k].color }} />
                         {k === "appointmentsCents" ? "Appointments" : "Coins"}
                       </span>
-                      <span className="font-bold tabular-nums">{money(shown[k])}</span>
+                      <span className="num">{money(shown[k])}</span>
                     </p>
                   ))}
                 </div>
@@ -491,22 +487,22 @@ function ShopPanel({ data, periodName }: { data: FinanceData; periodName: string
     { label: "Paid to pharmacies", value: money(s.pharmacyPayoutsPaidCents), hint: "Withdrawals sent" },
   ];
   return (
-    <section className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-5 sm:p-6">
+    <section className="surface rounded-[22px] p-5 sm:p-6">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h2 className="font-black text-slate-900">Pharmacy shop</h2>
-          <p className="text-[12px] text-slate-400 mt-0.5">The last {periodName}</p>
+          <h2 className="text-[16px] font-bold text-ink">Pharmacy shop</h2>
+          <p className="text-[13px] text-ink-3 mt-0.5">The last {periodName}</p>
         </div>
-        <Link to="/shop-orders" className="text-[12px] font-bold text-teal-700 hover:underline">
+        <Link to="/shop-orders" className="text-[13px] font-bold text-brand-ink hover:underline">
           See all orders →
         </Link>
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
         {tiles.map((t) => (
-          <div key={t.label} className="rounded-2xl bg-slate-50 px-4 py-3">
-            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">{t.label}</p>
-            <p className="text-xl font-black text-slate-900 tabular-nums mt-1">{t.value}</p>
-            <p className="text-[11px] text-slate-400 leading-snug">{t.hint}</p>
+          <div key={t.label} className="rounded-2xl bg-canvas px-4 py-3">
+            <p className="caption">{t.label}</p>
+            <p className="num text-[20px] text-ink mt-1">{t.value}</p>
+            <p className="text-[12px] text-ink-3 leading-snug">{t.hint}</p>
           </div>
         ))}
       </div>
@@ -550,26 +546,26 @@ function Owed({ data }: { data: FinanceData }) {
     },
   ];
   return (
-    <section className="bg-slate-900 text-white rounded-[28px] p-5 sm:p-6">
-      <div className="flex items-center gap-2 text-teal-300">
+    <section className="btn-ink rounded-[22px] p-5 sm:p-6">
+      <div className="flex items-center gap-2 text-[#8FE3E1]">
         <RiSafe2Line size={18} />
-        <h2 className="font-black">Owed right now</h2>
+        <h2 className="text-[16px] font-bold">Owed right now</h2>
       </div>
-      <p className="text-4xl font-black mt-3 tabular-nums">{money(o.totalCents)}</p>
-      <p className="text-[12px] text-slate-400 mt-1">Money the clinic is holding for patients and pharmacies. Keep at least this in the account.</p>
+      <p className="num text-[38px] leading-none mt-3">{money(o.totalCents)}</p>
+      <p className="text-[13px] text-white/60 mt-2">Money the clinic is holding for patients, doctors and pharmacies. Keep at least this in the account.</p>
       <div className="mt-5 space-y-3">
         {rows.map((r) => (
-          <div key={r.label} className="rounded-2xl bg-white/5 px-4 py-3">
+          <div key={r.label} className="rounded-2xl bg-white/[.06] border border-white/10 px-4 py-3">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-sm text-slate-300">{r.label}</p>
-              <p className="font-black tabular-nums">{r.value}</p>
+              <p className="text-[14px] text-white/80">{r.label}</p>
+              <p className="num">{r.value}</p>
             </div>
-            <p className="text-[11px] text-slate-500 mt-0.5">{r.hint}</p>
+            <p className="text-[12px] text-white/50 mt-0.5">{r.hint}</p>
           </div>
         ))}
       </div>
-      <p className="text-[11px] text-slate-500 mt-4">
-        Paid out in this period: <span className="text-slate-300 font-bold">{money(data.summary.payoutsPaidCents)}</span> (
+      <p className="text-[12px] text-white/50 mt-4">
+        Paid out in this period: <span className="num text-white/80">{money(data.summary.payoutsPaidCents)}</span> (
         {data.summary.payoutsPaidCount} withdrawal{data.summary.payoutsPaidCount === 1 ? "" : "s"})
       </p>
     </section>
@@ -586,21 +582,21 @@ function PaymentSplit({ data }: { data: FinanceData }) {
     ...(olderCents ? [{ label: "Card, before payment methods were recorded", cents: olderCents }] : []),
   ];
   return (
-    <section className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-5 sm:p-6">
-      <h2 className="font-black text-slate-900">How visits were paid</h2>
-      <p className="text-[12px] text-slate-400 mt-0.5 mb-4">{money(total)} in appointment fees</p>
+    <section className="surface rounded-[22px] p-5 sm:p-6">
+      <h2 className="text-[16px] font-bold text-ink">How visits were paid</h2>
+      <p className="text-[13px] text-ink-3 mt-0.5 mb-4"><span className="num">{money(total)}</span> in appointment fees</p>
       <div className="space-y-4">
         {rows.map((r) => {
           const pct = total ? Math.round((r.cents / total) * 100) : 0;
           return (
             <div key={r.label}>
-              <div className="flex items-baseline justify-between gap-2 text-sm">
-                <span className="text-slate-600">{r.label}</span>
-                <span className="font-bold text-slate-900 tabular-nums">
-                  {money(r.cents)} <span className="text-slate-400 font-medium">· {pct}%</span>
+              <div className="flex items-baseline justify-between gap-2 text-[14px]">
+                <span className="text-ink-2">{r.label}</span>
+                <span className="num text-ink">
+                  {money(r.cents)} <span className="text-ink-3">· {pct}%</span>
                 </span>
               </div>
-              <div className="h-2 rounded-full bg-slate-100 mt-1.5 overflow-hidden">
+              <div className="h-2 rounded-full bg-line mt-1.5 overflow-hidden">
                 <div className="h-full rounded-full bg-teal-600" style={{ width: `${pct}%` }} />
               </div>
             </div>
@@ -612,26 +608,26 @@ function PaymentSplit({ data }: { data: FinanceData }) {
 }
 
 function DoctorTable({ doctors }: { doctors: FinanceData["doctors"] }) {
-  if (!doctors.length) return <p className="text-sm text-slate-400 py-6 text-center">No paid visits in this period.</p>;
+  if (!doctors.length) return <p className="text-[14px] text-ink-3 py-6 text-center">No paid visits in this period.</p>;
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="text-[10px] uppercase tracking-wider text-slate-400">
+      <table className="w-full text-[14px]">
+        <thead className="text-[13px] text-ink-3">
           <tr>
-            <th className="text-left font-bold px-3 py-2">Doctor</th>
-            <th className="text-right font-bold px-3 py-2">Visits</th>
-            <th className="hidden sm:table-cell text-right font-bold px-3 py-2">Fees</th>
-            <th className="hidden sm:table-cell text-right font-bold px-3 py-2">Refunds</th>
-            <th className="hidden sm:table-cell text-right font-bold px-3 py-2">Clinic share</th>
-            <th className="text-right font-bold px-3 py-2">Doctor earned</th>
+            <th className="text-left font-semibold px-3 py-2">Doctor</th>
+            <th className="text-right font-semibold px-3 py-2">Visits</th>
+            <th className="hidden sm:table-cell text-right font-semibold px-3 py-2">Fees</th>
+            <th className="hidden sm:table-cell text-right font-semibold px-3 py-2">Refunds</th>
+            <th className="hidden sm:table-cell text-right font-semibold px-3 py-2">Clinic share</th>
+            <th className="text-right font-semibold px-3 py-2">Doctor earned</th>
           </tr>
         </thead>
         <tbody>
           {doctors.map((d) => (
-            <tr key={d.docId} className="border-t border-slate-100">
+            <tr key={d.docId} className="border-t border-line">
               <td className="px-3 py-2.5">
-                <p className="font-bold text-slate-800">{d.name}</p>
-                <p className="text-[11px] text-slate-400">
+                <p className="font-bold text-ink">{d.name}</p>
+                <p className="text-[12px] text-ink-3">
                   {[
                     d.speciality,
                     d.noShows ? `${d.noShows} patient no-show${d.noShows === 1 ? "" : "s"}` : "",
@@ -641,15 +637,15 @@ function DoctorTable({ doctors }: { doctors: FinanceData["doctors"] }) {
                     .join(" · ")}
                 </p>
               </td>
-              <td className="px-3 py-2.5 text-right tabular-nums text-slate-600">{d.visits}</td>
-              <td className="hidden sm:table-cell px-3 py-2.5 text-right tabular-nums text-slate-600">{money(d.grossCents)}</td>
-              <td className="hidden sm:table-cell px-3 py-2.5 text-right tabular-nums text-slate-600">
+              <td className="px-3 py-2.5 text-right num text-ink-2">{d.visits}</td>
+              <td className="hidden sm:table-cell px-3 py-2.5 text-right num text-ink-2">{money(d.grossCents)}</td>
+              <td className="hidden sm:table-cell px-3 py-2.5 text-right num text-ink-2">
                 {d.refundCents ? `−${money(d.refundCents)}` : "—"}
               </td>
-              <td className="hidden sm:table-cell px-3 py-2.5 text-right tabular-nums text-slate-600">
+              <td className="hidden sm:table-cell px-3 py-2.5 text-right num text-ink-2">
                 {d.commissionCents ? `−${money(d.commissionCents)}` : "—"}
               </td>
-              <td className="px-3 py-2.5 text-right tabular-nums font-black text-slate-900">{money(d.netCents - d.commissionCents)}</td>
+              <td className="px-3 py-2.5 text-right num text-ink">{money(d.netCents - d.commissionCents)}</td>
             </tr>
           ))}
         </tbody>

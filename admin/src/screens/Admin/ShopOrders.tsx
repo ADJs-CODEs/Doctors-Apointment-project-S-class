@@ -3,6 +3,7 @@
 import { RiErrorWarningLine, RiFileList3Line, RiShoppingBag3Line, RiStore2Line } from "@remixicon/react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { PageHeader, Pill, Skeleton } from "../../components/panel";
 import { API_PATHS } from "../../utils/apiPath";
 import axiosInstance from "../../utils/axiosInstance";
 
@@ -34,14 +35,14 @@ const VIEWS = [
   { id: "all", label: "All" },
 ] as const;
 
-const STATUS: Record<Status, { label: string; tone: string }> = {
-  placed: { label: "Waiting for pharmacy", tone: "bg-sky-50 text-sky-700" },
-  accepted: { label: "Accepted", tone: "bg-teal-50 text-teal-700" },
-  packing: { label: "Packing", tone: "bg-teal-50 text-teal-700" },
-  out_for_delivery: { label: "On the way", tone: "bg-violet-50 text-violet-700" },
-  delivered: { label: "Delivered", tone: "bg-slate-100 text-slate-600" },
-  rejected: { label: "Rejected", tone: "bg-orange-50 text-orange-700" },
-  cancelled: { label: "Cancelled", tone: "bg-slate-100 text-slate-500" },
+const STATUS: Record<Status, { label: string; tone: "amber" | "brand" | "violet" | "neutral" | "rose" }> = {
+  placed: { label: "Waiting for pharmacy", tone: "amber" },
+  accepted: { label: "Accepted", tone: "brand" },
+  packing: { label: "Packing", tone: "brand" },
+  out_for_delivery: { label: "On the way", tone: "violet" },
+  delivered: { label: "Delivered", tone: "neutral" },
+  rejected: { label: "Rejected", tone: "rose" },
+  cancelled: { label: "Cancelled", tone: "neutral" },
 };
 
 const money = (cents: number) => `$${(cents / 100).toFixed(2)}`;
@@ -68,24 +69,18 @@ export default function ShopOrders() {
   }, [load]);
 
   return (
-    <div className="p-4 sm:p-6 md:p-10 bg-slate-50/50 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-8 animate-reveal">
       <div className="max-w-5xl mx-auto">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-2.5 bg-slate-900 rounded-xl text-teal-400">
-            <RiShoppingBag3Line size={20} />
-          </div>
-          <h1 className="text-xl sm:text-3xl font-black text-slate-900">
-            Shop orders
-          </h1>
+        <div className="mb-6">
+          <PageHeader eyebrow="Medicine shop" title="Shop orders" subtitle="Every pharmacy order. Pharmacies handle them; refunds that failed need you." />
         </div>
-        <p className="text-slate-500 text-sm ml-12 mb-6">Every pharmacy order. Pharmacies handle them; refunds that failed need you.</p>
 
         <div className="flex flex-wrap gap-1.5 mb-5">
           {VIEWS.map((v) => (
             <button
               key={v.id}
               onClick={() => setView(v.id)}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold ${view === v.id ? "bg-slate-900 text-white" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"}`}
+              className={`px-3.5 py-2 rounded-xl text-[14px] font-bold ${view === v.id ? "btn-ink" : "bg-white border border-line text-ink-2 hover:border-ink-3/40"}`}
             >
               {v.label}
             </button>
@@ -93,44 +88,47 @@ export default function ShopOrders() {
         </div>
 
         {orders === null ? (
-          <div className="h-48 rounded-[28px] bg-slate-200/60 animate-pulse" />
+          <Skeleton className="h-48" />
         ) : orders.length === 0 ? (
-          <div className="bg-white rounded-[28px] border border-slate-100 p-12 text-center">
-            <p className="font-black text-slate-900">Nothing here</p>
+          <div className="surface rounded-[24px] p-12 text-center">
+            <div className="w-14 h-14 bg-brand-soft rounded-2xl flex items-center justify-center text-brand-ink mb-4 mx-auto">
+              <RiShoppingBag3Line size={24} />
+            </div>
+            <p className="font-bold text-ink">Nothing here</p>
           </div>
         ) : (
           <ul className="space-y-3">
             {orders.map((o) => (
-              <li key={o._id} className={`bg-white rounded-[24px] border p-4 sm:p-5 ${o.refundError ? "border-red-200" : "border-slate-200"}`}>
+              <li key={o._id} className={`surface rounded-[22px] p-4 sm:p-5 ${o.refundError ? "!border-rose-200" : ""}`}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-black text-slate-900">
-                      {o.patientName} <span className="font-medium text-slate-400 text-sm">· {o.patientEmail}</span>
+                    <p className="text-[16px] font-bold text-ink">
+                      {o.patientName} <span className="font-medium text-ink-3 text-[14px]">· {o.patientEmail}</span>
                     </p>
-                    <p className="text-[12px] text-slate-500 flex items-center gap-1">
+                    <p className="text-[13px] text-ink-3 flex items-center gap-1">
                       <RiStore2Line size={13} /> {o.pharmacyName} · {when(o.createdAt)} · {o.paymentMethod === "wallet" ? "wallet" : "card"}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className="font-black text-slate-900 tabular-nums">{money(o.totalCents)}</p>
-                    <span className={`inline-block text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${STATUS[o.status].tone}`}>{STATUS[o.status].label}</span>
+                  <div className="text-right space-y-1">
+                    <p className="num text-[17px] text-ink">{money(o.totalCents)}</p>
+                    <Pill tone={STATUS[o.status].tone}>{STATUS[o.status].label}</Pill>
                   </div>
                 </div>
-                <p className="text-[13px] text-slate-600 mt-2">
+                <p className="text-[14px] text-ink-2 mt-2">
                   {o.items.map((i) => `${i.quantity} × ${i.name}`).join(", ")}
                   {o.items.some((i) => i.requiresPrescription) && (
-                    <span className="ml-2 inline-flex items-center gap-1 text-[11px] font-bold text-violet-700">
+                    <span className="ml-2 inline-flex items-center gap-1 text-[12px] font-bold text-video">
                       <RiFileList3Line size={12} /> prescription{o.rxCheck ? ` checked by ${o.rxCheck.name} (${o.rxCheck.license})` : ""}
                     </span>
                   )}
                 </p>
-                <p className="text-[12px] text-slate-400 mt-1">
+                <p className="text-[13px] text-ink-3 mt-1">
                   Your commission {money(o.commissionCents)} · pharmacy gets {money(o.pharmacyEarningCents)}
                   {o.rejectReason ? ` · reason: ${o.rejectReason}` : ""}
                   {o.refund?.status === "refunded" ? ` · refunded ${money(o.refund.cents)} to ${o.refund.method === "wallet" ? "wallet" : "card"}` : ""}
                 </p>
                 {o.refundError && (
-                  <p className="mt-2 text-[12px] font-bold text-red-700 bg-red-50 rounded-xl px-3 py-2 flex items-start gap-1.5">
+                  <p className="mt-2 text-[13px] font-bold text-rose-700 bg-rose-50 border border-rose-100 rounded-xl px-3 py-2 flex items-start gap-1.5">
                     <RiErrorWarningLine size={15} className="shrink-0" />
                     The card refund of {money(o.refund?.cents ?? o.totalCents)} failed ({o.refundError}). Refund it from the Stripe dashboard.
                   </p>

@@ -8,7 +8,7 @@ import { usePharmacy } from "../../context/PharmacyContext";
 import { API_PATHS } from "../../utils/apiPath";
 import axiosInstance from "../../utils/axiosInstance";
 
-const input = "w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-teal-400";
+const input = "field";
 
 /** Change your own password (also used as the first-login screen). */
 export function ChangePasswordForm({ onDone }: { onDone?: () => void }) {
@@ -43,7 +43,7 @@ export function ChangePasswordForm({ onDone }: { onDone?: () => void }) {
       <input required type="password" placeholder="Current password" value={form.currentPassword} onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} className={input} />
       <input required type="password" minLength={8} placeholder="New password (8+ characters)" value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} className={input} />
       <input required type="password" minLength={8} placeholder="Repeat the new password" value={form.repeat} onChange={(e) => setForm({ ...form, repeat: e.target.value })} className={input} />
-      <button type="submit" disabled={saving} className="px-4 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-teal-600 disabled:opacity-50">
+      <button type="submit" disabled={saving} className="btn btn-ink !rounded-xl disabled:opacity-50">
         {saving ? "Saving…" : "Change password"}
       </button>
     </form>
@@ -55,17 +55,17 @@ export default function ChangePasswordGate() {
   const { staff, pharmacy, logout } = usePharmacy();
   const [confirming, setConfirming] = useState(false);
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8F9FD] p-4">
-      <div className="w-full max-w-md bg-white rounded-[32px] shadow-portal p-6 sm:p-10">
-        <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center bg-canvas p-4">
+      <div className="w-full max-w-md surface !bg-white rounded-[24px] p-6 sm:p-10">
+        <div className="w-12 h-12 rounded-2xl bg-brand-soft border border-teal-100 text-brand-ink flex items-center justify-center">
           <RiLockPasswordLine size={24} />
         </div>
-        <p className="text-2xl font-black text-slate-900 mt-4">Choose your own password</p>
-        <p className="text-sm text-slate-500 mt-1 mb-6">
+        <p className="text-[24px] font-extrabold tracking-[-0.02em] text-ink mt-4">Choose your own password</p>
+        <p className="text-[15px] text-ink-2 mt-1 mb-6">
           Welcome to {pharmacy?.name ?? "the pharmacy"}, {staff?.name.split(" ")[0]}. Replace the starting password we emailed you before you continue.
         </p>
         <ChangePasswordForm />
-        <button onClick={() => setConfirming(true)} className="mt-4 text-[12px] font-bold text-slate-400 hover:text-slate-700">
+        <button onClick={() => setConfirming(true)} className="mt-4 text-[13px] font-bold text-ink-3 hover:text-ink">
           Log out
         </button>
         <ConfirmLogout open={confirming} who="the pharmacy portal" onCancel={() => setConfirming(false)} onConfirm={logout} />

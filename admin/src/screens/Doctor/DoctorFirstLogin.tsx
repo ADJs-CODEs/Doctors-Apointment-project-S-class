@@ -18,7 +18,7 @@ export default function DoctorFirstLogin() {
         <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center">
           <RiLockPasswordLine size={24} />
         </div>
-        <p className="text-2xl font-black text-slate-900 mt-4">Choose your own password</p>
+        <p className="text-[24px] font-extrabold tracking-[-0.02em] text-ink mt-4">Choose your own password</p>
         <p className="text-sm text-slate-500 mt-1 mb-6">
           Welcome{name ? `, ${name}` : ""}. Replace the starting password the clinic emailed you before you continue.
         </p>

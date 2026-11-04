@@ -21,6 +21,7 @@ import { type FormEvent, type KeyboardEvent, type ReactNode, useCallback, useEff
 import { toast } from "sonner";
 import { CallButtons } from "@/components/calls/CallLayer";
 import JoinCallButton, { callState } from "@/components/JoinCallButton";
+import { PageHeader, Pill, Skeleton } from "@/components/panel";
 import { useDoctorMessages } from "@/context/DoctorMessagesContext";
 import { useNavigate, useSearchParams } from "@/lib/navigation";
 import type { ChatMessage, MedicineSummary, PatientThread, PatientVisit } from "@/types";
@@ -261,23 +262,22 @@ export default function DoctorMessages() {
   return (
     <div className="p-0 sm:p-2 lg:p-8">
       <div className="mb-5 hidden lg:block">
-        <h1 className="text-3xl font-black tracking-tight text-slate-900">Messages</h1>
-        <p className="text-slate-500 mt-1">Every message shows which visit or medicine it&apos;s about.</p>
+        <PageHeader eyebrow="Your practice" title="Messages" subtitle="Every message shows which visit or medicine it's about." />
       </div>
 
-      <div className="bg-white rounded-[28px] border border-slate-200 shadow-[0_12px_40px_-12px_rgba(15,23,42,0.18)] overflow-hidden flex h-[calc(100dvh-11rem)] lg:h-[calc(100dvh-12rem)] min-h-[480px]">
+      <div className="surface !bg-white rounded-[24px] overflow-hidden flex h-[calc(100dvh-11rem)] lg:h-[calc(100dvh-14rem)] min-h-[480px]">
         {/* --- patients (tinted, so it reads as its own column) --- */}
         <aside
-          className={`${patientId ? "hidden md:flex" : "flex"} w-full md:w-80 shrink-0 flex-col bg-slate-100/70 border-r border-slate-200`}
+          className={`${patientId ? "hidden md:flex" : "flex"} w-full md:w-80 shrink-0 flex-col bg-canvas border-r border-line`}
         >
-          <div className="p-4 border-b border-slate-200 space-y-3">
-            <div className="flex items-center gap-2 rounded-xl bg-white border border-slate-200 px-3 py-2">
-              <RiSearchLine size={16} className="text-slate-400" />
+          <div className="p-4 border-b border-line space-y-3">
+            <div className="flex items-center gap-2 rounded-xl bg-white border border-line px-3 py-2.5">
+              <RiSearchLine size={16} className="text-ink-3" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search patients"
-                className="bg-transparent outline-none text-sm flex-1 min-w-0"
+                className="bg-transparent outline-none text-[15px] text-ink flex-1 min-w-0"
               />
             </div>
             <div className="flex gap-1.5">
@@ -285,12 +285,12 @@ export default function DoctorMessages() {
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold capitalize transition-colors ${
+                  className={`px-3 py-1.5 rounded-xl text-[13px] font-bold capitalize transition-colors ${
                     filter === f
                       ? f === "critical"
-                        ? "bg-red-600 text-white"
-                        : "bg-slate-900 text-white"
-                      : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50"
+                        ? "bg-rose-600 text-white"
+                        : "btn-ink"
+                      : "bg-white text-ink-2 border border-line hover:border-ink-3/40"
                   }`}
                 >
                   {f}
@@ -302,11 +302,11 @@ export default function DoctorMessages() {
             {!loaded ? (
               <div className="p-4 space-y-3">
                 {[0, 1, 2, 3].map((i) => (
-                  <div key={i} className="h-16 rounded-2xl bg-slate-100 animate-pulse" />
+                  <Skeleton key={i} className="h-16 !rounded-2xl" />
                 ))}
               </div>
             ) : shown.length === 0 ? (
-              <p className="p-6 text-center text-sm text-slate-500">
+              <p className="p-6 text-center text-[14px] text-ink-3">
                 {conversations.length ? "No patients match." : "Patients who book with you will appear here."}
               </p>
             ) : (
@@ -318,7 +318,7 @@ export default function DoctorMessages() {
                     onClick={() => navigate(`/doctor-messages?patient=${c.patient._id}`, { replace: !!patientId })}
                     className={`relative w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-left transition-all ${
                       active
-                        ? "bg-white shadow-sm ring-1 ring-slate-200 before:absolute before:left-0 before:top-3 before:bottom-3 before:w-1 before:rounded-full before:bg-teal-500"
+                        ? "bg-white shadow-sm ring-1 ring-line before:absolute before:left-0 before:top-3 before:bottom-3 before:w-1 before:rounded-full before:bg-brand"
                         : c.unread
                           ? "bg-white/80 hover:bg-white"
                           : "hover:bg-white/70"
@@ -332,17 +332,17 @@ export default function DoctorMessages() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline justify-between gap-2">
-                        <p className={`truncate ${c.unread ? "font-black text-slate-900" : "font-bold text-slate-800"}`}>
+                        <p className={`truncate text-[15px] ${c.unread ? "font-extrabold text-ink" : "font-bold text-ink-2"}`}>
                           {c.patient.name}
                         </p>
                         {c.lastMessage && (
-                          <span className={`text-[11px] shrink-0 ${c.unread ? "text-teal-600 font-bold" : "text-slate-400"}`}>
+                          <span className={`num text-[11px] shrink-0 ${c.unread ? "text-brand-ink" : "text-ink-3"}`}>
                             {listTime(c.lastMessage.createdAt)}
                           </span>
                         )}
                       </div>
                       <div className="flex items-center justify-between gap-2 mt-0.5">
-                        <p className={`text-[13px] truncate ${c.unread ? "text-slate-700" : "text-slate-400"}`}>
+                        <p className={`text-[13px] truncate ${c.unread ? "text-ink-2" : "text-ink-3"}`}>
                           {c.lastMessage
                             ? `${c.lastMessage.sender === "doctor" ? "You: " : ""}${c.lastMessage.text}`
                             : c.critical
@@ -350,7 +350,7 @@ export default function DoctorMessages() {
                               : "No messages yet"}
                         </p>
                         {c.unread > 0 && (
-                          <span className="shrink-0 min-w-5 h-5 px-1.5 rounded-full bg-teal-500 text-[11px] font-black text-white flex items-center justify-center">
+                          <span className="num shrink-0 min-w-5 h-5 px-1.5 rounded-full bg-brand text-[11px] text-white flex items-center justify-center">
                             {c.unread}
                           </span>
                         )}
@@ -366,12 +366,12 @@ export default function DoctorMessages() {
         {/* --- thread --- */}
         <section className={`${patientId ? "flex" : "hidden md:flex"} flex-1 min-w-0 flex-col`}>
           {!patientId ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-[radial-gradient(circle_at_center,rgba(20,184,166,0.07),transparent_60%)]">
-              <div className="w-16 h-16 rounded-2xl bg-white text-teal-600 border border-teal-100 shadow-md flex items-center justify-center mb-4">
-                <RiChat3Line size={26} />
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-[radial-gradient(circle_at_center,rgba(14,165,164,0.07),transparent_60%)]">
+              <div className="w-14 h-14 rounded-2xl bg-brand-soft text-brand-ink border border-teal-100 flex items-center justify-center mb-4">
+                <RiChat3Line size={24} />
               </div>
-              <p className="font-black text-slate-900">Pick a patient</p>
-              <p className="text-sm text-slate-500 mt-1 max-w-xs">
+              <p className="font-bold text-ink">Pick a patient</p>
+              <p className="text-[14px] text-ink-3 mt-1 max-w-xs">
                 Their visits, vitals and medicines open next to the conversation.
               </p>
             </div>
@@ -390,14 +390,10 @@ export default function DoctorMessages() {
                     <img src={thread.patient.image} alt="" className="w-10 h-10 rounded-xl object-cover bg-slate-100" />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <p className="font-black text-slate-900 truncate">{thread.patient.name}</p>
-                        {thread.critical && (
-                          <span className="text-[9px] font-black uppercase tracking-wider bg-red-600 text-white px-2 py-0.5 rounded-full">
-                            Critical
-                          </span>
-                        )}
+                        <p className="text-[16px] font-bold text-ink truncate">{thread.patient.name}</p>
+                        {thread.critical && <Pill tone="rose">Critical</Pill>}
                       </div>
-                      <p className="text-[12px] text-slate-400 truncate">
+                      <p className="text-[13px] text-ink-3 truncate">
                         {activeVisits.length} visit{activeVisits.length === 1 ? "" : "s"} with you
                       </p>
                     </div>
@@ -629,7 +625,7 @@ function Bubble({
           }`}
         >
           {m.urgent && (
-            <p className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-red-100 mb-1">
+            <p className="flex items-center gap-1 text-[12px] font-bold text-red-100 mb-1">
               <RiErrorWarningFill size={13} /> Urgent
             </p>
           )}
@@ -778,8 +774,8 @@ function PatientPanel({
       } xl:flex xl:static xl:shadow-none xl:z-auto`}
     >
       <div className="flex items-center justify-between px-5 pt-5 xl:hidden">
-        <p className="text-[11px] font-black uppercase tracking-[2px] text-slate-400">Patient</p>
-        <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100" aria-label="Close">
+        <p className="text-[15px] font-bold text-ink">Patient</p>
+        <button onClick={onClose} className="p-1.5 rounded-lg text-ink-3 hover:bg-canvas" aria-label="Close">
           <RiCloseLine size={18} />
         </button>
       </div>
@@ -789,8 +785,8 @@ function PatientPanel({
           <div className="flex items-center gap-3">
             <img src={patient.image} alt="" className="w-14 h-14 rounded-2xl object-cover bg-slate-100" />
             <div className="min-w-0">
-              <p className="font-black text-slate-900 truncate">{patient.name}</p>
-              <p className="text-[12px] text-slate-500">
+              <p className="text-[16px] font-bold text-ink truncate">{patient.name}</p>
+              <p className="text-[13px] text-ink-3">
                 {[patient.gender !== "Not Selected" ? patient.gender : null, age ? `${age} yrs` : null]
                   .filter(Boolean)
                   .join(" · ") || "—"}
@@ -811,7 +807,7 @@ function PatientPanel({
 
       {attention.length > 0 && (
         <div className="p-5 border-b border-slate-100">
-          <p className="text-[10px] font-black uppercase tracking-[2px] text-red-600 mb-3">Needs attention</p>
+          <p className="text-[14px] font-bold text-rose-700 mb-3">Needs attention</p>
           <div className="space-y-2">
             {attention.map(({ visit, med }) => (
               <button
@@ -836,20 +832,20 @@ function PatientPanel({
 
       {latestVitals && (
         <div className="p-5 border-b border-slate-100">
-          <p className="text-[10px] font-black uppercase tracking-[2px] text-slate-400 mb-3 flex items-center gap-1.5">
-            <RiHeartPulseLine size={13} className="text-teal-600" /> Latest vitals · {visitDate(latestVitals.slotDate)}
+          <p className="text-[14px] font-bold text-ink mb-3 flex items-center gap-1.5">
+            <RiHeartPulseLine size={14} className="text-brand-ink" /> Latest vitals <span className="font-medium text-ink-3">· {visitDate(latestVitals.slotDate)}</span>
           </p>
           <div className="grid grid-cols-3 gap-2 text-center">
             {[
-              ["HR", latestVitals.vitals.heartRate, "bpm"],
+              ["Pulse", latestVitals.vitals.heartRate, "bpm"],
               ["BP", latestVitals.vitals.bloodPressure, ""],
               ["Temp", latestVitals.vitals.temperature, "°C"],
             ].map(([label, value, unit]) => (
-              <div key={label} className="rounded-xl bg-slate-50 py-2">
-                <p className="text-[10px] font-bold text-slate-400">{label}</p>
-                <p className="text-sm font-black text-slate-900">
+              <div key={label} className="rounded-xl bg-canvas py-2">
+                <p className="text-[12px] font-semibold text-ink-3">{label}</p>
+                <p className="num text-[14px] text-ink">
                   {value || "--"}
-                  {value && unit ? <span className="text-[10px] text-slate-400 font-medium"> {unit}</span> : null}
+                  {value && unit ? <span className="text-[11px] text-ink-3"> {unit}</span> : null}
                 </p>
               </div>
             ))}
@@ -858,7 +854,7 @@ function PatientPanel({
       )}
 
       <div className="p-5">
-        <p className="text-[10px] font-black uppercase tracking-[2px] text-slate-400 mb-3">Visits with you</p>
+        <p className="text-[14px] font-bold text-ink mb-3">Visits with you</p>
         <div className="space-y-3">
           {visits.map((v) => (
             <div
@@ -871,21 +867,23 @@ function PatientPanel({
               } ${v.status === "cancelled" ? "opacity-50" : ""}`}
             >
               <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-black text-slate-800">
-                  {visitDate(v.slotDate)} <span className="font-medium text-slate-400">· {v.slotTime}</span>
+                <p className="text-[14px] font-bold text-ink">
+                  {visitDate(v.slotDate)} <span className="num font-normal text-ink-3">· {v.slotTime}</span>
                 </p>
-                <span
-                  className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                    v.patientStatus === "Critical" && v.status !== "cancelled"
-                      ? "bg-red-600 text-white"
-                      : v.status === "completed"
-                        ? "bg-teal-50 text-teal-700"
-                        : v.status === "upcoming"
-                          ? "bg-indigo-50 text-indigo-700"
-                          : "bg-slate-100 text-slate-500"
-                  }`}
-                >
-                  {v.patientStatus === "Critical" && v.status !== "cancelled" ? "Critical" : v.status}
+                <span className="capitalize">
+                  <Pill
+                    tone={
+                      v.patientStatus === "Critical" && v.status !== "cancelled"
+                        ? "rose"
+                        : v.status === "completed"
+                          ? "brand"
+                          : v.status === "upcoming"
+                            ? "violet"
+                            : "neutral"
+                    }
+                  >
+                    {v.patientStatus === "Critical" && v.status !== "cancelled" ? "Critical" : v.status}
+                  </Pill>
                 </span>
               </div>
               {v.doctorNotes && <p className="text-[12px] text-slate-500 mt-2 line-clamp-3">{v.doctorNotes}</p>}
@@ -900,7 +898,7 @@ function PatientPanel({
                         </p>
                       </div>
                       <span
-                        className={`shrink-0 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${MED_STATUS[m.status].tone}`}
+                        className={`shrink-0 text-[11px] font-bold px-2 py-0.5 rounded-full ${MED_STATUS[m.status].tone}`}
                       >
                         {MED_STATUS[m.status].label}
                       </span>

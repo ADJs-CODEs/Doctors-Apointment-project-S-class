@@ -4,6 +4,7 @@ import type { Dispatch, SetStateAction } from "react";
 import type { Appointment } from "../types/index";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  RiHeartLine,
   RiHeartPulseLine,
   RiSendPlaneFill,
   RiTempHotLine,
@@ -36,19 +37,17 @@ const DoctorsAdherenceView = ({
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: "auto", opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
-          className="bg-slate-50 overflow-hidden border-b"
+          className="bg-canvas/60 overflow-hidden border-t border-line"
         >
           <div className="p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-              <p className="text-[10px] font-black uppercase tracking-[2px] text-slate-400">
-                Clinical Monitoring
-              </p>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
+              <p className="text-[15px] font-bold text-ink sm:mr-auto">How it&apos;s going since the visit</p>
               {/* alerts now go through the chat (tick "Urgent" there) */}
               <button
                 onClick={() => navigate(`/doctor-messages?patient=${item.userId}&appointment=${item._id}`)}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-slate-900 text-white px-4 py-3 sm:py-2 rounded-xl text-[10px] font-black hover:bg-teal-600 active:scale-95 transition-all"
+                className="btn btn-ink w-full sm:w-auto !py-2 !px-4 !text-[13px] !rounded-xl"
               >
-                <RiSendPlaneFill size={14} /> MESSAGE PATIENT
+                <RiSendPlaneFill size={14} /> Message patient
               </button>
               <button
                 onClick={() => {
@@ -73,16 +72,16 @@ const DoctorsAdherenceView = ({
                       .catch(() => toast.error("Failed to add patient"));
                   }
                 }}
-                className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-xl text-[10px] font-black hover:bg-red-600 active:scale-95 transition-all"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-line bg-white text-[13px] font-bold text-ink-2 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200"
               >
-                ❤️ ADD TO WISH WELL
+                <RiHeartLine size={15} /> Put forward for the Wish Well
               </button>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
               <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 {[
                   {
-                    label: "BP",
+                    label: "Blood pressure",
                     value: item.healthData.bloodPressure,
                     icon: <RiHeartPulseLine size={16} />,
                     color: "text-rose-500",
@@ -94,7 +93,7 @@ const DoctorsAdherenceView = ({
                     color: "text-blue-500",
                   },
                   {
-                    label: "Temp",
+                    label: "Temperature",
                     value: item.healthData.temperature + "°C",
                     icon: <RiTempHotLine size={16} />,
                     color: "text-teal-500",
@@ -102,15 +101,15 @@ const DoctorsAdherenceView = ({
                 ].map((vital, vIdx) => (
                   <div
                     key={vIdx}
-                    className="bg-white p-3 sm:p-4 rounded-2xl border text-center shadow-sm"
+                    className="bg-white p-3 sm:p-4 rounded-2xl border border-line text-center"
                   >
                     <div className={`${vital.color} flex justify-center mb-1`}>
                       {vital.icon}
                     </div>
-                    <p className="text-xs sm:text-sm font-black text-slate-800">
+                    <p className="num text-[15px] text-ink">
                       {vital.value || "--"}
                     </p>
-                    <p className="text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase">
+                    <p className="text-[12px] font-semibold text-ink-3 mt-0.5">
                       {vital.label}
                     </p>
                   </div>
@@ -123,17 +122,17 @@ const DoctorsAdherenceView = ({
                     return (
                       <div
                         key={mIdx}
-                        className={`bg-white p-3 sm:p-4 rounded-2xl border ${med.overdoseAlert ? "border-red-500 bg-red-50/20" : "border-slate-100"}`}
+                        className={`bg-white p-3 sm:p-4 rounded-2xl border ${med.overdoseAlert ? "border-rose-300 bg-rose-50/30" : "border-line"}`}
                       >
                         <div className="flex justify-between items-center mb-2">
-                          <p className="font-bold text-[11px] sm:text-xs">
+                          <p className="font-bold text-[14px] text-ink">
                             {med.name}
                           </p>
-                          <p className="text-[10px] sm:text-[11px] font-black text-teal-500">
+                          <p className="num text-[13px] text-brand-ink" title="Doses taken on time">
                             {stats.rate}%
                           </p>
                         </div>
-                        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-1.5 w-full bg-line rounded-full overflow-hidden">
                           <div
                             className={`h-full ${med.overdoseAlert ? "bg-red-500" : "bg-teal-500"}`}
                             style={{ width: `${stats.rate}%` }}

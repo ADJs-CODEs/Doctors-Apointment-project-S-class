@@ -3,6 +3,8 @@
 import { RiCheckLine, RiCloseLine, RiRefreshLine, RiSendPlaneLine, RiStore2Line } from "@remixicon/react";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Pill, Skeleton } from "../../components/panel";
+import { PAYOUT_STATUS, type PayoutFilter, PayoutFilters } from "./payout-ui";
 import { API_PATHS } from "../../utils/apiPath";
 import axiosInstance from "../../utils/axiosInstance";
 
@@ -22,21 +24,15 @@ export type Payout = {
   createdAt: string;
 };
 
-const FILTERS = ["pending", "processing", "paid", "failed", "rejected", "all"] as const;
 const money = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 const naira = (kobo: number) => `₦${(kobo / 100).toLocaleString("en-NG", { maximumFractionDigits: 0 })}`;
 const when = (iso?: string) => (iso ? new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : "");
-const TONE: Record<Payout["status"], string> = {
-  pending: "bg-orange-50 text-orange-700 border-orange-100",
-  processing: "bg-sky-50 text-sky-700 border-sky-100",
-  paid: "bg-teal-50 text-teal-700 border-teal-100",
-  failed: "bg-red-50 text-red-700 border-red-100",
-  rejected: "bg-slate-100 text-slate-500 border-slate-200",
-};
+const ghost = "flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-line bg-white text-ink-2 text-[14px] font-bold hover:bg-canvas";
+const teal = "btn btn-teal !py-2.5 !px-4 !text-[14px] !rounded-xl";
 
 /** Pharmacies withdrawing their earnings: send through Paystack, or by hand and record the reference. */
 export default function PharmacyPayouts() {
-  const [filter, setFilter] = useState<(typeof FILTERS)[number]>("pending");
+  const [filter, setFilter] = useState<PayoutFilter>("pending");
   const [rows, setRows] = useState<Payout[] | null>(null);
   const [paystack, setPaystack] = useState(false);
 
@@ -60,28 +56,21 @@ export default function PharmacyPayouts() {
   return (
     <div className="max-w-5xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
-        <p className="text-slate-500 text-sm">
+        <p className="text-ink-2 text-[15px]">
           Pharmacies withdraw what they earned on delivered orders (after your commission), a day after delivery.
         </p>
-        <div className="flex flex-wrap gap-1.5">
-          {FILTERS.map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold capitalize ${filter === f ? "bg-slate-900 text-white" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"}`}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
+        <PayoutFilters value={filter} onChange={setFilter} />
       </div>
 
       {rows === null ? (
-        <div className="h-40 rounded-[28px] bg-slate-200/60 animate-pulse" />
+        <Skeleton className="h-40" />
       ) : rows.length === 0 ? (
-        <div className="bg-white rounded-[28px] border border-slate-100 p-12 text-center">
-          <p className="font-black text-slate-900">Nothing here</p>
-          <p className="text-sm text-slate-400 mt-1">{filter === "pending" ? "No pharmacy withdrawals are waiting." : "No withdrawals with this status."}</p>
+        <div className="surface rounded-[24px] p-12 text-center">
+          <div className="w-14 h-14 bg-brand-soft rounded-2xl flex items-center justify-center text-brand-ink mb-4 mx-auto">
+            <RiStore2Line size={24} />
+          </div>
+          <p className="font-bold text-ink">Nothing here</p>
+          <p className="text-[14px] text-ink-3 mt-1">{filter === "pending" ? "No pharmacy withdrawals are waiting." : "No withdrawals with this status."}</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -100,7 +89,7 @@ export function PayoutCard({
   paystack,
   onChanged,
   path = API_PATHS.ADMIN.PHARMACY_PAYOUT,
-  icon = <RiStore2Line size={15} className="text-teal-600" />,
+  icon = <RiStore2Line size={15} className="text-brand-ink" />,
   who = "pharmacy",
 }: {
   p: Payout & { doctorName?: string };
@@ -131,42 +120,44 @@ export function PayoutCard({
   };
 
   return (
-    <div className="bg-white rounded-[28px] border border-slate-200 shadow-sm p-5 sm:p-6">
+    <div className="surface rounded-[22px] p-5 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>
-          <p className="text-3xl font-black text-slate-900">
+          <p className="num text-[30px] leading-none text-ink">
             {money(p.cents)}
-            {p.payoutMinor ? <span className="text-lg font-bold text-slate-400"> · {naira(p.payoutMinor)}</span> : null}
+            {p.payoutMinor ? <span className="text-[18px] text-ink-3"> · {naira(p.payoutMinor)}</span> : null}
           </p>
-          <p className="text-sm font-bold text-slate-700 mt-1 flex items-center gap-1.5">
+          <p className="text-[15px] font-bold text-ink mt-2 flex items-center gap-1.5">
             {icon} {p.pharmacyName ?? p.doctorName}
           </p>
-          <p className="text-[12px] text-slate-400">
+          <p className="text-[13px] text-ink-3">
             Requested {when(p.createdAt)}
             {p.requestedBy ? ` by ${p.requestedBy}` : ""}
           </p>
         </div>
-        <span className={`self-start text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full border ${TONE[p.status]}`}>{p.status}</span>
+        <span className="self-start">
+          <Pill tone={PAYOUT_STATUS[p.status].tone}>{PAYOUT_STATUS[p.status].label}</Pill>
+        </span>
       </div>
 
-      <div className="mt-4 rounded-xl bg-slate-50 px-3 py-2 text-sm">
-        <p className="font-bold text-slate-800">
-          {p.bank.accountName} · {p.bank.bankName} · {p.bank.accountNumber}
+      <div className="mt-4 rounded-xl bg-canvas px-3 py-2.5 text-[14px]">
+        <p className="font-bold text-ink">
+          {p.bank.accountName} · {p.bank.bankName} · <span className="num font-normal">{p.bank.accountNumber}</span>
         </p>
-        <p className={`text-[12px] ${p.bank.verified ? "text-teal-700" : "text-orange-700"}`}>
+        <p className={`text-[13px] ${p.bank.verified ? "text-brand-ink" : "text-orange-700"}`}>
           {p.bank.verified ? "Confirmed by the bank" : `Typed in by the ${who}, not confirmed: check it before sending`}
         </p>
       </div>
 
       {p.status === "processing" ? (
         <div className="flex flex-wrap items-center gap-3 mt-4">
-          <p className="text-sm text-sky-700">Sent to Paystack, waiting for the bank.</p>
-          <button onClick={() => act("refresh")} disabled={busy} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-slate-600 text-[12px] font-bold hover:bg-slate-50 disabled:opacity-40">
+          <p className="text-[14px] text-video">Sent to Paystack, waiting for the bank.</p>
+          <button onClick={() => act("refresh")} disabled={busy} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-line bg-white text-ink-2 text-[13px] font-bold hover:bg-canvas disabled:opacity-40">
             <RiRefreshLine size={14} /> Check again
           </button>
         </div>
       ) : p.status !== "pending" ? (
-        <p className="text-sm text-slate-500 mt-4">
+        <p className="text-[14px] text-ink-3 mt-4">
           {p.status === "paid"
             ? `Paid ${when(p.decidedAt)} · ref ${p.reference}`
             : p.status === "failed"
@@ -176,40 +167,34 @@ export function PayoutCard({
       ) : mode === "none" ? (
         <div className="flex flex-wrap gap-2 mt-5">
           {canSend && (
-            <button onClick={() => act("send")} disabled={busy} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-bold hover:bg-teal-700 disabled:opacity-40">
+            <button onClick={() => act("send")} disabled={busy} className={`${teal} disabled:opacity-40`}>
               <RiSendPlaneLine size={16} /> Send via Paystack
             </button>
           )}
-          <button
-            onClick={() => setMode("pay")}
-            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold ${canSend ? "border border-slate-200 text-slate-600 hover:bg-slate-50" : "bg-teal-600 text-white hover:bg-teal-700"}`}
-          >
+          <button onClick={() => setMode("pay")} className={canSend ? ghost : teal}>
             <RiCheckLine size={16} /> I&apos;ve sent it by hand
           </button>
-          <button
-            onClick={() => setMode("reject")}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-bold hover:bg-red-50 hover:text-red-600 hover:border-red-200"
-          >
+          <button onClick={() => setMode("reject")} className={`${ghost} hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200`}>
             <RiCloseLine size={16} /> Reject
           </button>
         </div>
       ) : (
-        <div className="mt-5 rounded-2xl border border-slate-200 p-4 space-y-3">
+        <div className="mt-5 rounded-2xl border border-line bg-canvas/60 p-4 space-y-3">
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder={mode === "pay" ? "Bank transfer reference" : `Reason (sent to the ${who})`}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-teal-400"
+            className="field"
           />
           <div className="flex gap-2">
             <button
               onClick={() => act(mode === "pay" ? "paid" : "reject", mode === "pay" ? { reference: text } : { adminNote: text })}
               disabled={busy || !text.trim()}
-              className={`px-4 py-2.5 rounded-xl text-white text-sm font-bold disabled:opacity-40 ${mode === "pay" ? "bg-teal-600" : "bg-red-600"}`}
+              className={`disabled:opacity-40 ${mode === "pay" ? teal : "px-4 py-2.5 rounded-xl text-white text-[14px] font-bold bg-rose-600 hover:bg-rose-700"}`}
             >
               {mode === "pay" ? "Mark as paid" : "Reject"}
             </button>
-            <button onClick={() => setMode("none")} className="px-4 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100">
+            <button onClick={() => setMode("none")} className="px-4 py-2.5 rounded-xl text-[14px] font-bold text-ink-3 hover:bg-white">
               Back
             </button>
           </div>

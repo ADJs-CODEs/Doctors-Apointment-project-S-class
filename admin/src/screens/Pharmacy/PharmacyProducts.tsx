@@ -13,6 +13,7 @@ import {
 } from "@remixicon/react";
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { PageHeader, Pill, Skeleton } from "../../components/panel";
 import { API_PATHS } from "../../utils/apiPath";
 import axiosInstance from "../../utils/axiosInstance";
 
@@ -34,8 +35,9 @@ type Category = { id: string; label: string };
 
 const LOW_STOCK = 5;
 const money = (cents: number) => `$${(cents / 100).toFixed(2)}`;
-const input = "w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-teal-400";
-const label = "text-[11px] font-bold uppercase tracking-wider text-slate-400";
+const input = "field";
+const label = "caption";
+const iconBtn = "p-2 rounded-xl border border-line bg-white text-ink-3 hover:bg-canvas disabled:opacity-30";
 // FormData must go as multipart (the shared client defaults to JSON, which would drop the photo)
 const multipart = { headers: { "Content-Type": "multipart/form-data" } };
 
@@ -87,28 +89,21 @@ export default function PharmacyProducts() {
   );
 
   return (
-    <div className="p-4 sm:p-6 md:p-10 bg-slate-50/50 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-8 animate-reveal">
       <div className="max-w-5xl mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2.5 bg-slate-900 rounded-xl text-teal-400">
-                <RiCapsuleLine size={20} />
-              </div>
-              <h1 className="text-xl sm:text-3xl font-black text-slate-900">
-                Products and stock
-              </h1>
-            </div>
-            <p className="text-slate-500 text-sm ml-12">What you sell. Patients near you see listed products that are in stock.</p>
-          </div>
-          {editing === null && (
-            <button
-              onClick={() => setEditing("new")}
-              className="self-start sm:self-auto flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-bold hover:bg-teal-700"
-            >
-              <RiAddLine size={16} /> Add a product
-            </button>
-          )}
+        <div className="mb-6">
+          <PageHeader
+            eyebrow="Your pharmacy"
+            title="Products and stock"
+            subtitle="What you sell. Patients near you see listed products that are in stock."
+            action={
+              editing === null && (
+                <button onClick={() => setEditing("new")} className="btn btn-teal !rounded-xl">
+                  <RiAddLine size={16} /> Add a product
+                </button>
+              )
+            }
+          />
         </div>
 
         {editing !== null && (
@@ -126,8 +121,8 @@ export default function PharmacyProducts() {
 
         <div className="flex flex-col sm:flex-row gap-3 mb-4">
           <label className="relative flex-1">
-            <RiSearchLine size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search your products" className={`${input} pl-9 bg-white`} />
+            <RiSearchLine size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-3" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search your products" className={`${input} !pl-10`} />
           </label>
           <div className="flex flex-wrap gap-1.5">
             {(
@@ -141,8 +136,8 @@ export default function PharmacyProducts() {
               <button
                 key={key}
                 onClick={() => setFilter(key)}
-                className={`px-3 py-2 rounded-lg text-[11px] font-bold ${
-                  filter === key ? "bg-slate-900 text-white" : "bg-white border border-slate-200 text-slate-500 hover:bg-slate-50"
+                className={`px-3.5 py-2.5 rounded-xl text-[14px] font-bold ${
+                  filter === key ? "btn-ink" : "bg-white border border-line text-ink-2 hover:border-ink-3/40"
                 }`}
               >
                 {text}
@@ -152,15 +147,17 @@ export default function PharmacyProducts() {
         </div>
 
         {products === null ? (
-          <div className="h-48 rounded-[28px] bg-slate-200/60 animate-pulse" />
+          <Skeleton className="h-48" />
         ) : products.length === 0 ? (
-          <div className="bg-white rounded-[28px] border border-slate-100 p-12 text-center">
-            <RiCapsuleLine size={30} className="mx-auto text-slate-300" />
-            <p className="font-black text-slate-900 mt-2">No products yet</p>
-            <p className="text-sm text-slate-400 mt-1">Add what you sell so patients near you can find it.</p>
+          <div className="surface rounded-[24px] p-12 text-center">
+            <div className="w-14 h-14 bg-brand-soft rounded-2xl flex items-center justify-center text-brand-ink mb-4 mx-auto">
+              <RiCapsuleLine size={24} />
+            </div>
+            <p className="font-bold text-ink">No products yet</p>
+            <p className="text-[14px] text-ink-3 mt-1">Add what you sell so patients near you can find it.</p>
           </div>
         ) : shown.length === 0 ? (
-          <p className="text-sm text-slate-400 text-center py-10">Nothing matches.</p>
+          <p className="text-[14px] text-ink-3 text-center py-10">Nothing matches.</p>
         ) : (
           <ul className="space-y-2">
             {shown.map((p) => (
@@ -195,42 +192,42 @@ function ProductRow({ p, category, onEdit, onChanged }: { p: Product; category?:
     call(axiosInstance.patch(API_PATHS.PHARMACY.PRODUCT(p._id), fd, multipart));
   };
 
-  const stockTone = p.stock === 0 ? "text-red-600 bg-red-50" : p.stock <= LOW_STOCK ? "text-orange-700 bg-orange-50" : "text-slate-700 bg-slate-50";
+  const stockTone = p.stock === 0 ? "text-rose-600 bg-rose-50" : p.stock <= LOW_STOCK ? "text-orange-700 bg-orange-50" : "text-ink bg-canvas";
 
   return (
-    <li className={`bg-white rounded-[20px] border border-slate-200 p-3 sm:p-4 flex flex-wrap items-center gap-3 ${p.listed ? "" : "opacity-60"}`}>
-      <div className="w-14 h-14 rounded-xl bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
-        {p.image ? <img src={p.image} alt="" className="w-full h-full object-cover" /> : <RiCapsuleLine size={22} className="text-slate-300" />}
+    <li className={`surface rounded-[18px] p-3 sm:p-4 flex flex-wrap items-center gap-3 ${p.listed ? "" : "opacity-60"}`}>
+      <div className="w-14 h-14 rounded-xl bg-brand-soft overflow-hidden shrink-0 flex items-center justify-center">
+        {p.image ? <img src={p.image} alt="" className="w-full h-full object-cover" /> : <RiCapsuleLine size={22} className="text-brand-ink/50" />}
       </div>
       <div className="flex-1 min-w-48">
-        <p className="font-black text-slate-900 flex flex-wrap items-center gap-2">
+        <p className="text-[15px] font-bold text-ink flex flex-wrap items-center gap-2">
           {p.name}
           {p.requiresPrescription && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-violet-700 bg-violet-50 px-2 py-0.5 rounded-full">
-              <RiFileList3Line size={11} /> Prescription
-            </span>
+            <Pill tone="violet">
+              <RiFileList3Line size={12} /> Prescription
+            </Pill>
           )}
-          {!p.listed && <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Hidden</span>}
+          {!p.listed && <Pill>Hidden</Pill>}
         </p>
-        <p className="text-[12px] text-slate-500">{[p.genericName, p.strength, p.packSize, category].filter(Boolean).join(" · ")}</p>
+        <p className="text-[13px] text-ink-3">{[p.genericName, p.strength, p.packSize, category].filter(Boolean).join(" · ")}</p>
       </div>
-      <p className="font-black text-slate-900 tabular-nums w-20 text-right">{money(p.priceCents)}</p>
+      <p className="num text-[15px] text-ink w-20 text-right">{money(p.priceCents)}</p>
       <div className="flex items-center gap-1">
-        <button onClick={() => change(-1)} disabled={busy || p.stock === 0} aria-label="One less in stock" className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30">
+        <button onClick={() => change(-1)} disabled={busy || p.stock === 0} aria-label="One less in stock" className="p-1.5 rounded-lg border border-line bg-white text-ink-3 hover:bg-canvas disabled:opacity-30">
           <RiSubtractLine size={15} />
         </button>
-        <span className={`min-w-16 text-center text-sm font-black tabular-nums px-2 py-1 rounded-lg ${stockTone}`}>
+        <span className={`num min-w-16 text-center text-[13px] px-2 py-1 rounded-lg ${stockTone}`}>
           {p.stock === 0 ? "Out" : `${p.stock} left`}
         </span>
-        <button onClick={() => change(1)} disabled={busy} aria-label="One more in stock" className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30">
+        <button onClick={() => change(1)} disabled={busy} aria-label="One more in stock" className="p-1.5 rounded-lg border border-line bg-white text-ink-3 hover:bg-canvas disabled:opacity-30">
           <RiAddLine size={15} />
         </button>
       </div>
       <div className="flex gap-1">
-        <button onClick={toggleListed} disabled={busy} title={p.listed ? "Hide from patients" : "Show to patients"} className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50">
+        <button onClick={toggleListed} disabled={busy} title={p.listed ? "Hide from patients" : "Show to patients"} aria-label={p.listed ? "Hide from patients" : "Show to patients"} className={iconBtn}>
           {p.listed ? <RiEyeLine size={17} /> : <RiEyeOffLine size={17} />}
         </button>
-        <button onClick={onEdit} title="Edit" className="p-2 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50">
+        <button onClick={onEdit} title="Edit" aria-label={`Edit ${p.name}`} className={iconBtn}>
           <RiEditLine size={17} />
         </button>
       </div>
@@ -303,16 +300,16 @@ function ProductForm({
   };
 
   return (
-    <form onSubmit={submit} className="bg-white rounded-[28px] border border-slate-200 p-5 sm:p-6 mb-6">
-      <p className="font-black text-slate-900 mb-4">{product ? `Edit ${product.name}` : "Add a product"}</p>
+    <form onSubmit={submit} className="surface rounded-[22px] p-5 sm:p-6 mb-6">
+      <p className="text-[16px] font-bold text-ink mb-4">{product ? `Edit ${product.name}` : "Add a product"}</p>
       <div className="flex flex-col sm:flex-row gap-5">
-        <label className="shrink-0 w-full sm:w-36 h-36 rounded-2xl border-2 border-dashed border-slate-200 hover:border-teal-300 flex flex-col items-center justify-center cursor-pointer overflow-hidden bg-slate-50">
+        <label className="shrink-0 w-full sm:w-36 h-36 rounded-2xl border-2 border-dashed border-line hover:border-brand flex flex-col items-center justify-center cursor-pointer overflow-hidden bg-canvas">
           {preview ? (
             <img src={preview} alt="" className="w-full h-full object-cover" />
           ) : (
             <>
-              <RiImageAddLine size={26} className="text-slate-300" />
-              <span className="text-[11px] font-bold text-slate-400 mt-1">Add a photo</span>
+              <RiImageAddLine size={26} className="text-ink-3" />
+              <span className="text-[13px] font-bold text-ink-3 mt-1">Add a photo</span>
             </>
           )}
           <input
@@ -345,7 +342,7 @@ function ProductForm({
           </label>
           <label className="block">
             <span className={label}>Shop section</span>
-            <select value={form.category} onChange={set("category")} className={`${input} mt-1 bg-white`}>
+            <select value={form.category} onChange={set("category")} className={`${input} mt-1`}>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.label}
@@ -365,7 +362,7 @@ function ProductForm({
             <span className={label}>Description (optional)</span>
             <textarea value={form.description} onChange={set("description")} rows={2} className={`${input} mt-1 resize-none`} />
           </label>
-          <label className="sm:col-span-2 flex items-start gap-3 rounded-2xl border border-violet-100 bg-violet-50/50 p-3 cursor-pointer">
+          <label className="sm:col-span-2 flex items-start gap-3 rounded-2xl border border-violet-100 bg-video-soft p-3 cursor-pointer">
             <input
               type="checkbox"
               checked={form.requiresPrescription}
@@ -373,8 +370,8 @@ function ProductForm({
               className="mt-1 accent-violet-600"
             />
             <span>
-              <span className="block text-sm font-black text-slate-900">Prescription-only medicine</span>
-              <span className="block text-[12px] text-slate-500">
+              <span className="block text-[15px] font-bold text-ink">Prescription-only medicine</span>
+              <span className="block text-[13px] text-ink-2">
                 Patients can only order it against a prescription from one of our doctors, and one of your pharmacists approves the order.
               </span>
             </span>
@@ -382,10 +379,10 @@ function ProductForm({
         </div>
       </div>
       <div className="flex gap-2 mt-5">
-        <button type="submit" disabled={saving} className="px-5 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-bold hover:bg-teal-700 disabled:opacity-50">
+        <button type="submit" disabled={saving} className="btn btn-teal !py-2.5 !px-5 !text-[14px] !rounded-xl disabled:opacity-50">
           {saving ? "Saving…" : product ? "Save changes" : "Add product"}
         </button>
-        <button type="button" onClick={onClose} className="px-4 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100">
+        <button type="button" onClick={onClose} className="px-4 py-2.5 rounded-xl text-[14px] font-bold text-ink-3 hover:bg-canvas">
           Cancel
         </button>
       </div>

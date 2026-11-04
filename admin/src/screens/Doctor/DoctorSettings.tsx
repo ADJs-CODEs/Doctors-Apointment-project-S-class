@@ -9,11 +9,11 @@ import {
   RiMapPin2Line,
   RiMoonLine,
   RiRefreshLine,
-  RiSettings3Line,
   RiShieldCheckLine,
 } from "@remixicon/react";
 import { type FormEvent, type ReactNode, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { PageHeader, Pill, Skeleton } from "../../components/panel";
 import { API_PATHS } from "../../utils/apiPath";
 import axiosInstance from "../../utils/axiosInstance";
 import DoctorSchedule from "./DoctorSchedule";
@@ -39,7 +39,8 @@ const EMAILS: { key: EmailKind; label: string; hint: string }[] = [
   { key: "visitStarting", label: "Visit starting now", hint: "At the time of each appointment, with the video link" },
 ];
 
-const input = "rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-teal-400";
+const input = "rounded-[14px] border-[1.5px] border-line bg-white px-3 py-2.5 text-[15px] text-ink outline-none focus:border-brand";
+const ghost = "flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-line bg-white text-[14px] font-bold text-ink-2 hover:bg-canvas disabled:opacity-50";
 
 /** The doctor's settings: bookings switch, hours and fees, emails, quiet hours, password, connected apps. */
 export default function DoctorSettings() {
@@ -84,8 +85,9 @@ function SettingsPage() {
 
   if (!data) {
     return (
-      <div className="p-6 md:p-10">
-        <div className="max-w-4xl mx-auto h-64 rounded-[28px] bg-slate-200/60 animate-pulse" />
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-5">
+        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-64" />
       </div>
     );
   }
@@ -93,23 +95,19 @@ function SettingsPage() {
   const s = data.settings;
 
   return (
-    <div className="p-4 sm:p-6 md:p-10 bg-slate-50/50 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-8 animate-reveal">
       <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-slate-900 rounded-xl text-teal-400">
-            <RiSettings3Line size={20} />
-          </div>
-          <div>
-            <h1 className="text-xl sm:text-3xl font-black text-slate-900">Settings</h1>
-            <p className="text-slate-500 text-sm">Changes save as you make them.</p>
-          </div>
-        </div>
+        <PageHeader eyebrow="Your practice" title="Settings" subtitle="Changes save as you make them." />
 
         {/* the big one first: can patients book right now? */}
-        <section className={`rounded-[28px] border-2 p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4 ${data.available ? "border-teal-200 bg-teal-50/60" : "border-rose-200 bg-rose-50/60"}`}>
+        <section
+          className={`rounded-[22px] border-[1.5px] p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4 ${
+            data.available ? "border-teal-200 bg-brand-soft/70" : "border-rose-200 bg-rose-50/60"
+          }`}
+        >
           <div className="flex-1">
-            <p className="font-black text-slate-900 text-lg">{data.available ? "You're taking bookings" : "You're not taking bookings"}</p>
-            <p className="text-sm text-slate-600">
+            <p className="text-[18px] font-extrabold tracking-[-0.01em] text-ink">{data.available ? "You're taking bookings" : "You're not taking bookings"}</p>
+            <p className="text-[14px] text-ink-2">
               {data.available
                 ? "Patients can book you inside your hours below."
                 : "Patients see you as not taking bookings and can't book. Visits already booked stay as they are."}
@@ -121,24 +119,24 @@ function SettingsPage() {
         <DoctorSchedule />
 
         <Card icon={<RiMailLine size={18} />} title="Emails" hint="Everything still shows in your notification bell.">
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-line">
             {EMAILS.map((e) => (
               <li key={e.key} className="flex items-center gap-4 py-3">
                 <div className="flex-1">
-                  <p className="font-bold text-slate-800 text-sm">{e.label}</p>
-                  <p className="text-[12px] text-slate-500">{e.hint}</p>
+                  <p className="font-bold text-ink text-[15px]">{e.label}</p>
+                  <p className="text-[13px] text-ink-3">{e.hint}</p>
                 </div>
                 <Toggle on={s.emails[e.key]} onChange={(v) => save({ settings: { ...s, emails: { ...s.emails, [e.key]: v } } })} label={e.label} />
               </li>
             ))}
             <li className="flex items-center gap-4 py-3">
               <div className="flex-1">
-                <p className="font-bold text-slate-800 text-sm flex items-center gap-1.5">
-                  <RiShieldCheckLine size={15} className="text-teal-600" /> Patient safety alerts
+                <p className="font-bold text-ink text-[15px] flex items-center gap-1.5">
+                  <RiShieldCheckLine size={15} className="text-brand-ink" /> Patient safety alerts
                 </p>
-                <p className="text-[12px] text-slate-500">A patient took a dose early, or a visit needs closing. Always sent.</p>
+                <p className="text-[13px] text-ink-3">A patient took a dose early, or a visit needs closing. Always sent.</p>
               </div>
-              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">Always on</span>
+              <Pill tone="brand">Always on</Pill>
             </li>
           </ul>
         </Card>
@@ -146,7 +144,7 @@ function SettingsPage() {
         <Card icon={<RiMoonLine size={18} />} title="Quiet hours" hint="No non-urgent emails during these hours. Safety alerts still come through.">
           <div className="flex flex-wrap items-center gap-3">
             <Toggle on={s.quietHours.enabled} onChange={(v) => save({ settings: { ...s, quietHours: { ...s.quietHours, enabled: v } } })} label="Quiet hours" />
-            <span className="text-sm text-slate-600">From</span>
+            <span className="text-[14px] text-ink-2">From</span>
             <input
               type="time"
               value={s.quietHours.start}
@@ -154,7 +152,7 @@ function SettingsPage() {
               onChange={(e) => save({ settings: { ...s, quietHours: { ...s.quietHours, start: e.target.value } } })}
               className={`${input} disabled:opacity-40`}
             />
-            <span className="text-sm text-slate-600">to</span>
+            <span className="text-[14px] text-ink-2">to</span>
             <input
               type="time"
               value={s.quietHours.end}
@@ -183,12 +181,12 @@ function SettingsPage() {
 
 function Card({ icon, title, hint, children }: { icon: ReactNode; title: string; hint: string; children: ReactNode }) {
   return (
-    <section className="bg-white rounded-[28px] border border-slate-200 p-5 sm:p-6">
+    <section className="surface rounded-[22px] p-5 sm:p-6">
       <div className="flex items-start gap-3 mb-4">
-        <span className="p-2 rounded-xl bg-teal-50 text-teal-600">{icon}</span>
+        <span className="w-9 h-9 shrink-0 rounded-[11px] grid place-items-center border border-teal-100 bg-brand-soft text-brand-ink">{icon}</span>
         <div>
-          <h2 className="font-black text-slate-900">{title}</h2>
-          <p className="text-[12px] text-slate-500">{hint}</p>
+          <h2 className="text-[16px] font-bold text-ink">{title}</h2>
+          <p className="text-[13px] text-ink-3">{hint}</p>
         </div>
       </div>
       {children}
@@ -204,7 +202,7 @@ function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) =
       aria-checked={on}
       aria-label={label}
       onClick={() => onChange(!on)}
-      className={`relative w-14 h-8 rounded-full shrink-0 transition-colors ${on ? "bg-teal-600" : "bg-slate-300"}`}
+      className={`relative w-14 h-8 rounded-full shrink-0 transition-colors ${on ? "bg-brand" : "bg-line"}`}
     >
       <span className={`absolute top-1 left-1 w-6 h-6 rounded-full bg-white shadow transition-transform ${on ? "translate-x-6" : ""}`} />
     </button>
@@ -237,37 +235,29 @@ function CalendarConnect({ calendar, onChanged }: { calendar: Data["calendar"]; 
   });
 
   if (!calendar.configured) {
-    return <p className="text-sm text-slate-500">Google Calendar isn&apos;t set up on the server yet (the clinic needs to add its Google client secret).</p>;
+    return <p className="text-[14px] text-ink-3">Google Calendar isn&apos;t set up on the server yet (the clinic needs to add its Google client secret).</p>;
   }
   if (!calendar.connected) {
     return (
-      <button
-        onClick={() => connect()}
-        disabled={busy !== null}
-        className="px-5 py-3 rounded-2xl bg-slate-900 text-white text-sm font-bold hover:bg-teal-600 disabled:opacity-50"
-      >
+      <button onClick={() => connect()} disabled={busy !== null} className="btn btn-ink !rounded-xl disabled:opacity-50">
         {busy ? "Connecting…" : "Connect Google Calendar"}
       </button>
     );
   }
   return (
     <div className="space-y-3">
-      <p className="text-sm text-slate-700">
-        Connected to <strong>{calendar.email ?? "your Google account"}</strong>
+      <p className="text-[15px] text-ink-2">
+        Connected to <strong className="text-ink">{calendar.email ?? "your Google account"}</strong>
       </p>
-      {calendar.lastError && <p className="text-[12px] text-orange-700 bg-orange-50 rounded-xl px-3 py-2">{calendar.lastError}</p>}
+      {calendar.lastError && <p className="text-[13px] text-orange-700 bg-orange-50 border border-orange-100 rounded-xl px-3 py-2">{calendar.lastError}</p>}
       <div className="flex flex-wrap gap-2">
-        <button
-          onClick={() => call("sync", API_PATHS.DOCTOR.GCAL_SYNC)}
-          disabled={busy !== null}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-        >
+        <button onClick={() => call("sync", API_PATHS.DOCTOR.GCAL_SYNC)} disabled={busy !== null} className={ghost}>
           <RiRefreshLine size={15} /> {busy === "sync" ? "Syncing…" : "Sync now"}
         </button>
         <button
           onClick={() => call("disconnect", API_PATHS.DOCTOR.GCAL_DISCONNECT)}
           disabled={busy !== null}
-          className="px-4 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"
+          className="px-4 py-2.5 rounded-xl text-[14px] font-bold text-ink-3 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"
         >
           Disconnect
         </button>
@@ -294,40 +284,34 @@ function MapCheck({ map, onChanged }: { map: Data["map"]; onChanged: (m: Data["m
     }
   };
 
-  if (!map.address) return <p className="text-sm text-slate-500">Add your clinic address in My Profile first.</p>;
+  if (!map.address) return <p className="text-[14px] text-ink-3">Add your clinic address in My Profile first.</p>;
 
   const q = map.located ? `${map.lat},${map.lng}` : encodeURIComponent(map.address);
   return (
     <div className="space-y-3">
-      <p className="text-sm text-slate-700">
-        <strong>{map.address}</strong>
-      </p>
+      <p className="text-[15px] font-bold text-ink">{map.address}</p>
       {map.located ? (
-        <div className="rounded-2xl overflow-hidden border border-slate-200 aspect-[16/7] bg-slate-100">
+        <div className="rounded-2xl overflow-hidden border border-line aspect-[16/7] bg-canvas">
           <iframe title="Your clinic on the map" src={`https://maps.google.com/maps?q=${q}&z=15&output=embed`} className="w-full h-full" loading="lazy" />
         </div>
       ) : (
-        <p className="text-[12px] text-orange-700 bg-orange-50 rounded-xl px-3 py-2">
+        <p className="text-[13px] text-orange-700 bg-orange-50 border border-orange-100 rounded-xl px-3 py-2">
           We couldn&apos;t place this address on the map yet, so patients don&apos;t get directions or travel time to you. Add the area and city in
           My Profile, then check again.
         </p>
       )}
       {map.located && !map.precise && (
-        <p className="text-[12px] text-slate-500">This pin is approximate (from OpenStreetMap). It becomes exact once the clinic adds a Google Maps key.</p>
+        <p className="text-[13px] text-ink-3">This pin is approximate (from OpenStreetMap). It becomes exact once the clinic adds a Google Maps key.</p>
       )}
       <div className="flex flex-wrap gap-2">
-        <button
-          onClick={refresh}
-          disabled={busy}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-        >
+        <button onClick={refresh} disabled={busy} className={ghost}>
           <RiRefreshLine size={15} /> {busy ? "Checking…" : "Check my location again"}
         </button>
         <a
           href={`https://www.google.com/maps/search/?api=1&query=${q}`}
           target="_blank"
           rel="noreferrer"
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold text-teal-700 hover:bg-teal-50"
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[14px] font-bold text-brand-ink hover:bg-brand-soft"
         >
           <RiExternalLinkLine size={15} /> Open in Google Maps
         </a>
@@ -364,7 +348,7 @@ export function PasswordForm({ onDone, stacked }: { onDone?: () => void; stacked
       <input required type="password" placeholder={stacked ? "Starting password from the email" : "Current password"} value={form.currentPassword} onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} className={input} />
       <input required type="password" minLength={8} placeholder="New password (8+)" value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} className={input} />
       <input required type="password" minLength={8} placeholder="Repeat new password" value={form.repeat} onChange={(e) => setForm({ ...form, repeat: e.target.value })} className={input} />
-      <button type="submit" disabled={saving} className={`${stacked ? "" : "sm:col-span-3 sm:justify-self-start"} justify-self-stretch px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-teal-600 disabled:opacity-50`}>
+      <button type="submit" disabled={saving} className={`${stacked ? "" : "sm:col-span-3 sm:justify-self-start"} justify-self-stretch btn btn-ink !rounded-xl disabled:opacity-50`}>
         {saving ? "Saving…" : "Change password"}
       </button>
     </form>
