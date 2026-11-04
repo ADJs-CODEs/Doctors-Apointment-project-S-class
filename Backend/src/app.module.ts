@@ -20,6 +20,9 @@ import { ConnectionsController } from './connections/connections.controller';
 import { ConnectionsService } from './connections/connections.service';
 import { DatabaseModule } from './database/database.module';
 import { DoctorController } from './doctor/doctor.controller';
+import { DoctorEarningsService } from './doctor/doctor-earnings.service';
+import { DoctorSettingsController } from './doctor/doctor-settings.controller';
+import { AdminDoctorPayoutsController, DoctorWalletController } from './doctor/doctor-wallet.controller';
 import { DoctorService } from './doctor/doctor.service';
 import { IntegrationsModule } from './integrations/integrations';
 import { LegacyMessageCopier } from './messages/legacy-message-copier';
@@ -41,6 +44,7 @@ import { PaystackService } from './payments/paystack.service';
 import { StripeWebhookController } from './payments/stripe-webhook.controller';
 import { MapsService } from './maps/maps.service';
 import { GoogleCalendar } from './settings/google-calendar';
+import { DoctorPreferences } from './settings/doctor-preferences';
 import { Preferences } from './settings/preferences';
 import { SettingsController } from './settings/settings.controller';
 import { AdminPayoutsController, WalletController } from './wallet/wallet.controller';
@@ -76,6 +80,9 @@ class HealthController {
     WalletController,
     AdminPayoutsController,
     SettingsController,
+    DoctorSettingsController,
+    DoctorWalletController,
+    AdminDoctorPayoutsController,
     MapsController,
     PatientVideoController,
     DoctorVideoController,
@@ -95,10 +102,12 @@ class HealthController {
     ShopService,
     OrderService,
     PharmacyEarningsService,
+    DoctorEarningsService,
     BookingService,
     VideoService,
     MapsService,
     Preferences,
+    DoctorPreferences,
     GoogleCalendar,
     WalletService,
     MissedAppointments,

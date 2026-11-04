@@ -107,7 +107,10 @@ const ChatBot: React.FC<{ aboveTabBar?: boolean }> = ({ aboveTabBar = false }) =
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => setOpen(true)}
-            className={`fixed ${bottom} left-6 z-50 w-14 h-14 bg-slate-900 text-white rounded-full shadow-2xl flex items-center justify-center border border-white/10 group`}
+            aria-label="Open the AI assistant"
+            title="AI assistant"
+            // on desktop, sit just right of the sidebar instead of on top of the profile at its bottom
+            className={`fixed ${bottom} left-6 ${aboveTabBar ? "lg:left-[19.5rem]" : ""} z-50 w-14 h-14 bg-slate-900 text-white rounded-full shadow-2xl flex items-center justify-center border border-white/10 group`}
           >
             <RiRobot2Line
               size={24}

@@ -87,7 +87,7 @@ export function normalizeSettings(raw: any): Settings {
 }
 
 /** "22:00".."07:00" in the clinic's time zone, wrapping past midnight. */
-function inQuietHours(q: Settings['quietHours'], now = new Date()) {
+export function inQuietHours(q: Settings['quietHours'], now = new Date()) {
   if (!q.enabled) return false;
   const hm = now.toLocaleTimeString('en-GB', { timeZone: CLINIC_TZ, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
   return q.start <= q.end ? hm >= q.start && hm < q.end : hm >= q.start || hm < q.end;

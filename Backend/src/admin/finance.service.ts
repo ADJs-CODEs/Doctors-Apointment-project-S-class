@@ -4,6 +4,7 @@ import type { Model, PipelineStage } from 'mongoose';
 import { NOT_A_HOLD } from '../appointments/booking.service';
 import { MODEL } from '../database/models';
 import type { IAppointment } from '../database/schemas/appointment.schema';
+import type { IDoctorPayout } from '../database/schemas/doctor-payout.schema';
 import type { IPharmacyPayout } from '../database/schemas/pharmacy.schemas';
 import { type IShopOrder, OPEN_ORDER } from '../database/schemas/shop-order.schema';
 import type { IPayout, IWallet, IWalletTransaction } from '../database/schemas/wallet.schemas';
@@ -31,6 +32,7 @@ export class FinanceService {
     @InjectModel(MODEL.payout) private readonly payouts: Model<IPayout>,
     @InjectModel(MODEL.shopOrder) private readonly shopOrders: Model<IShopOrder>,
     @InjectModel(MODEL.pharmacyPayout) private readonly pharmacyPayouts: Model<IPharmacyPayout>,
+    @InjectModel(MODEL.doctorPayout) private readonly doctorPayouts: Model<IDoctorPayout>,
   ) {}
 
   async overview(daysParam?: string) {
@@ -39,7 +41,7 @@ export class FinanceService {
     const bucket: Bucket = days === 30 ? 'day' : days === 90 ? 'week' : 'month';
 
     const paid = { ...NOT_A_HOLD, payment: true, date: { $gte: since.getTime() } };
-    const [visits, doctors, ledger, refunds, owed, payouts, attention, trend, shop] = await Promise.all([
+    const [visits, doctors, ledger, refunds, owed, payouts, attention, trend, shop, docWallets] = await Promise.all([
       this.visitTotals(paid),
       this.doctorEarnings(paid),
       this.ledgerTotals(since),
@@ -49,6 +51,7 @@ export class FinanceService {
       this.needsAttention(),
       this.trend(since, bucket, paid),
       this.shopTotals(since),
+      this.doctorWalletTotals(since),
     ]);
 
     const cardCents = visits.card + visits.legacy;
@@ -72,7 +75,17 @@ export class FinanceService {
         payoutsPaidCents: payouts.paidCents,
         payoutsPaidCount: payouts.paidCount,
       },
-      owed: { ...owed, pharmaciesCents: shop.owedToPharmaciesCents, ordersInProgressCents: shop.inProgressCents, totalCents: owed.totalCents + shop.owedToPharmaciesCents + shop.inProgressCents },
+      owed: {
+        ...owed,
+        pharmaciesCents: shop.owedToPharmaciesCents,
+        ordersInProgressCents: shop.inProgressCents,
+        doctorsCents: docWallets.owedToDoctorsCents,
+        totalCents: owed.totalCents + shop.owedToPharmaciesCents + shop.inProgressCents + docWallets.owedToDoctorsCents,
+      },
+      doctorWallets: {
+        commissionCents: docWallets.commissionCents,
+        payoutsPaidCents: docWallets.payoutsPaidCents,
+      },
       shop: {
         ordersCents: shop.ordersCents,
         orders: shop.orders,
@@ -82,7 +95,12 @@ export class FinanceService {
         pharmacyPayoutsPaidCents: shop.payoutsPaidCents,
       },
       doctors,
-      attention: { ...attention, pendingPharmacyPayouts: shop.pendingPayouts, failedOrderRefunds: shop.failedRefunds },
+      attention: {
+        ...attention,
+        pendingPharmacyPayouts: shop.pendingPayouts,
+        failedOrderRefunds: shop.failedRefunds,
+        pendingDoctorPayouts: docWallets.pendingPayouts,
+      },
       trend,
     };
   }
@@ -114,6 +132,7 @@ export class FinanceService {
       refundCents: number;
       missedByDoctor: number;
       noShows: number;
+      commissionCents: number;
     }>([
       // a cancelled visit earns the doctor nothing (its refund is listed under "needs attention" if it's missing)
       { $match: { ...match, cancelled: { $ne: true } } },
@@ -129,6 +148,7 @@ export class FinanceService {
           },
           missedByDoctor: { $sum: { $cond: [{ $eq: ['$missed.by', 'doctor'] }, 1, 0] } },
           noShows: { $sum: { $cond: [{ $eq: ['$missed.by', 'patient'] }, 1, 0] } },
+          commissionCents: { $sum: { $ifNull: ['$earning.commissionCents', 0] } },
         },
       },
       { $sort: { grossCents: -1 } },
@@ -260,6 +280,36 @@ export class FinanceService {
       payoutsPaidCents: payoutsPaid[0]?.cents ?? 0,
       pendingPayouts,
       failedRefunds,
+    };
+  }
+
+  /**
+   * Doctors' wallets. Each settled visit records what it earned the doctor and the clinic's
+   * commission (`earning`); visits from before that are recorded the first time the doctor
+   * opens their wallet. Owed = earned minus withdrawals already sent.
+   */
+  private async doctorWalletTotals(since: Date) {
+    const [[period], [earned], [withdrawn], [paidOut], pendingPayouts] = await Promise.all([
+      this.appointments.aggregate<{ commission: number }>([
+        { $match: { 'earning.at': { $gte: since } } },
+        { $group: { _id: null, commission: { $sum: '$earning.commissionCents' } } },
+      ]),
+      this.appointments.aggregate<{ cents: number }>([
+        { $match: { 'earning.at': { $exists: true } } },
+        { $group: { _id: null, cents: { $sum: '$earning.doctorCents' } } },
+      ]),
+      this.doctorPayouts.aggregate<{ cents: number }>([{ $match: { status: 'paid' } }, { $group: { _id: null, cents: { $sum: '$cents' } } }]),
+      this.doctorPayouts.aggregate<{ cents: number }>([
+        { $match: { status: 'paid', decidedAt: { $gte: since } } },
+        { $group: { _id: null, cents: { $sum: '$cents' } } },
+      ]),
+      this.doctorPayouts.countDocuments({ status: 'pending' }),
+    ]);
+    return {
+      commissionCents: period?.commission ?? 0,
+      owedToDoctorsCents: Math.max(0, (earned?.cents ?? 0) - (withdrawn?.cents ?? 0)),
+      payoutsPaidCents: paidOut?.cents ?? 0,
+      pendingPayouts,
     };
   }
 

@@ -3,11 +3,14 @@ import { InjectModel } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
 import { MODEL } from '../database/models';
 import type { IAppointment, IMedicine, IRefund } from '../database/schemas/appointment.schema';
+import type { IDoctorPayout } from '../database/schemas/doctor-payout.schema';
+import type { DoctorEmail } from '../database/schemas/doctor.schema';
 import type { IPharmacyPayout } from '../database/schemas/pharmacy.schemas';
 import type { IShopOrder, OrderStatus } from '../database/schemas/shop-order.schema';
 import type { IConnection } from '../database/schemas/social.schemas';
 import type { IUser } from '../database/schemas/user.schema';
 import { type Mail, MailService } from '../integrations/integrations';
+import { DoctorPreferences } from '../settings/doctor-preferences';
 import { type Category, Preferences } from '../settings/preferences';
 import { type AppNotification, AppNotifier } from './app-notifier';
 import { CLINIC_TZ, slotParts, type WallClock } from './clinic-time';
@@ -164,17 +167,23 @@ export class EmailNotifications {
     @InjectModel(MODEL.connection) private readonly connections: Model<IConnection>,
     @InjectModel(MODEL.user) private readonly users: Model<IUser>,
     private readonly prefs: Preferences,
+    private readonly doctorPrefs: DoctorPreferences,
   ) {}
 
   /**
-   * Sends one email, unless the patient switched this kind off (who = their id and the
-   * setting that governs it; leave it out for emails that always go, e.g. to doctors).
+   * Sends one email, unless its recipient switched this kind off: a patient (who = their id
+   * and the setting that governs it) or a doctor (doctorId + doctorEmail). Leave both out for
+   * emails that always go (safety alerts, the admin).
    */
-  private deliver(kind: string, mail: Mail & Partial<Who>, who?: Who) {
-    const { userId, category, ...email } = mail;
+  private deliver(kind: string, mail: Mail & Partial<Who> & { doctorId?: unknown; doctorEmail?: DoctorEmail }, who?: Who) {
+    const { userId, category, doctorId, doctorEmail, ...email } = mail;
     const owner = who ?? (userId && category ? { userId, category } : undefined);
     if (!email.to) return;
-    const allowed = owner ? this.prefs.allows(String(owner.userId), owner.category, 'email') : Promise.resolve(true);
+    const allowed = owner
+      ? this.prefs.allows(String(owner.userId), owner.category, 'email')
+      : doctorId && doctorEmail
+        ? this.doctorPrefs.allowsEmail(String(doctorId), doctorEmail)
+        : Promise.resolve(true);
     allowed
       .then((ok) => (ok ? this.mail.send(email) : undefined))
       .catch((err) => this.logger.warn(`${kind} email to ${email.to} failed: ${err.message}`));
@@ -298,6 +307,8 @@ export class EmailNotifications {
     });
 
     this.deliver('booking (doctor)', {
+      doctorId: a.docId,
+      doctorEmail: 'bookings',
       to: a.docData?.email,
       subject: `New booking: ${a.userData?.name}, ${prettyDate(a.slotDate)} ${a.slotTime}`,
       html: layout({
@@ -380,6 +391,8 @@ export class EmailNotifications {
     });
 
     this.deliver('payment (doctor)', {
+      doctorId: a.docId,
+      doctorEmail: 'bookings',
       to: a.docData?.email,
       subject: `Paid: ${a.userData?.name}, ${prettyDate(a.slotDate)} ${a.slotTime}`,
       html: layout({
@@ -480,6 +493,8 @@ export class EmailNotifications {
       link: isVideo(a) ? `/doctor-call/${a._id}` : `/doctor-messages?patient=${a.userId}&appointment=${a._id}`,
     });
     this.deliver('appointment now (doctor)', {
+      doctorId: a.docId,
+      doctorEmail: 'visitStarting',
       to: a.docData?.email,
       subject: `Now: ${a.userData?.name} (${a.slotTime})`,
       html: layout({
@@ -539,6 +554,8 @@ export class EmailNotifications {
     }
     if (by !== 'doctor') {
       this.deliver('cancel (doctor)', {
+        doctorId: a.docId,
+        doctorEmail: 'cancellations',
         to: a.docData?.email,
         subject: `Cancelled: ${a.userData?.name}, ${prettyDate(a.slotDate)} ${a.slotTime}`,
         html: layout({
@@ -640,6 +657,8 @@ export class EmailNotifications {
       });
     }
     this.deliver('missed (doctor)', {
+      doctorId: a.docId,
+      doctorEmail: 'cancellations',
       to: a.docData?.email,
       subject: patientMissed
         ? `No-show recorded: ${a.userData?.name}, ${prettyDate(a.slotDate)}`
@@ -952,6 +971,47 @@ export class EmailNotifications {
         body: `<p>${escapeHtml(copy.text)}</p>${p.adminNote && p.status === 'rejected' ? quote(p.adminNote, 'orange') : ''}`,
         button: { label: 'Open earnings', url: adminUrl('/pharmacy-earnings') },
         footer: 'You are receiving this because you sell on ADJ’s CODEs.',
+      }),
+    });
+  }
+
+  /** A doctor asked to withdraw their earnings: the admin approves it. */
+  doctorPayoutRequested(p: IDoctorPayout) {
+    this.deliver('doctor payout requested (admin)', {
+      to: process.env.ADMIN_EMAIL ?? '',
+      subject: `Doctor withdrawal: ${cents(p.cents)} for ${p.doctorName}`,
+      html: layout({
+        title: 'A doctor wants to withdraw their earnings',
+        tone: 'orange',
+        body: `${details([
+          ['Doctor', p.doctorName],
+          ['Amount', cents(p.cents)],
+          ['Bank', `${p.bank.bankName}, ${p.bank.accountName}${p.bank.verified ? ' (confirmed by the bank)' : ' (typed in, not confirmed)'}`],
+        ])}`,
+        button: { label: 'Open payouts', url: adminUrl('/payouts?tab=doctors') },
+        footer: 'Sent to the clinic admin.',
+      }),
+    });
+  }
+
+  /** The admin (or Paystack) settled a doctor withdrawal. */
+  doctorPayoutDecided(p: IDoctorPayout, to?: string) {
+    if (!to) return;
+    const copy = {
+      paid: { title: 'Your withdrawal was sent', tone: 'teal' as const, text: `${cents(p.cents)} has been sent to ${p.bank.bankName} (${p.bank.accountName}).${p.reference ? ` Reference: ${p.reference}.` : ''}` },
+      rejected: { title: 'Your withdrawal wasn’t approved', tone: 'orange' as const, text: `The ${cents(p.cents)} is back in your available balance.` },
+      failed: { title: 'Your withdrawal couldn’t be sent', tone: 'red' as const, text: `The bank transfer failed${p.failureReason ? ` (${p.failureReason})` : ''}. The ${cents(p.cents)} is back in your available balance; check your bank details and try again.` },
+    }[p.status as 'paid' | 'rejected' | 'failed'];
+    if (!copy) return;
+    this.deliver(`doctor payout ${p.status}`, {
+      to,
+      subject: `${copy.title}: ${cents(p.cents)}`,
+      html: layout({
+        title: copy.title,
+        tone: copy.tone,
+        body: `<p>${escapeHtml(copy.text)}</p>${p.adminNote && p.status === 'rejected' ? quote(p.adminNote, 'orange') : ''}`,
+        button: { label: 'Open wallet', url: adminUrl('/doctor-wallet') },
+        footer: 'You are receiving this because you see patients on ADJ’s CODEs.',
       }),
     });
   }

@@ -14,13 +14,14 @@ import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "@/lib/navigation";
 import { API_PATHS } from "../../utils/apiPath";
 import axiosInstance from "../../utils/axiosInstance";
+import DoctorPayouts from "./DoctorPayouts";
 import PharmacyPayouts from "./PharmacyPayouts";
 
-/** Money going out: patients' care funds, and pharmacies' earnings. */
+/** Money going out: patients' care funds, doctors' and pharmacies' earnings. */
 export default function Payouts() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const tab = params.get("tab") === "pharmacies" ? "pharmacies" : "care";
+  const tab = params.get("tab") === "pharmacies" ? "pharmacies" : params.get("tab") === "doctors" ? "doctors" : "care";
   return (
     <div className="bg-slate-50/50 min-h-screen">
       <div className="px-4 sm:px-6 md:px-10 pt-6 md:pt-10">
@@ -29,12 +30,13 @@ export default function Payouts() {
             {(
               [
                 ["care", "Patients' care funds"],
+                ["doctors", "Doctors"],
                 ["pharmacies", "Pharmacies"],
               ] as const
             ).map(([key, label]) => (
               <button
                 key={key}
-                onClick={() => navigate(key === "care" ? "/payouts" : "/payouts?tab=pharmacies")}
+                onClick={() => navigate(key === "care" ? "/payouts" : `/payouts?tab=${key}`)}
                 className={`px-4 py-2 rounded-xl text-sm font-bold ${tab === key ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
               >
                 {label}
@@ -46,9 +48,7 @@ export default function Payouts() {
       {tab === "care" ? (
         <CareFundPayouts />
       ) : (
-        <div className="p-4 sm:p-6 md:p-10">
-          <PharmacyPayouts />
-        </div>
+        <div className="p-4 sm:p-6 md:p-10">{tab === "doctors" ? <DoctorPayouts /> : <PharmacyPayouts />}</div>
       )}
     </div>
   );

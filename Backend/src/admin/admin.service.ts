@@ -78,7 +78,7 @@ export class AdminService {
   }
 
   async allDoctors() {
-    const doctors = await this.doctors.find({}).select('-password');
+    const doctors = await this.doctors.find({}).select('-password -googleCalendar');
     return { success: true, doctors };
   }
 

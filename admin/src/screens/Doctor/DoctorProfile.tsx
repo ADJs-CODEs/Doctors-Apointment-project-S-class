@@ -11,8 +11,7 @@ import type {
 } from "../../types/index";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPath";
-import Availabilty from "../../inputs/Availabilty";
-import DoctorSchedule from "./DoctorSchedule";
+import { Link } from "@/lib/navigation";
 
 const DoctorProfile: React.FC = () => {
   const { profileData, getProfileData } = useContext(
@@ -150,17 +149,14 @@ const DoctorProfile: React.FC = () => {
               </div>
             </div>
 
-            {/* ✅ FIXED: Correct props passed to Availabilty */}
-            <Availabilty
-              isEdit={isEdit}
-              tempData={tempData}
-              setTempData={
-                setTempData as React.Dispatch<
-                  React.SetStateAction<{ available: boolean } | null>
-                >
-              }
-              profileData={profileData}
-            />
+            {/* taking bookings, hours and fees live in Settings now */}
+            <p className="mt-6 text-[12px] text-slate-500">
+              Taking bookings, your hours and your video fee are in{" "}
+              <Link to="/doctor-settings" className="font-bold text-teal-700 hover:underline">
+                Settings
+              </Link>
+              .
+            </p>
 
             <div className="mt-8 md:mt-10 flex flex-col sm:flex-row gap-3">
               {isEdit ? (
@@ -192,9 +188,6 @@ const DoctorProfile: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* when patients can book, and the video call fee */}
-        <DoctorSchedule />
       </div>
     </div>
   );

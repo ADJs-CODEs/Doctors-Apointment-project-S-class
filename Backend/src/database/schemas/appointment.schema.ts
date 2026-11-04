@@ -60,6 +60,8 @@ export interface IAppointment extends Document {
   paymentIntentId?: string;
   /** the event in the patient's Google Calendar, when they've connected it */
   calendarEventId?: string;
+  /** the same visit in the doctor's Google Calendar, when they've connected it */
+  doctorCalendarEventId?: string;
   /**
    * Set while the slot is only held for payment: the booking becomes real once it's paid,
    * and an unpaid hold is removed (and the slot freed) when this passes.
@@ -78,6 +80,12 @@ export interface IAppointment extends Document {
   // a no-show: who didn't turn up, and who/what recorded it
   missed?: { by: 'patient' | 'doctor'; markedBy: 'doctor' | 'admin' | 'system'; at: Date };
   refund?: IRefund;
+  /**
+   * What this visit earned the doctor, fixed when it was settled (completed, or a patient
+   * no-show): the fee minus any refund, minus the clinic's commission at that moment.
+   * Withdrawable once `at` is 7 days old (doctor/doctor-earnings.service.ts).
+   */
+  earning?: { percent: number; grossCents: number; refundCents: number; commissionCents: number; doctorCents: number; at: Date };
 }
 
 export interface IRefund {
@@ -130,6 +138,7 @@ export const AppointmentSchema = new Schema<IAppointment>(
     paymentIntentId: { type: String },
     paymentMethod: { type: String, enum: ['stripe', 'wallet'] },
     calendarEventId: { type: String },
+    doctorCalendarEventId: { type: String },
     holdExpiresAt: { type: Date },
     stripeSessionId: { type: String },
     kind: { type: String, enum: ['in-person', 'video'], default: 'in-person' },
@@ -164,6 +173,13 @@ export const AppointmentSchema = new Schema<IAppointment>(
           error: { type: String },
           at: { type: Date, required: true },
         },
+        { _id: false },
+      ),
+      default: undefined,
+    },
+    earning: {
+      type: new Schema(
+        { percent: Number, grossCents: Number, refundCents: Number, commissionCents: Number, doctorCents: Number, at: Date },
         { _id: false },
       ),
       default: undefined,

@@ -20,4 +20,6 @@ export const MODEL = {
   product: 'product',
   shopOrder: 'shoporder',
   pharmacyPayout: 'pharmacypayout',
+  doctorPayout: 'doctorpayout',
+  platformSetting: 'platformsetting',
 } as const;

@@ -56,6 +56,15 @@ export class DoctorController {
     return this.missed.markMissed(appointmentId, 'patient', 'doctor', docId);
   }
 
+  /** The patient is no longer critical with this doctor (urgent message / early dose handled). */
+  @Post('resolve-critical')
+  @HttpCode(200)
+  @UseGuards(DoctorAuthGuard)
+  @UseFilters(OkOnErrorFilter)
+  resolveCritical(@DocId() docId: string, @Body('userId') userId?: string) {
+    return this.doctors.resolveCritical(docId, userId);
+  }
+
   @Get('dashboard')
   @UseGuards(DoctorAuthGuard)
   @UseFilters(OkOnErrorFilter)
