@@ -2,6 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
 import { fail } from '../common/http';
+import { NOT_A_HOLD } from '../appointments/booking.service';
 import { MODEL } from '../database/models';
 import type { IAppointment } from '../database/schemas/appointment.schema';
 import type { IConnection, INudge } from '../database/schemas/social.schemas';
@@ -202,9 +203,14 @@ export class ConnectionsService {
     });
     if (!connection) fail('No active connection with this patient', HttpStatus.FORBIDDEN);
 
+    // only what the watcher's page shows: who they are, their visits and doses. Never their address,
+    // phone, date of birth, wallet or payment details (the visit copy of the patient is left out too).
     const [patient, appointments] = await Promise.all([
-      this.users.findById(patientId).select('-password -resetToken -resetTokenExpire -settings -googleCalendar'),
-      this.appointments.find({ userId: patientId }).sort({ date: -1 }),
+      this.users.findById(patientId).select('name email image'),
+      this.appointments
+        .find({ userId: patientId, ...NOT_A_HOLD })
+        .select('docId docData.name docData.image docData.speciality slotDate slotTime kind payment cancelled isCompleted missed healthData date')
+        .sort({ date: -1 }),
     ]);
     return { success: true, patient, appointments };
   }

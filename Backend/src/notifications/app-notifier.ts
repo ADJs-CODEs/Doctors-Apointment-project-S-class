@@ -78,6 +78,15 @@ export class AppNotifier {
     this.push(userId, n, n.tag).catch((err) => this.logger.warn(`push for ${userId} failed: ${err.message}`));
   }
 
+  /** Like pushOnly, but only if their settings allow this category now (switch and quiet hours). */
+  pushIfAllowed(userId: string, n: AppNotification & { tag: string; category: Category }) {
+    if (!userId) return;
+    this.prefs
+      .allows(userId, n.category, 'push', n.urgent)
+      .then((ok) => (ok ? this.push(userId, n, n.tag) : undefined))
+      .catch((err) => this.logger.warn(`push for ${userId} failed: ${err.message}`));
+  }
+
   /**
    * A doctor's bell (doctor panel): saved and pushed live to their open tabs. No device
    * push yet: the doctor panel has no service worker, and they also get an email.
